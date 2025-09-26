@@ -1,17 +1,14 @@
 // -------- Configuración de clasificación (edita a gusto) --------
-// Rango en dB (aprox. tras calibración) -> etiqueta, emoji y color
 const CLASSES = [
   { min: -Infinity, max: 55,  label: "Tristeza",   emoji: "😔", color: "#3b82f6" },
   { min: 55,        max: 65,  label: "Ansiedad",   emoji: "😰", color: "#eab308" },
   { min: 65,        max: 75,  label: "Estrés",     emoji: "😣", color: "#f97316" },
   { min: 75,        max: 90,  label: "Enojo",      emoji: "😡", color: "#ef4444" },
-  { min: 60,        max: 72,  label: "Alegría",    emoji: "😃", color: "#10b981", priority: 1 }, // Ejemplo de rango solapado opcional
+  { min: 60,        max: 72,  label: "Alegría",    emoji: "😃", color: "#10b981", priority: 1 },
 ];
-// Nota: si hay solapes, gana el que tenga mayor "priority". Si no hay priority, el primero que cumpla.
 
 const legendList = document.getElementById("legendList");
 function renderLegend() {
-  // mostrar sin duplicados por solapes (orden informativo)
   const shown = new Set();
   CLASSES.forEach(c => {
     const key = `${c.label}-${c.min}-${c.max}`;
@@ -39,8 +36,8 @@ let rafId = null;
 let running = false;
 let smoothedDb = null;
 
+// -------- Funciones --------
 function classify(db) {
-  // Resolver solapes por prioridad
   let match = null;
   let bestPriority = -Infinity;
   for (const c of CLASSES) {
@@ -62,7 +59,6 @@ function setStatus(label, emoji, color) {
 }
 
 function setBar(db) {
-  // Escala para barra (0–100%). Ajusta límites a conveniencia
   const minDb = 30;
   const maxDb = 90;
   const clamped = Math.max(minDb, Math.min(maxDb, db));
@@ -71,7 +67,7 @@ function setBar(db) {
 }
 
 function rmsToDb(rms) {
-  // Evitar log(0)
+  // Convierte RMS a dBFS (normalmente valores negativos)
   const min = 1e-8;
   const val = Math.max(min, rms);
   return 20 * Math.log10(val);
@@ -100,7 +96,6 @@ function stop() {
     analyser = null;
   }
   if (audioContext) {
-    // No cerramos completamente para iOS; pero aquí sí para liberar
     audioContext.close().catch(()=>{});
     audioContext = null;
   }
@@ -117,7 +112,6 @@ function stop() {
 
 async function start() {
   try {
-    // Requiere HTTPS y gesto del usuario en iOS
     mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: false,
@@ -153,16 +147,14 @@ function loop() {
   const rms = computeRmsFloat(dataBuf);
   let db = rmsToDb(rms);
 
-  // Calibración para aproximar dB SPL (ajuste empírico)
+  // 🔧 Escalamos los dBFS (que van de ~ -60 a 0) a rango 30–90
   const calibration = parseInt(calSlider.value, 10) || 0;
-  db += calibration;
+  let dbMapped = Math.round(30 + ((db + 60) / 60) * 60 + calibration);
 
-  // Suavizado exponencial simple
-  if (smoothedDb == null) smoothedDb = db;
-  smoothedDb = smoothedDb * 0.8 + db * 0.2;
+  if (smoothedDb == null) smoothedDb = dbMapped;
+  smoothedDb = smoothedDb * 0.8 + dbMapped * 0.2;
 
-  // Mostrar
-  const shown = Math.max(0, Math.round(smoothedDb));
+  const shown = Math.round(smoothedDb);
   dbValueEl.textContent = isFinite(shown) ? shown : "—";
   setBar(shown);
 
@@ -172,7 +164,7 @@ function loop() {
   rafId = requestAnimationFrame(loop);
 }
 
-// UI bindings
+// -------- UI bindings --------
 toggleBtn.addEventListener("click", async () => {
   if (running) stop();
   else start();
@@ -190,7 +182,6 @@ smoothingEl.addEventListener("change", () => {
 setBar(30);
 setStatus("Sin medición", "⏸️", "#a8b3cf");
 
-// Advertencia básica si no hay soporte
 if (!navigator.mediaDevices?.getUserMedia) {
   alert("Este navegador no soporta getUserMedia(). Prueba con Chrome/Edge/Firefox o Safari reciente.");
 }
