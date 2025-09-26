@@ -18,12 +18,10 @@
 
     <section class="controls">
       <button id="toggleBtn" class="primary">🎙️ Activar micrófono</button>
-
       <div class="row">
         <label for="calibration">Calibración (dB): <span id="calVal">0</span></label>
         <input id="calibration" type="range" min="-30" max="30" value="0" step="1" />
       </div>
-
       <div class="row">
         <label for="smoothing">Suavizado:</label>
         <select id="smoothing">
@@ -40,11 +38,9 @@
         <span id="dbValue">—</span>
         <small>dB (aprox.)</small>
       </div>
-
       <div class="barWrap">
         <div id="bar" class="bar"></div>
       </div>
-
       <div id="status" class="status">
         <span class="tag">Sin medición</span>
       </div>
@@ -53,18 +49,13 @@
     <section class="legend">
       <h2>Escala de clasificación</h2>
       <ul id="legendList"></ul>
-      <small>
-        *Rangos personalizables en <code>app.js</code>. Los dB son aproximados (dBFS calibrados).
-      </small>
+      <small>*Rangos personalizables en <code>app.js</code>. Los dB son aproximados.</small>
     </section>
 
     <footer>
-      <p>
-        Hecho para pruebas educativas. Requiere <strong>HTTPS</strong> (GitHub Pages funciona).
-      </p>
+      <p>Hecho para pruebas educativas. Requiere <strong>HTTPS</strong>.</p>
     </footer>
   </main>
-
   <script src="app.js"></script>
 </body>
 </html>
