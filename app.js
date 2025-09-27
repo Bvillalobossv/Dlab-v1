@@ -1,27 +1,12 @@
-// -------- Configuración de clasificación (edita a gusto) --------
+// -------- Configuración de clasificación --------
 const CLASSES = [
-  { min: -Infinity, max: 55,  label: "Tristeza",   emoji: "😔", color: "#3b82f6" },
-  { min: 55,        max: 65,  label: "Ansiedad",   emoji: "😰", color: "#eab308" },
-  { min: 65,        max: 75,  label: "Estrés",     emoji: "😣", color: "#f97316" },
-  { min: 75,        max: 90,  label: "Enojo",      emoji: "😡", color: "#ef4444" },
-  { min: 60,        max: 72,  label: "Alegría",    emoji: "😃", color: "#10b981", priority: 1 },
+  { min: -Infinity, max: 55,  label: "Tristeza", emoji: "😔", color: "#3b82f6" },
+  { min: 55,        max: 65,  label: "Ansiedad", emoji: "😰", color: "#eab308" },
+  { min: 65,        max: 75,  label: "Estrés",   emoji: "😣", color: "#f97316" },
+  { min: 75,        max: 90,  label: "Enojo",    emoji: "😡", color: "#ef4444" },
+  { min: 60,        max: 72,  label: "Alegría",  emoji: "😃", color: "#10b981", priority: 1 },
 ];
 
-const legendList = document.getElementById("legendList");
-function renderLegend() {
-  const shown = new Set();
-  CLASSES.forEach(c => {
-    const key = `${c.label}-${c.min}-${c.max}`;
-    if (shown.has(key)) return;
-    shown.add(key);
-    const li = document.createElement("li");
-    li.innerHTML = `<strong>${c.label}</strong> ${c.emoji} → ${c.min === -Infinity ? "≤" : ""}${c.min === -Infinity ? c.max : `${c.min}–${c.max}`} dB`;
-    legendList.appendChild(li);
-  });
-}
-renderLegend();
-
-// -------- Estado y elementos UI --------
 const toggleBtn   = document.getElementById("toggleBtn");
 const dbValueEl   = document.getElementById("dbValue");
 const barEl       = document.getElementById("bar");
@@ -32,23 +17,15 @@ const smoothingEl = document.getElementById("smoothing");
 
 let audioContext, analyser, sourceNode, mediaStream;
 let dataBuf;
-let rafId = null;
-let running = false;
-let smoothedDb = null;
 
 // -------- Funciones --------
 function classify(db) {
-  let match = null;
-  let bestPriority = -Infinity;
+  let match = null, bestPriority = -Infinity;
   for (const c of CLASSES) {
     if (db >= c.min && db < c.max) {
       const p = c.priority ?? 0;
-      if (p > bestPriority) {
-        bestPriority = p;
-        match = c;
-      } else if (match === null) {
-        match = c;
-      }
+      if (p > bestPriority) { bestPriority = p; match = c; }
+      else if (match === null) { match = c; }
     }
   }
   return match;
@@ -58,16 +35,7 @@ function setStatus(label, emoji, color) {
   statusEl.innerHTML = `<span class="tag" style="border-color:${color}; color:${color}">${emoji} ${label}</span>`;
 }
 
-function setBar(db) {
-  const minDb = 30;
-  const maxDb = 90;
-  const clamped = Math.max(minDb, Math.min(maxDb, db));
-  const pct = ((clamped - minDb) / (maxDb - minDb)) * 100;
-  barEl.style.width = `${pct}%`;
-}
-
 function rmsToDb(rms) {
-  // Convierte RMS a dBFS (normalmente valores negativos)
   const min = 1e-8;
   const val = Math.max(min, rms);
   return 20 * Math.log10(val);
@@ -75,49 +43,14 @@ function rmsToDb(rms) {
 
 function computeRmsFloat(buffer) {
   let sum = 0;
-  for (let i = 0; i < buffer.length; i++) {
-    const x = buffer[i];
-    sum += x * x;
-  }
+  for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
   return Math.sqrt(sum / buffer.length);
 }
 
-function stop() {
-  if (rafId) {
-    cancelAnimationFrame(rafId);
-    rafId = null;
-  }
-  if (sourceNode) {
-    sourceNode.disconnect();
-    sourceNode = null;
-  }
-  if (analyser) {
-    analyser.disconnect();
-    analyser = null;
-  }
-  if (audioContext) {
-    audioContext.close().catch(()=>{});
-    audioContext = null;
-  }
-  if (mediaStream) {
-    mediaStream.getTracks().forEach(t => t.stop());
-    mediaStream = null;
-  }
-  running = false;
-  toggleBtn.textContent = "🎙️ Activar micrófono";
-  dbValueEl.textContent = "—";
-  setBar(30);
-  setStatus("Sin medición", "⏸️", "#a8b3cf");
-}
-
-async function start() {
+async function startMeasurement() {
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: false,
-        noiseSuppression: false,
-        autoGainControl: false
-      }
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
 
     audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
@@ -130,58 +63,56 @@ async function start() {
 
     dataBuf = new Float32Array(analyser.fftSize);
 
-    running = true;
-    toggleBtn.textContent = "⏹️ Detener";
-    loop();
+    // Mostrar estado de análisis
+    dbValueEl.textContent = "…";
+    setStatus("Analizando ambiente laboral...", "⏳", "#0ea5e9");
+    barEl.style.width = "0%";
+
+    // Guardar muestras durante 5 segundos
+    let samples = [];
+    const duration = 5000; // ms
+    const interval = 100;  // ms
+
+    const intervalId = setInterval(() => {
+      analyser.getFloatTimeDomainData(dataBuf);
+      const rms = computeRmsFloat(dataBuf);
+      let db = rmsToDb(rms);
+
+      // Mapear de -60–0 dBFS a 30–90 dB SPL aprox
+      const calibration = parseInt(calSlider.value, 10) || 0;
+      let dbMapped = Math.round(30 + ((db + 60) / 60) * 60 + calibration);
+
+      samples.push(dbMapped);
+    }, interval);
+
+    // Después de 5 segundos, parar y calcular promedio
+    setTimeout(() => {
+      clearInterval(intervalId);
+
+      if (samples.length === 0) {
+        dbValueEl.textContent = "—";
+        setStatus("Sin datos", "⚠️", "#f59e0b");
+        return;
+      }
+
+      const avg = Math.round(samples.reduce((a,b)=>a+b,0) / samples.length);
+      dbValueEl.textContent = avg;
+      barEl.style.width = `${((avg-30)/60)*100}%`;
+
+      const cls = classify(avg);
+      if (cls) setStatus(cls.label, cls.emoji, cls.color);
+
+      // Liberar recursos
+      mediaStream.getTracks().forEach(t => t.stop());
+      audioContext.close();
+    }, duration);
+
   } catch (err) {
     console.error(err);
     alert("No se pudo acceder al micrófono. Asegúrate de otorgar permisos y usar HTTPS.");
-    stop();
   }
 }
 
-function loop() {
-  if (!running) return;
-
-  analyser.getFloatTimeDomainData(dataBuf);
-  const rms = computeRmsFloat(dataBuf);
-  let db = rmsToDb(rms);
-
-  // 🔧 Escalamos los dBFS (que van de ~ -60 a 0) a rango 30–90
-  const calibration = parseInt(calSlider.value, 10) || 0;
-  let dbMapped = Math.round(30 + ((db + 60) / 60) * 60 + calibration);
-
-  if (smoothedDb == null) smoothedDb = dbMapped;
-  smoothedDb = smoothedDb * 0.8 + dbMapped * 0.2;
-
-  const shown = Math.round(smoothedDb);
-  dbValueEl.textContent = isFinite(shown) ? shown : "—";
-  setBar(shown);
-
-  const cls = classify(shown);
-  if (cls) setStatus(cls.label, cls.emoji, cls.color);
-
-  rafId = requestAnimationFrame(loop);
-}
-
-// -------- UI bindings --------
-toggleBtn.addEventListener("click", async () => {
-  if (running) stop();
-  else start();
-});
-
-calSlider.addEventListener("input", () => {
-  calValEl.textContent = calSlider.value;
-});
-
-smoothingEl.addEventListener("change", () => {
-  if (analyser) analyser.smoothingTimeConstant = parseFloat(smoothingEl.value);
-});
-
-// Estado inicial
-setBar(30);
-setStatus("Sin medición", "⏸️", "#a8b3cf");
-
-if (!navigator.mediaDevices?.getUserMedia) {
-  alert("Este navegador no soporta getUserMedia(). Prueba con Chrome/Edge/Firefox o Safari reciente.");
-}
+// -------- UI binding --------
+toggleBtn.addEventListener("click", startMeasurement);
+calSlider.addEventListener("input", () => { calValEl.textContent = calSlider.value; });
