@@ -150,7 +150,7 @@ async function startMeasurement() {
 function showResults(avg, cls) {
   showScreen("screen4");
 
-  document.getElementById("resultText").textContent =
+  document.getElementById("resultsSummary").textContent =
     `Esta semana los decibeles fueron ${avg} dB. Voces ${cls.label.toLowerCase()} de lo habitual.`;
 
   // Indicador actual
