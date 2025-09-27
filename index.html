@@ -1,80 +1,74 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SenseWell</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-  <!-- Pantalla 1 -->
-  <section class="screen active" id="screen1">
-    <div class="content">
-      <img src="images/logo.png" alt="SenseWell Logo" class="logo">
-      <h2>Bienvenido a SenseWell</h2>
-      <p>
-        Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
-        Si notas ruido, tensión o cansancio, te enviaremos pausas breves y mensajes positivos
-        para mantener tu bienestar. Relájate, nosotros cuidamos tu equilibrio.
-      </p>
-      <button class="btn" id="btnStart">Empezar ahora</button>
+  <!-- Pantalla 1: Bienvenida -->
+  <div id="screen1" class="screen active">
+    <img src="images/logo.png" alt="SenseWell Logo" class="logo" />
+    <h2>Bienvenido a SenseWell</h2>
+    <p>
+      Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
+      Si notas ruido, tensión o cansancio, te enviaremos pausas breves y mensajes positivos
+      para mantener tu bienestar. Relájate, nosotros cuidamos tu equilibrio.
+    </p>
+    <button id="btnStart" class="btn">Empezar ahora</button>
+  </div>
+
+  <!-- Pantalla 2: Mockup -->
+  <div id="screen2" class="screen">
+    <img src="images/mockup.png" alt="Mockup" class="mockup" />
+    <h2>Medición ambiental</h2>
+    <p>Vamos a registrar el nivel de ruido ambiental y mostrarte tu estado.</p>
+    <button id="btnNext" class="btn">Siguiente</button>
+  </div>
+
+  <!-- Pantalla 3: Medición -->
+  <div id="screen3" class="screen">
+    <h2>Medición en progreso</h2>
+    <p id="dbValue">—</p>
+    <div id="barContainer"><div id="bar"></div></div>
+    <p id="status"></p>
+
+    <div style="margin: 1rem 0;">
+      <label>Calibración: <span id="calVal">0</span>dB</label>
+      <input type="range" id="calibration" min="-10" max="10" value="0" />
     </div>
-  </section>
 
-  <!-- Pantalla 2 -->
-  <section class="screen" id="screen2">
-    <div class="content">
-      <img src="images/mockup.png" alt="SenseWell Demo" class="mockup">
-      <h2>Análisis de ambiente laboral en segundos</h2>
-      <p>
-        Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
-        sientes para ayudarte a mantener tu día en equilibrio.
-      </p>
-      <button class="btn" id="btnNext">Siguiente</button>
+    <div style="margin: 1rem 0;">
+      <label>Suavizado:</label>
+      <input type="number" id="smoothing" min="0" max="1" step="0.1" value="0.8" />
     </div>
-  </section>
 
-  <!-- Pantalla 3 (Medidor de decibeles) -->
-  <section class="screen" id="screen3">
-    <div class="content">
-      <h2>Medidor de Ruido</h2>
-      <button class="btn" id="toggleBtn">🎙️ Activar micrófono</button>
-      <p><strong>Decibeles:</strong> <span id="dbValue">—</span> dB</p>
-      <div id="barContainer"><div id="bar"></div></div>
-      <div id="status">⏸️ Sin medición</div>
-      <p>
-        Calibración: <input type="range" id="calibration" min="-20" max="20" value="0">
-        <span id="calVal">0</span> dB
-      </p>
-      <p>
-        Suavizado: 
-        <select id="smoothing">
-          <option value="0">0</option>
-          <option value="0.5" selected>0.5</option>
-          <option value="0.9">0.9</option>
-        </select>
-      </p>
-    </div>
-  </section>
+    <button id="toggleBtn" class="btn">Iniciar medición</button>
+  </div>
 
-  <!-- Pantalla 4 (Resultados) -->
-  <section class="screen" id="screen4">
-    <div class="content">
-      <h2>Resultados de tus mediciones</h2>
-      <p id="resultText"></p>
-      <canvas id="historyChart" width="300" height="200"></canvas>
+  <!-- Pantalla 4: Resultados -->
+  <div id="screen4" class="screen">
+    <h2>Resultados de tus mediciones</h2>
+    <p id="resultText">Aquí aparecerá el resumen de tu estado</p>
 
-      <h3>Tu indicador actual</h3>
-      <div id="currentIndicator"></div>
+    <!-- Gráfico -->
+    <canvas id="historyChart" width="400" height="200"></canvas>
 
-      <h3>Información de todos los indicadores</h3>
-      <div class="carousel" id="allIndicators"></div>
+    <!-- Indicador actual -->
+    <h3>Tu indicador actual</h3>
+    <div id="currentIndicator" class="indicator-card"></div>
 
-      <button class="btn" id="btnRetry">Medir otra vez</button>
-    </div>
-  </section>
+    <!-- Todos los indicadores -->
+    <h3>Información de todos los indicadores</h3>
+    <div id="allIndicators" class="carousel"></div>
 
+    <button id="btnRetry" class="btn">Medir otra vez</button>
+  </div>
+
+  <!-- Script -->
   <script src="app.js"></script>
 </body>
 </html>
