@@ -43,9 +43,16 @@ p {
   border-radius: 8px;
   font-size: 1rem;
   cursor: pointer;
+  margin: 0.5rem;
 }
 .btn:hover {
   background: #2563eb;
+}
+.btn-secondary {
+  background: #6b7280;
+}
+.btn-secondary:hover {
+  background: #4b5563;
 }
 
 #barContainer {
@@ -70,11 +77,6 @@ p {
 }
 
 /* ---- Estilos de resultados ---- */
-canvas {
-  margin: 1rem 0;
-  max-width: 100%;
-}
-
 .carousel {
   display: flex;
   overflow-x: auto;
@@ -91,6 +93,11 @@ canvas {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   text-align: center;
   padding: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s ease-in-out;
+}
+.indicator-card:hover {
+  transform: scale(1.05);
 }
 
 .indicator-card img {
@@ -99,4 +106,24 @@ canvas {
   object-fit: contain;
   border-radius: 8px;
   margin-bottom: 0.5rem;
+}
+
+/* ---- Detalle de indicador ---- */
+.indicator-detail {
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  max-width: 500px;
+  margin: 2rem auto;
+  text-align: left;
+}
+.indicator-detail img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+}
+.indicator-detail h3 {
+  margin-top: 0.5rem;
 }

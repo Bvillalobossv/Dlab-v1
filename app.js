@@ -4,17 +4,10 @@ function showScreen(id) {
   document.getElementById(id).classList.add("active");
 }
 
-document.getElementById("btnStart").addEventListener("click", () => {
-  showScreen("screen2");
-});
-
-document.getElementById("btnNext").addEventListener("click", () => {
-  showScreen("screen3");
-});
-
-document.getElementById("btnRetry")?.addEventListener("click", () => {
-  showScreen("screen3");
-});
+document.getElementById("btnStart").addEventListener("click", () => showScreen("screen2"));
+document.getElementById("btnNext").addEventListener("click", () => showScreen("screen3"));
+document.getElementById("btnRetry")?.addEventListener("click", () => showScreen("screen3"));
+document.getElementById("btnBackResults")?.addEventListener("click", () => showScreen("screen4"));
 
 // -------- Configuración de clasificación --------
 const CLASSES = [
@@ -25,13 +18,48 @@ const CLASSES = [
   { min: 60,        max: 72,  label: "Alegría",  emoji: "🌟", color: "#10b981", priority: 1 },
 ];
 
-// Indicadores con imágenes
+// Indicadores con imágenes y descripciones
 const INDICATORS = {
-  Alegría:  { emoji: "🌟", img: "images/ind-alegria.png",   range: "60–72 dB" },
-  Enojo:    { emoji: "🔥", img: "images/ind-enojo.png",     range: "75–90 dB" },
-  Estrés:   { emoji: "⚡", img: "images/ind-estres.png",    range: "65–80 dB" },
-  Ansiedad: { emoji: "🌊", img: "images/ind-ansiedad.png",  range: "55–70 dB" },
-  Tristeza: { emoji: "🌧️", img: "images/ind-tristeza.png", range: "35–55 dB" }
+  Alegría: {
+    emoji: "🌟",
+    img: "images/ind-alegria.png",
+    range: "60–72 dB",
+    description: `✨ ¡Tu voz está brillando de alegría! Se nota entusiasmo y buena vibra.
+🎮 Dato curioso: cuando sonríes al hablar, tus cuerdas vocales vibran distinto.
+👉 Mini-reto: intenta grabarte diciendo una frase con y sin sonrisa…`
+  },
+  Enojo: {
+    emoji: "🔥",
+    img: "images/ind-enojo.png",
+    range: "75–90 dB",
+    description: `😤 Tu voz transmite enojo o tensión.
+📚 Dato curioso: al enojarnos, los músculos del cuello se tensan y la voz suena más fuerte.
+👉 Juego rápido: respira 10s antes de responder.`
+  },
+  Estrés: {
+    emoji: "⚡",
+    img: "images/ind-estres.png",
+    range: "65–80 dB",
+    description: `⏳ Tu voz suena acelerada bajo estrés.
+🔍 Dato curioso: el estrés activa la adrenalina y acelera el ritmo.
+👉 Ejercicio: respira profundamente 5 veces con mano en el abdomen.`
+  },
+  Ansiedad: {
+    emoji: "🌊",
+    img: "images/ind-ansiedad.png",
+    range: "55–70 dB",
+    description: `💙 La ansiedad hace tu voz temblorosa o inestable.
+🧠 Dato curioso: el cuerpo tiembla levemente y eso se refleja en la voz.
+👉 Dinámica: lee un texto lentamente como narrador de audiolibro.`
+  },
+  Tristeza: {
+    emoji: "🌧️",
+    img: "images/ind-tristeza.png",
+    range: "35–55 dB",
+    description: `🌥️ Tu voz se escucha bajita y sin energía.
+📖 Dato curioso: la tristeza activa menos músculos en la laringe.
+👉 Mini-desafío: habla en un lugar con más luz o abre una ventana.`
+  }
 };
 
 const toggleBtn   = document.getElementById("toggleBtn");
@@ -44,10 +72,7 @@ const smoothingEl = document.getElementById("smoothing");
 
 let audioContext, analyser, sourceNode, mediaStream;
 let dataBuf;
-
-// ---- Historial por días ----
-let allDays = []; // [{ day: 1, measurements: [60, 62] }]
-let currentDay = 1;
+let history = []; // guardamos las mediciones
 
 // -------- Funciones --------
 function classify(db) {
@@ -80,11 +105,9 @@ function computeRmsFloat(buffer) {
 
 async function startMeasurement() {
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
-    });
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioContext.createAnalyser();
     analyser.fftSize = 2048;
     analyser.smoothingTimeConstant = parseFloat(smoothingEl.value);
@@ -94,14 +117,13 @@ async function startMeasurement() {
 
     dataBuf = new Float32Array(analyser.fftSize);
 
-    // Mostrar estado de análisis
     dbValueEl.textContent = "…";
-    setStatus("Analizando ambiente laboral...", "⏳", "#0ea5e9");
+    setStatus("Analizando ambiente...", "⏳", "#0ea5e9");
     barEl.style.width = "0%";
 
     let samples = [];
-    const duration = 5000; // ms
-    const interval = 100;  // ms
+    const duration = 5000;
+    const interval = 100;
 
     const intervalId = setInterval(() => {
       analyser.getFloatTimeDomainData(dataBuf);
@@ -130,6 +152,7 @@ async function startMeasurement() {
       const cls = classify(avg);
       if (cls) setStatus(cls.label, cls.emoji, cls.color);
 
+      history.push(avg);
       showResults(avg, cls);
 
       mediaStream.getTracks().forEach(t => t.stop());
@@ -138,7 +161,7 @@ async function startMeasurement() {
 
   } catch (err) {
     console.error(err);
-    alert("No se pudo acceder al micrófono. Asegúrate de otorgar permisos y usar HTTPS.");
+    alert("No se pudo acceder al micrófono. Activa permisos y usa HTTPS.");
   }
 }
 
@@ -149,15 +172,6 @@ function showResults(avg, cls) {
   document.getElementById("resultsSummary").textContent =
     `Esta semana los decibeles fueron ${avg} dB. Voces ${cls.label.toLowerCase()} de lo habitual.`;
 
-  // Guardar en el día actual
-  let today = allDays.find(d => d.day === currentDay);
-  if (!today) {
-    today = { day: currentDay, measurements: [] };
-    allDays.push(today);
-  }
-  today.measurements.push(avg);
-
-  // Indicador actual
   const current = INDICATORS[cls.label];
   document.getElementById("currentIndicator").innerHTML = `
     <img src="${current.img}" alt="${cls.label}">
@@ -165,12 +179,11 @@ function showResults(avg, cls) {
     <p>${current.range}</p>
   `;
 
-  // Carrusel de todos
   const allDiv = document.getElementById("allIndicators");
   allDiv.innerHTML = "";
   Object.entries(INDICATORS).forEach(([key, val]) => {
     allDiv.innerHTML += `
-      <div class="indicator-card">
+      <div class="indicator-card" onclick="showIndicatorDetail('${key}')">
         <img src="${val.img}" alt="${key}">
         <p>${val.emoji} ${key}</p>
         <p>${val.range}</p>
@@ -178,63 +191,42 @@ function showResults(avg, cls) {
     `;
   });
 
-  renderCharts();
+  renderChart();
 }
 
-// -------- Gráficos con Chart.js --------
-let dailyChartInstance, summaryChartInstance;
+// -------- Detalle de indicador --------
+function showIndicatorDetail(key) {
+  const ind = INDICATORS[key];
+  const detailDiv = document.getElementById("indicatorDetail");
+  detailDiv.innerHTML = `
+    <img src="${ind.img}" alt="${key}">
+    <h3>${ind.emoji} ${key}</h3>
+    <p><strong>${ind.range}</strong></p>
+    <p>${ind.description.replace(/\n/g, "<br>")}</p>
+  `;
+  showScreen("screen5");
+}
 
-function renderCharts() {
-  const today = allDays.find(d => d.day === currentDay);
-
-  // --- Gráfico diario ---
-  const ctx1 = document.getElementById("dailyChart").getContext("2d");
-  if (dailyChartInstance) dailyChartInstance.destroy();
-  dailyChartInstance = new Chart(ctx1, {
+// -------- Gráfico con Chart.js --------
+function renderChart() {
+  const ctx = document.getElementById("historyChart").getContext("2d");
+  new Chart(ctx, {
     type: "line",
     data: {
-      labels: today.measurements.map((_, i) => `Medición ${i+1}`),
+      labels: history.map((_, i) => `Día ${i+1}`),
       datasets: [{
-        label: `Día ${currentDay}`,
-        data: today.measurements,
+        label: "Decibeles",
+        data: history,
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59,130,246,0.2)",
         fill: true,
-        tension: 0.3
+        tension: 0.3,
+        pointBackgroundColor: "#3b82f6"
       }]
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: "Decibeles" } },
-        x: { title: { display: true, text: "Mediciones" } }
-      }
-    }
-  });
-
-  // --- Gráfico resumen ---
-  const ctx2 = document.getElementById("summaryChart").getContext("2d");
-  if (summaryChartInstance) summaryChartInstance.destroy();
-  const labels = allDays.map(d => `Día ${d.day}`);
-  const averages = allDays.map(d => {
-    const sum = d.measurements.reduce((a,b)=>a+b,0);
-    return Math.round(sum / d.measurements.length);
-  });
-
-  summaryChartInstance = new Chart(ctx2, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Promedio diario",
-        data: averages,
-        backgroundColor: "rgba(16,185,129,0.6)",
-        borderColor: "#10b981",
-        borderWidth: 2
-      }]
-    },
-    options: {
-      responsive: true,
+      plugins: { legend: { display: true } },
       scales: {
         y: { beginAtZero: true, title: { display: true, text: "Decibeles" } },
         x: { title: { display: true, text: "Días" } }
@@ -242,12 +234,6 @@ function renderCharts() {
     }
   });
 }
-
-// -------- Botón "Nuevo día" --------
-document.getElementById("btnNewDay")?.addEventListener("click", () => {
-  currentDay++;
-  alert(`Has iniciado el Día ${currentDay}. ¡Realiza nuevas mediciones!`);
-});
 
 // -------- UI binding --------
 toggleBtn.addEventListener("click", startMeasurement);
