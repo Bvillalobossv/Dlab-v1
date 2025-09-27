@@ -27,11 +27,11 @@ const CLASSES = [
 
 // Indicadores con imágenes
 const INDICATORS = {
-  Alegría: { emoji: "🌟", img: "img/alegria.png", range: "60–72 dB" },
-  Enojo:   { emoji: "🔥", img: "img/enojo.png",   range: "75–90 dB" },
-  Estrés:  { emoji: "⚡", img: "img/estres.png",  range: "65–80 dB" },
-  Ansiedad:{ emoji: "🌊", img: "img/ansiedad.png",range: "55–70 dB" },
-  Tristeza:{ emoji: "🌧️", img: "img/tristeza.png",range: "35–55 dB" }
+  Alegría: { emoji: "🌟", img: "images/ind-alegria.png", range: "60–72 dB" },
+  Enojo:   { emoji: "🔥", img: "images/ind-enojo.png",   range: "75–90 dB" },
+  Estrés:  { emoji: "⚡", img: "images/ind-estres.png",  range: "65–80 dB" },
+  Ansiedad:{ emoji: "🌊", img: "images/ind-ansiedad.png",range: "55–70 dB" },
+  Tristeza:{ emoji: "🌧️", img: "images/ind-tristeza.png",range: "35–55 dB" }
 };
 
 const toggleBtn   = document.getElementById("toggleBtn");
@@ -150,7 +150,7 @@ async function startMeasurement() {
 function showResults(avg, cls) {
   showScreen("screen4");
 
-  document.getElementById("resultsSummary").textContent =
+  document.getElementById("resultText").textContent =
     `Esta semana los decibeles fueron ${avg} dB. Voces ${cls.label.toLowerCase()} de lo habitual.`;
 
   // Indicador actual

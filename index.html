@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SenseWell</title>
   <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <!-- Pantalla 1 -->
   <section class="screen active" id="screen1">
     <div class="content">
-      <img src="img/logo.png" alt="SenseWell Logo" class="logo">
+      <img src="images/logo.png" alt="SenseWell Logo" class="logo">
       <h2>Bienvenido a SenseWell</h2>
       <p>
         Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
@@ -24,7 +25,7 @@
   <!-- Pantalla 2 -->
   <section class="screen" id="screen2">
     <div class="content">
-      <img src="img/mockup.png" alt="SenseWell Demo" class="mockup">
+      <img src="images/mockup.png" alt="SenseWell Demo" class="mockup">
       <h2>Análisis de ambiente laboral en segundos</h2>
       <p>
         Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
@@ -61,20 +62,19 @@
   <section class="screen" id="screen4">
     <div class="content">
       <h2>Resultados de tus mediciones</h2>
-      <p id="resultsSummary"></p>
-      <canvas id="historyChart"></canvas>
+      <p id="resultText"></p>
+      <canvas id="historyChart" width="300" height="200"></canvas>
 
       <h3>Tu indicador actual</h3>
-      <div id="currentIndicator" class="indicator-card"></div>
+      <div id="currentIndicator"></div>
 
       <h3>Información de todos los indicadores</h3>
-      <div id="allIndicators" class="carousel"></div>
+      <div class="carousel" id="allIndicators"></div>
 
       <button class="btn" id="btnRetry">Medir otra vez</button>
     </div>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
