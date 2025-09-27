@@ -1,70 +1,106 @@
-body, html {
-  margin: 0;
-  padding: 0;
-  font-family: sans-serif;
-  height: 100%;
-  background: #f9fafb;
+:root{
+  --bg:#f7f9fc;
+  --text:#111827;
+  --muted:#6b7280;
+  --brand:#3b82f6;
+  --card:#ffffff;
+  --ring:#e5e7eb;
+  --ok:#10b981;
+  --warn:#f59e0b;
+  --bad:#ef4444;
 }
 
-.screen {
-  display: none;
-  height: 100vh;
-  text-align: center;
-  padding: 2rem;
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+  color:var(--text);
+  background:var(--bg);
 }
 
-.screen.active {
-  display: block;
+/* screens */
+.screen{display:none; min-height:100vh; padding:24px}
+.screen.active{display:block}
+.content{max-width:900px; margin:0 auto}
+.narrow{max-width:620px}
+.wide{max-width:900px}
+
+/* basics */
+h2{margin:12px 0 8px}
+h3{margin:12px 0 6px; font-size:24px}
+h4{margin:18px 0 10px}
+p{line-height:1.5}
+.muted{color:var(--muted)}
+
+.logo,.mockup{max-width:80%; margin:12px auto; display:block}
+
+.btn{
+  background:var(--brand); color:#fff; border:none;
+  padding:12px 18px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+.btn:hover{filter:brightness(.95)}
+.btn:disabled{opacity:.6; cursor:not-allowed}
+.btn.outline{
+  background:#fff; color:var(--brand); border:1px solid var(--brand);
 }
 
-.logo, .mockup {
-  max-width: 80%;
-  margin: 1rem auto;
-  display: block;
-}
+.center{display:flex; justify-content:center; margin-top:10px}
+.navRow{display:flex; gap:12px; justify-content:space-between; margin-top:14px}
 
-h2 {
-  margin-top: 1rem;
-  color: #111827;
+.pill{
+  appearance:none; border:none; padding:8px 14px; border-radius:999px;
+  background:#e9eefc; color:#111;
 }
+.pill.active{background:#111; color:#fff}
+.tabs{display:flex; gap:8px; margin-bottom:10px}
 
-p {
-  color: #374151;
-  font-size: 1rem;
-  line-height: 1.5;
-  margin: 1rem 0;
+/* analyzer */
+.analyzer{
+  background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:16px;
 }
+.readout{margin-top:10px}
+#barContainer{width:100%; height:16px; background:#e5e7eb; border-radius:999px; overflow:hidden}
+#bar{height:100%; width:0%; background:linear-gradient(90deg, var(--ok), var(--warn) 55%, var(--bad))}
+.controls{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px}
+.controls label{display:flex; align-items:center; gap:8px}
 
-.btn {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 8px;
-  font-size: 1rem;
-  cursor: pointer;
+/* loader */
+.loader{display:flex; align-items:center; gap:10px; margin-top:10px}
+.spinner{
+  width:18px; height:18px; border-radius:50%;
+  border:3px solid #d1d5db; border-top-color:var(--brand);
+  animation:spin 1s linear infinite;
 }
-.btn:hover {
-  background: #2563eb;
-}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-#barContainer {
-  width: 100%;
-  height: 20px;
-  background: #e5e7eb;
-  border-radius: 10px;
-  margin: 1rem 0;
+/* results */
+.summary{
+  background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:14px; margin-bottom:12px;
 }
-#bar {
-  height: 100%;
-  width: 0%;
-  background: #3b82f6;
-  border-radius: 10px;
+.chartCard{
+  background:var(--card); border:1px solid var(--ring); border-radius:14px; padding:14px;
 }
+.axisLabels{display:flex; gap:10px; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px}
+.xLabels{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-top:6px}
 
-.tag {
-  border: 2px solid;
-  padding: 0.25rem 0.5rem;
-  border-radius: 8px;
-  font-weight: bold;
+/* carousel */
+.carousel{display:flex; gap:12px; overflow-x:auto; padding:8px 2px}
+.card{
+  min-width:220px; border-radius:18px; overflow:hidden; border:1px solid var(--ring);
+  background:var(--card); box-shadow:0 2px 10px rgba(0,0,0,.05);
+  cursor:pointer;
 }
+.card .thumb{
+  height:130px; background-size:cover; background-position:center;
+}
+.card .body{padding:10px}
+.card .title{font-weight:800; margin:0}
+.card .range{color:var(--muted); font-size:13px; margin:4px 0 0}
+
+/* indicator detail */
+.hero{height:180px; border-radius:18px; background-size:cover; background-position:center; border:1px solid var(--ring)}
+.rangeTag{
+  display:inline-block; margin:6px 0 10px; padding:4px 8px; border-radius:999px; border:1px solid var(--ring); color:var(--muted)
+}
+.indicatorBody p{margin:10px 0}

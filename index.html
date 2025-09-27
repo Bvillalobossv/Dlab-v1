@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SenseWell</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <!-- Pantalla 1 -->
+
+  <!-- PANTALLA 1 · Bienvenida -->
   <section class="screen active" id="screen1">
-    <div class="content">
-      <img src="logo.png" alt="SenseWell Logo" class="logo">
+    <div class="content narrow">
+      <img src="logo.png" alt="SenseWell Logo" class="logo"/>
       <h2>Bienvenido a SenseWell</h2>
       <p>
         Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
@@ -21,39 +22,97 @@
     </div>
   </section>
 
-  <!-- Pantalla 2 -->
+  <!-- PANTALLA 2 · Qué hace -->
   <section class="screen" id="screen2">
-    <div class="content">
-      <img src="mockup.png" alt="SenseWell Demo" class="mockup">
+    <div class="content narrow">
+      <img src="mockup.png" alt="SenseWell Demo" class="mockup"/>
       <h2>Análisis de ambiente laboral en segundos</h2>
       <p>
-        Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
+        Activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
         sientes para ayudarte a mantener tu día en equilibrio.
       </p>
       <button class="btn" id="btnNext">Siguiente</button>
     </div>
   </section>
 
-  <!-- Pantalla 3 (Medidor de decibeles) -->
+  <!-- PANTALLA 3 · Medición (5s) -->
   <section class="screen" id="screen3">
-    <div class="content">
+    <div class="content narrow">
       <h2>Medidor de Ruido</h2>
-      <button class="btn" id="toggleBtn">🎙️ Activar micrófono</button>
-      <p><strong>Decibeles:</strong> <span id="dbValue">—</span> dB</p>
-      <div id="barContainer"><div id="bar"></div></div>
-      <div id="status">⏸️ Sin medición</div>
-      <p>
-        Calibración: <input type="range" id="calibration" min="-20" max="20" value="0">
-        <span id="calVal">0</span> dB
-      </p>
-      <p>
-        Suavizado: 
-        <select id="smoothing">
-          <option value="0">0</option>
-          <option value="0.5" selected>0.5</option>
-          <option value="0.9">0.9</option>
-        </select>
-      </p>
+
+      <div class="analyzer">
+        <button class="btn" id="toggleBtn">🎙️ Analizar 5 segundos</button>
+
+        <div class="loader" id="loader" hidden>
+          <div class="spinner"></div>
+          <p class="muted">Analizando ambiente laboral…</p>
+        </div>
+
+        <div class="readout">
+          <p><strong>Decibeles:</strong> <span id="dbValue">—</span> dB</p>
+          <div id="barContainer"><div id="bar"></div></div>
+          <div id="status" class="muted">⏸️ Sin medición</div>
+        </div>
+
+        <div class="controls">
+          <label>Calibración:
+            <input type="range" id="calibration" min="-20" max="20" value="0"/>
+            <span id="calVal">0</span> dB
+          </label>
+          <label>Suavizado:
+            <select id="smoothing">
+              <option value="0">0</option>
+              <option value="0.5" selected>0.5</option>
+              <option value="0.9">0.9</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 4 · Resultados -->
+  <section class="screen" id="screen4">
+    <div class="content wide">
+      <div class="tabs">
+        <button class="pill active">Ruido ambiental</button>
+        <button class="pill" disabled>Cuestionario</button>
+      </div>
+
+      <div class="summary">
+        <h3 id="rangeTitle">Esta semana los decibeles fueron — dB</h3>
+        <p class="muted" id="rangeSubtitle">Aún no hay suficientes mediciones.</p>
+      </div>
+
+      <div class="chartCard">
+        <svg id="chart" viewBox="0 0 320 160" preserveAspectRatio="none" aria-label="Historial de decibeles"></svg>
+        <div class="axisLabels">
+          <span>0</span><span>50</span><span>60</span><span>70</span><span>80</span><span>90</span>
+        </div>
+        <div class="xLabels" id="xLabels"></div>
+      </div>
+
+      <h4>Saber más sobre estos indicadores</h4>
+      <div class="carousel" id="carousel"></div>
+
+      <div class="center">
+        <button class="btn outline" id="btnMedirOtraVez">Medir otra vez</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PANTALLA 5 · Detalle de Indicador -->
+  <section class="screen" id="screen5">
+    <div class="content narrow">
+      <div class="hero" id="indicatorHero"></div>
+      <h2 id="indicatorTitle">Indicador</h2>
+      <p class="rangeTag" id="indicatorRange">—</p>
+      <div id="indicatorBody" class="indicatorBody"></div>
+
+      <div class="navRow">
+        <button class="btn outline" id="btnVolverResultados">Atrás</button>
+        <button class="btn" id="btnIrAMedir">Medir</button>
+      </div>
     </div>
   </section>
 
