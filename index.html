@@ -1,61 +1,62 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Medidor de Ruido — SenseWell</title>
-  <link rel="stylesheet" href="styles.css" />
-  <meta name="theme-color" content="#0ea5e9" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SenseWell</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>SenseWell · Medidor de Ruido</h1>
-      <p class="sub">
-        Activa el micrófono para medir el nivel de sonido ambiental y clasificarlo.
+  <!-- Pantalla 1 -->
+  <section class="screen active" id="screen1">
+    <div class="content">
+      <img src="logo.png" alt="SenseWell Logo" class="logo">
+      <h2>Bienvenido a SenseWell</h2>
+      <p>
+        Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
+        Si notas ruido, tensión o cansancio, te enviaremos pausas breves y mensajes positivos
+        para mantener tu bienestar. Relájate, nosotros cuidamos tu equilibrio.
       </p>
-    </header>
+      <button class="btn" id="btnStart">Empezar ahora</button>
+    </div>
+  </section>
 
-    <section class="controls">
-      <button id="toggleBtn" class="primary">🎙️ Activar micrófono</button>
-      <div class="row">
-        <label for="calibration">Calibración (dB): <span id="calVal">0</span></label>
-        <input id="calibration" type="range" min="-30" max="30" value="0" step="1" />
-      </div>
-      <div class="row">
-        <label for="smoothing">Suavizado:</label>
+  <!-- Pantalla 2 -->
+  <section class="screen" id="screen2">
+    <div class="content">
+      <img src="mockup.png" alt="SenseWell Demo" class="mockup">
+      <h2>Análisis de ambiente laboral en segundos</h2>
+      <p>
+        Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
+        sientes para ayudarte a mantener tu día en equilibrio.
+      </p>
+      <button class="btn" id="btnNext">Siguiente</button>
+    </div>
+  </section>
+
+  <!-- Pantalla 3 (Medidor de decibeles) -->
+  <section class="screen" id="screen3">
+    <div class="content">
+      <h2>Medidor de Ruido</h2>
+      <button class="btn" id="toggleBtn">🎙️ Activar micrófono</button>
+      <p><strong>Decibeles:</strong> <span id="dbValue">—</span> dB</p>
+      <div id="barContainer"><div id="bar"></div></div>
+      <div id="status">⏸️ Sin medición</div>
+      <p>
+        Calibración: <input type="range" id="calibration" min="-20" max="20" value="0">
+        <span id="calVal">0</span> dB
+      </p>
+      <p>
+        Suavizado: 
         <select id="smoothing">
-          <option value="0.0">Ninguno</option>
-          <option value="0.5" selected>Medio (0.5)</option>
-          <option value="0.8">Alto (0.8)</option>
-          <option value="0.9">Muy alto (0.9)</option>
+          <option value="0">0</option>
+          <option value="0.5" selected>0.5</option>
+          <option value="0.9">0.9</option>
         </select>
-      </div>
-    </section>
+      </p>
+    </div>
+  </section>
 
-    <section class="meter">
-      <div class="value">
-        <span id="dbValue">—</span>
-        <small>dB (aprox.)</small>
-      </div>
-      <div class="barWrap">
-        <div id="bar" class="bar"></div>
-      </div>
-      <div id="status" class="status">
-        <span class="tag">Sin medición</span>
-      </div>
-    </section>
-
-    <section class="legend">
-      <h2>Escala de clasificación</h2>
-      <ul id="legendList"></ul>
-      <small>*Rangos personalizables en <code>app.js</code>. Los dB son aproximados.</small>
-    </section>
-
-    <footer>
-      <p>Hecho para pruebas educativas. Requiere <strong>HTTPS</strong>.</p>
-    </footer>
-  </main>
   <script src="app.js"></script>
 </body>
 </html>

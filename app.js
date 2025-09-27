@@ -1,3 +1,17 @@
+// -------- Manejo de pantallas --------
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+document.getElementById("btnStart").addEventListener("click", () => {
+  showScreen("screen2");
+});
+
+document.getElementById("btnNext").addEventListener("click", () => {
+  showScreen("screen3");
+});
+
 // -------- Configuración de clasificación --------
 const CLASSES = [
   { min: -Infinity, max: 55,  label: "Tristeza", emoji: "😔", color: "#3b82f6" },
