@@ -69,22 +69,28 @@ p {
   font-weight: bold;
 }
 
+/* ---- Estilos de resultados ---- */
 .carousel {
   display: flex;
   overflow-x: auto;
   gap: 1rem;
   margin: 1rem 0;
+  padding: 1rem;
 }
-.carousel .card {
-  min-width: 150px;
+
+.indicator-card {
+  flex: 0 0 auto;
+  width: 150px;
   background: #fff;
-  border: 1px solid #e5e7eb;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   text-align: center;
   padding: 1rem;
-  cursor: pointer;
 }
-.carousel .card img {
-  max-width: 100%;
-  border-radius: 8px;
+
+.indicator-card img {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-bottom: 0.5rem;
 }

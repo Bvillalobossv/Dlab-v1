@@ -10,9 +10,13 @@
   <!-- Pantalla 1 -->
   <section class="screen active" id="screen1">
     <div class="content">
-      <img src="logo.png" alt="SenseWell Logo" class="logo">
+      <img src="img/logo.png" alt="SenseWell Logo" class="logo">
       <h2>Bienvenido a SenseWell</h2>
-      <p>Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.</p>
+      <p>
+        Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
+        Si notas ruido, tensión o cansancio, te enviaremos pausas breves y mensajes positivos
+        para mantener tu bienestar. Relájate, nosotros cuidamos tu equilibrio.
+      </p>
       <button class="btn" id="btnStart">Empezar ahora</button>
     </div>
   </section>
@@ -20,24 +24,35 @@
   <!-- Pantalla 2 -->
   <section class="screen" id="screen2">
     <div class="content">
-      <img src="mockup.png" alt="SenseWell Demo" class="mockup">
+      <img src="img/mockup.png" alt="SenseWell Demo" class="mockup">
       <h2>Análisis de ambiente laboral en segundos</h2>
-      <p>Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te sientes.</p>
+      <p>
+        Solo activa el sensor: SenseWell analiza el ambiente a tu alrededor y detecta cómo te
+        sientes para ayudarte a mantener tu día en equilibrio.
+      </p>
       <button class="btn" id="btnNext">Siguiente</button>
     </div>
   </section>
 
-  <!-- Pantalla 3 (Medidor) -->
+  <!-- Pantalla 3 (Medidor de decibeles) -->
   <section class="screen" id="screen3">
     <div class="content">
       <h2>Medidor de Ruido</h2>
-      <button class="btn" id="toggleBtn">🎙️ Medir ambiente</button>
+      <button class="btn" id="toggleBtn">🎙️ Activar micrófono</button>
       <p><strong>Decibeles:</strong> <span id="dbValue">—</span> dB</p>
       <div id="barContainer"><div id="bar"></div></div>
       <div id="status">⏸️ Sin medición</div>
       <p>
         Calibración: <input type="range" id="calibration" min="-20" max="20" value="0">
         <span id="calVal">0</span> dB
+      </p>
+      <p>
+        Suavizado: 
+        <select id="smoothing">
+          <option value="0">0</option>
+          <option value="0.5" selected>0.5</option>
+          <option value="0.9">0.9</option>
+        </select>
       </p>
     </div>
   </section>
@@ -46,31 +61,17 @@
   <section class="screen" id="screen4">
     <div class="content">
       <h2>Resultados de tus mediciones</h2>
-      <p id="summaryText">Esta semana tus decibeles fueron...</p>
-      <canvas id="historyChart" width="300" height="150"></canvas>
+      <p id="resultsSummary"></p>
+      <canvas id="historyChart"></canvas>
 
       <h3>Tu indicador actual</h3>
-      <div id="currentIndicator"></div>
+      <div id="currentIndicator" class="indicator-card"></div>
 
       <h3>Información de todos los indicadores</h3>
-      <div class="carousel" id="indicatorsCarousel">
-        <div class="card" data-indicator="alegria"><img src="alegria.png"><p>🌟 Alegría</p></div>
-        <div class="card" data-indicator="enojo"><img src="enojo.png"><p>🔥 Enojo</p></div>
-        <div class="card" data-indicator="estres"><img src="estres.png"><p>⚡ Estrés</p></div>
-        <div class="card" data-indicator="ansiedad"><img src="ansiedad.png"><p>🌊 Ansiedad</p></div>
-        <div class="card" data-indicator="tristeza"><img src="tristeza.png"><p>🌧️ Tristeza</p></div>
-      </div>
+      <div id="allIndicators" class="carousel"></div>
 
-      <button class="btn" onclick="showScreen('screen3')">Medir otra vez</button>
+      <button class="btn" id="btnRetry">Medir otra vez</button>
     </div>
-  </section>
-
-  <!-- Pantalla 5 (Detalle de indicador) -->
-  <section class="screen" id="screen5">
-    <div class="content" id="indicatorDetail">
-      <!-- contenido dinámico -->
-    </div>
-    <button class="btn" onclick="showScreen('screen4')">Volver</button>
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
