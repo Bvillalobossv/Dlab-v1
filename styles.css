@@ -70,6 +70,11 @@ p {
 }
 
 /* ---- Estilos de resultados ---- */
+canvas {
+  margin: 1rem 0;
+  max-width: 100%;
+}
+
 .carousel {
   display: flex;
   overflow-x: auto;

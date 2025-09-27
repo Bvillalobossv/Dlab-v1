@@ -44,7 +44,10 @@ const smoothingEl = document.getElementById("smoothing");
 
 let audioContext, analyser, sourceNode, mediaStream;
 let dataBuf;
-let history = []; // guardamos las mediciones
+
+// ---- Historial por días ----
+let allDays = []; // [{ day: 1, measurements: [60, 62] }]
+let currentDay = 1;
 
 // -------- Funciones --------
 function classify(db) {
@@ -96,7 +99,6 @@ async function startMeasurement() {
     setStatus("Analizando ambiente laboral...", "⏳", "#0ea5e9");
     barEl.style.width = "0%";
 
-    // Guardar muestras durante 5 segundos
     let samples = [];
     const duration = 5000; // ms
     const interval = 100;  // ms
@@ -112,7 +114,6 @@ async function startMeasurement() {
       samples.push(dbMapped);
     }, interval);
 
-    // Después de 5 segundos, parar y calcular promedio
     setTimeout(() => {
       clearInterval(intervalId);
 
@@ -129,13 +130,8 @@ async function startMeasurement() {
       const cls = classify(avg);
       if (cls) setStatus(cls.label, cls.emoji, cls.color);
 
-      // Guardar en historial
-      history.push(avg);
-
-      // Mostrar resultados en pantalla 4
       showResults(avg, cls);
 
-      // Liberar recursos
       mediaStream.getTracks().forEach(t => t.stop());
       audioContext.close();
     }, duration);
@@ -153,6 +149,14 @@ function showResults(avg, cls) {
   document.getElementById("resultsSummary").textContent =
     `Esta semana los decibeles fueron ${avg} dB. Voces ${cls.label.toLowerCase()} de lo habitual.`;
 
+  // Guardar en el día actual
+  let today = allDays.find(d => d.day === currentDay);
+  if (!today) {
+    today = { day: currentDay, measurements: [] };
+    allDays.push(today);
+  }
+  today.measurements.push(avg);
+
   // Indicador actual
   const current = INDICATORS[cls.label];
   document.getElementById("currentIndicator").innerHTML = `
@@ -161,7 +165,7 @@ function showResults(avg, cls) {
     <p>${current.range}</p>
   `;
 
-  // Carrusel de todos los indicadores
+  // Carrusel de todos
   const allDiv = document.getElementById("allIndicators");
   allDiv.innerHTML = "";
   Object.entries(INDICATORS).forEach(([key, val]) => {
@@ -174,30 +178,63 @@ function showResults(avg, cls) {
     `;
   });
 
-  // Renderizar gráfico
-  renderChart();
+  renderCharts();
 }
 
-// -------- Gráfico con Chart.js --------
-function renderChart() {
-  const ctx = document.getElementById("historyChart").getContext("2d");
-  new Chart(ctx, {
+// -------- Gráficos con Chart.js --------
+let dailyChartInstance, summaryChartInstance;
+
+function renderCharts() {
+  const today = allDays.find(d => d.day === currentDay);
+
+  // --- Gráfico diario ---
+  const ctx1 = document.getElementById("dailyChart").getContext("2d");
+  if (dailyChartInstance) dailyChartInstance.destroy();
+  dailyChartInstance = new Chart(ctx1, {
     type: "line",
     data: {
-      labels: history.map((_, i) => `Día ${i+1}`),
+      labels: today.measurements.map((_, i) => `Medición ${i+1}`),
       datasets: [{
-        label: "Decibeles",
-        data: history,
+        label: `Día ${currentDay}`,
+        data: today.measurements,
         borderColor: "#3b82f6",
         backgroundColor: "rgba(59,130,246,0.2)",
         fill: true,
-        tension: 0.3,
-        pointBackgroundColor: "#3b82f6"
+        tension: 0.3
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: true } },
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: "Decibeles" } },
+        x: { title: { display: true, text: "Mediciones" } }
+      }
+    }
+  });
+
+  // --- Gráfico resumen ---
+  const ctx2 = document.getElementById("summaryChart").getContext("2d");
+  if (summaryChartInstance) summaryChartInstance.destroy();
+  const labels = allDays.map(d => `Día ${d.day}`);
+  const averages = allDays.map(d => {
+    const sum = d.measurements.reduce((a,b)=>a+b,0);
+    return Math.round(sum / d.measurements.length);
+  });
+
+  summaryChartInstance = new Chart(ctx2, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: "Promedio diario",
+        data: averages,
+        backgroundColor: "rgba(16,185,129,0.6)",
+        borderColor: "#10b981",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: "Decibeles" } },
         x: { title: { display: true, text: "Días" } }
@@ -205,6 +242,12 @@ function renderChart() {
     }
   });
 }
+
+// -------- Botón "Nuevo día" --------
+document.getElementById("btnNewDay")?.addEventListener("click", () => {
+  currentDay++;
+  alert(`Has iniciado el Día ${currentDay}. ¡Realiza nuevas mediciones!`);
+});
 
 // -------- UI binding --------
 toggleBtn.addEventListener("click", startMeasurement);

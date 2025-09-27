@@ -59,8 +59,13 @@
     <h2>Resultados de tus mediciones</h2>
     <p id="resultsSummary">Aquí aparecerá el resumen de tu estado</p>
 
-    <!-- Gráfico histórico -->
-    <canvas id="historyChart" width="400" height="200"></canvas>
+    <!-- Gráfico 1: Mediciones del día -->
+    <h3>Detalle de mediciones del día</h3>
+    <canvas id="dailyChart" width="400" height="200"></canvas>
+
+    <!-- Gráfico 2: Promedio por día -->
+    <h3>Promedios por día</h3>
+    <canvas id="summaryChart" width="400" height="200"></canvas>
 
     <!-- Indicador actual -->
     <h3>Tu indicador actual</h3>
@@ -71,6 +76,7 @@
     <div id="allIndicators" class="carousel"></div>
 
     <button id="btnRetry" class="btn">Medir otra vez</button>
+    <button id="btnNewDay" class="btn">➕ Nuevo día</button>
   </div>
 
   <!-- Script principal -->
