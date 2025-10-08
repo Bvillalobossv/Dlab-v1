@@ -5,36 +5,96 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SenseWell</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Chart.js -->
+  <!-- Librerías -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Detección facial (emociones) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 <body>
-  <!-- Pantalla 1: Bienvenida -->
-  <div id="screen1" class="screen active">
-    <img src="images/logo.png" alt="SenseWell Logo" class="logo" />
-    <h2>Bienvenido a SenseWell</h2>
-    <p>
-      Analizamos el ambiente a tu alrededor y tus respuestas para detectar cómo te sientes.
-      Si notas ruido, tensión o cansancio, te enviaremos pausas breves y mensajes positivos
-      para mantener tu bienestar. Relájate, nosotros cuidamos tu equilibrio.
-    </p>
-    <button id="btnStart" class="btn">Empezar ahora</button>
+  <!-- ====================== AUTH ====================== -->
+  <div id="screenAuth" class="screen active">
+    <img src="images/logo.png" alt="SenseWell" class="logo" />
+    <h2>¡Bienvenida/o a SenseWell!</h2>
+    <p>Cuida tu energía cada día con tres pasos: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>escaneo corporal</b>.</p>
+
+    <div class="card max-600">
+      <div class="segmented">
+        <button id="authTabLogin" class="segment active">Iniciar sesión</button>
+        <button id="authTabSignup" class="segment">Crear cuenta</button>
+      </div>
+
+      <form id="formLogin" class="form">
+        <div class="form-row">
+          <label>Usuario</label>
+          <input type="text" id="login_user" required />
+        </div>
+        <div class="form-row">
+          <label>Contraseña</label>
+          <input type="password" id="login_pass" required />
+        </div>
+        <button type="submit" class="btn">Entrar</button>
+      </form>
+
+      <form id="formSignup" class="form" style="display:none">
+        <div class="form-row">
+          <label>Nuevo usuario</label>
+          <input type="text" id="su_user" required />
+        </div>
+        <div class="form-row">
+          <label>Contraseña</label>
+          <input type="password" id="su_pass" required />
+        </div>
+        <button type="submit" class="btn">Crear cuenta</button>
+      </form>
+      <p class="muted small">*Demo local sin backend: se guarda de forma básica en tu navegador.</p>
+    </div>
   </div>
 
-  <!-- Pantalla 2: Mockup -->
-  <div id="screen2" class="screen">
-    <img src="images/mockup.png" alt="Mockup de SenseWell" class="mockup" />
+  <!-- ====================== SELFIE / ROSTRO ====================== -->
+  <div id="screenFace" class="screen">
+    <h2>Comencemos el día</h2>
+    <p><b>¡Tómate una selfie!</b> Activaremos tu cámara para estimar tu estado facial (felicidad, neutral, estrés/enojo, tristeza, sorpresa).</p>
+
+    <div class="card max-800 two-cols">
+      <div>
+        <video id="faceVideo" autoplay playsinline muted class="video"></video>
+        <canvas id="faceCanvas" class="video" style="display:none"></canvas>
+        <div class="stack-sm">
+          <button id="btnFaceStart" class="btn">Activar cámara</button>
+          <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie y analizar</button>
+        </div>
+      </div>
+      <div>
+        <h3>Resultado</h3>
+        <p><b>Emoción dominante:</b> <span id="faceEmotion">—</span></p>
+        <p><b>Confianza:</b> <span id="faceConfidence">—</span></p>
+        <img id="faceMascot" class="mascot" alt="" />
+        <p id="faceTip" class="muted"></p>
+        <div class="stack-sm">
+          <button id="btnFaceNext" class="btn" disabled>Continuar a medición de ruido</button>
+          <button id="btnFaceSkip" class="btn btn-secondary">Saltar selfie</button>
+        </div>
+      </div>
+    </div>
+    <p class="muted small">Procesamiento en tu dispositivo (face-api.js). No subimos tu imagen a ningún servidor.</p>
+  </div>
+
+  <!-- ====================== INTRO MIC ====================== -->
+  <div id="screenMicIntro" class="screen">
+    <img src="images/mockup.png" alt="Mockup" class="mockup" />
     <h2>Medición ambiental</h2>
-    <p>Vamos a registrar el nivel de ruido ambiental y mostrarte tu estado.</p>
-    <button id="btnNext" class="btn">Siguiente</button>
+    <p>Tomaremos una muestra de <b>5 segundos</b> para estimar dB(A)* y darte recomendaciones.</p>
+    <p class="muted small">*Aproximación desde dBFS del navegador con calibración.</p>
+    <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
 
-  <!-- Pantalla 3: Medición -->
-  <div id="screen3" class="screen">
+  <!-- ====================== MEDICIÓN 5s ====================== -->
+  <div id="screenMeasure" class="screen">
     <h2>Medición en progreso</h2>
     <p><strong>Decibeles detectados:</strong> <span id="dbValue">—</span> dB</p>
+
     <div id="barContainer"><div id="bar"></div></div>
-    <p id="status">Esperando inicio...</p>
+    <p id="status">Listo para empezar.</p>
 
     <div class="control-row">
       <label>Calibración: <span id="calVal">0</span>dB</label>
@@ -51,70 +111,63 @@
       </select>
     </div>
 
-    <button id="toggleBtn" class="btn">🎙️ Iniciar medición</button>
+    <div class="stack-sm">
+      <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
+      <button id="btnMeasureToResults" class="btn btn-secondary" disabled>Ver resultados</button>
+    </div>
+
+    <div class="tips-card card max-700">
+      <h3>Mientras medimos…</h3>
+      <p id="motivation">Respira profundo por la nariz 4 segundos, suelta 6. Tu foco te lo agradece ✨</p>
+    </div>
   </div>
 
-  <!-- Pantalla 4: Resultados (Ruido) -->
-  <div id="screen4" class="screen">
-    <!-- Selector superior (segmented control) -->
+  <!-- ====================== RESULTADOS (RUIDO) ====================== -->
+  <div id="screenResults" class="screen">
     <div class="segmented">
       <button id="tabNoise" class="segment active">Ruido ambiental</button>
       <button id="tabScan" class="segment">Escaneo corporal</button>
     </div>
 
     <h2>Resultados de tus mediciones</h2>
-    <p id="resultsSummary">Aquí aparecerá el resumen de tu estado</p>
+    <p id="resultsSummary">Aquí aparecerá el resumen de tu estado.</p>
 
-    <!-- Gráfico histórico -->
-    <canvas id="historyChart" width="400" height="200"></canvas>
+    <canvas id="historyChart" height="160"></canvas>
 
-    <!-- Indicador actual -->
     <h3>Tu indicador actual</h3>
     <div id="currentIndicator" class="indicator-card"></div>
 
-    <!-- Carrusel con todos los indicadores -->
-    <h3>Información de todos los indicadores</h3>
+    <h3>Tabla de referencia de dB(A) en oficina</h3>
     <div id="allIndicators" class="carousel"></div>
 
     <div class="stack-sm">
       <button id="btnRetry" class="btn">Medir otra vez</button>
-      <button id="btnNewDay" class="btn btn-secondary">+ Nuevo día</button>
       <button id="btnGoIntegration" class="btn btn-outline">Ver indicador combinado</button>
     </div>
   </div>
 
-  <!-- Pantalla 5: Detalle de indicador -->
-  <div id="screen5" class="screen">
+  <!-- ====================== DETALLE INDICADOR ====================== -->
+  <div id="screenIndicatorDetail" class="screen">
     <button id="btnBackResults" class="btn btn-secondary">⬅ Volver</button>
     <div id="indicatorDetail" class="indicator-detail"></div>
   </div>
 
-  <!-- ===== Escaneo corporal (nuevo flujo) ===== -->
-
-  <!-- Pantalla 6: Introducción -->
-  <div id="screen6" class="screen">
-    <div class="card max-600">
+  <!-- ====================== ESCANEO CORPORAL ====================== -->
+  <div id="screenScanIntro" class="screen">
+    <div class="card max-700">
       <div class="checkmark">✓</div>
-      <h2>Introducción</h2>
-      <p>
-        Bienvenida/o al escaneo corporal personalizado. Este proceso tiene como objetivo
-        ayudarte a mejorar tu bienestar físico y emocional mediante el análisis de tu postura,
-        gestos y niveles de estrés. La información recopilada se utiliza exclusivamente
-        para fines de evaluación y mejora personal.
-      </p>
-      <p class="muted">
-        Tu privacidad es nuestra prioridad: todos los datos se manejan de forma confidencial y segura.
-      </p>
+      <h2>Escaneo corporal</h2>
+      <p>Ahora registraremos cómo se siente tu cuerpo. Tres áreas, escala 1–10 y algunos síntomas.</p>
+      <p class="muted">Tu privacidad es prioridad. Los datos se usan para mejorar tu bienestar.</p>
       <div class="stack-sm">
-        <button id="btnScanStart" class="btn">Comenzar escaneo corporal</button>
-        <button class="btn btn-link" id="btnScanBackToResults">← Volver a resultados</button>
+        <button id="btnScanStart" class="btn">Comenzar</button>
+        <button id="btnScanIntroBack" class="btn btn-secondary">Volver</button>
       </div>
     </div>
   </div>
 
-  <!-- Pantalla 7: Encuesta laboral -->
-  <div id="screen7" class="screen">
-    <h2>Encuesta de contexto</h2>
+  <div id="screenSurvey" class="screen">
+    <h2>Encuesta breve de contexto</h2>
     <form id="workSurvey" class="form max-700">
       <div class="form-row two">
         <div>
@@ -139,183 +192,152 @@
       </div>
 
       <div class="slider-group">
-        <label>¿Cómo percibes tu <b>carga de trabajo</b> hoy?</label>
+        <label>Carga de trabajo hoy</label>
         <input type="range" min="1" max="10" value="5" id="ws_carga" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
 
       <div class="slider-group">
-        <label>¿Cuál ha sido tu <b>ritmo de trabajo</b>?</label>
+        <label>Ritmo de trabajo</label>
         <input type="range" min="1" max="10" value="5" id="ws_ritmo" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
 
       <div class="slider-group">
-        <label>¿Realizaste <b>pausas</b> durante el día?</label>
-        <input type="range" min="1" max="10" value="5" id="ws_pausas" />
-        <div class="range-ticks"><span>1</span><span>10</span></div>
-      </div>
-
-      <div class="slider-group">
-        <label>¿Te sientes <b>apoyado/a</b> en el trabajo?</label>
-        <input type="range" min="1" max="10" value="5" id="ws_apoyo" />
-        <div class="range-ticks"><span>1</span><span>10</span></div>
-      </div>
-
-      <div class="slider-group">
-        <label>¿Cómo percibes tu <b>comunicación</b> con colegas?</label>
-        <input type="range" min="1" max="10" value="5" id="ws_comunicacion" />
-        <div class="range-ticks"><span>1</span><span>10</span></div>
-      </div>
-
-      <div class="slider-group">
-        <label>¿Cómo calificarías tu <b>estrés general</b> hoy?</label>
+        <label>Estrés general</label>
         <input type="range" min="1" max="10" value="5" id="ws_estres" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
 
       <div class="stack-sm">
-        <button type="button" id="btnToBodyScan" class="btn">Continuar al escaneo corporal</button>
+        <button type="button" id="btnToBodyScan" class="btn">Continuar</button>
         <button type="button" id="btnSurveyBack" class="btn btn-secondary">Volver</button>
       </div>
     </form>
   </div>
 
-  <!-- Pantalla 8: Body Scan (clic en zonas) -->
-  <div id="screen8" class="screen">
-    <h2>Escaneo Corporal</h2>
-    <p class="muted">(Escala lineal en cada pregunta: 1 = completamente relajado/a, 10 = máxima tensión o incomodidad)</p>
+  <!-- 3 PARTES: cabeza / tren superior / tren inferior -->
+  <div id="screenBodyScan" class="screen">
+    <h2>Body Scan (3 zonas)</h2>
+    <p class="muted">(1 = relajado, 10 = máxima tensión)</p>
 
-    <div class="body-scan">
-      <!-- Silueta SVG simple con zonas clicables -->
-      <svg id="bodySvg" viewBox="0 0 120 300" class="body-svg" aria-label="Mapa corporal">
-        <!-- Piernas -->
-        <rect id="zone_Pies y piernas" x="40" y="210" width="40" height="70" class="zone" />
-        <!-- Caderas / lumbar -->
-        <rect id="zone_Caderas y zona lumbar" x="38" y="180" width="44" height="28" class="zone" />
-        <!-- Abdomen -->
-        <rect id="zone_Abdomen y respiración" x="38" y="150" width="44" height="28" class="zone" />
-        <!-- Pecho -->
-        <rect id="zone_Pecho" x="35" y="120" width="50" height="28" class="zone" />
-        <!-- Espalda alta / hombros -->
-        <rect id="zone_Espalda alta y hombros" x="30" y="95" width="60" height="22" class="zone" />
-        <!-- Cuello y garganta -->
-        <rect id="zone_Cuello y garganta" x="50" y="78" width="20" height="14" class="zone" />
-        <!-- Mandíbula y boca -->
-        <rect id="zone_Mandíbula y boca" x="48" y="62" width="24" height="14" class="zone" />
-        <!-- Frente/sienes/ojos -->
-        <rect id="zone_Frente, sienes y ojos" x="46" y="44" width="28" height="16" class="zone" />
-        <!-- Cabeza general -->
-        <circle id="zone_Cabeza en general" cx="60" cy="24" r="16" class="zone" />
-      </svg>
+    <div class="card max-900">
+      <h3>1) Cabeza</h3>
+      <div class="slider-group">
+        <label>Tensión en frente/ojos/mandíbula</label>
+        <input type="range" id="bs_head_tension" min="1" max="10" value="5">
+        <div class="range-ticks"><span>1</span><span>10</span></div>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" class="symptomHead" value="Dolor de cabeza"> Dolor de cabeza</label>
+        <label><input type="checkbox" class="symptomHead" value="Mandíbula apretada"> Mandíbula apretada</label>
+        <label><input type="checkbox" class="symptomHead" value="Visión cansada"> Visión cansada</label>
+      </div>
+    </div>
 
-      <!-- Panel dinámico de preguntas por zona -->
-      <div class="zone-panel">
-        <h3 id="zp_title">Selecciona una zona</h3>
-        <div id="zp_content" class="zone-content muted">Toca una zona del cuerpo para registrar tu nivel de tensión (1–10) y síntomas.</div>
+    <div class="card max-900">
+      <h3>2) Tren superior</h3>
+      <div class="slider-group">
+        <label>Cuello, hombros, espalda alta y pecho</label>
+        <input type="range" id="bs_upper_tension" min="1" max="10" value="5">
+        <div class="range-ticks"><span>1</span><span>10</span></div>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" class="symptomUpper" value="Hombros rígidos"> Hombros rígidos</label>
+        <label><input type="checkbox" class="symptomUpper" value="Respiración corta"> Respiración corta</label>
+        <label><input type="checkbox" class="symptomUpper" value="Dolor espalda alta"> Dolor espalda alta</label>
+      </div>
+    </div>
+
+    <div class="card max-900">
+      <h3>3) Tren inferior</h3>
+      <div class="slider-group">
+        <label>Lumbar, caderas, piernas</label>
+        <input type="range" id="bs_lower_tension" min="1" max="10" value="5">
+        <div class="range-ticks"><span>1</span><span>10</span></div>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" class="symptomLower" value="Dolor lumbar"> Dolor lumbar</label>
+        <label><input type="checkbox" class="symptomLower" value="Piernas pesadas"> Piernas pesadas</label>
+        <label><input type="checkbox" class="symptomLower" value="Tensión caderas"> Tensión caderas</label>
       </div>
     </div>
 
     <div class="card max-700">
-      <h3>¿Notaste alguno de estos signos durante el recorrido?</h3>
-      <div class="checks">
-        <label><input type="checkbox" class="symptom" value="Respiración corta o agitada"> Respiración corta o agitada</label>
-        <label><input type="checkbox" class="symptom" value="Dolor de cabeza"> Dolor de cabeza</label>
-        <label><input type="checkbox" class="symptom" value="Hombros rígidos"> Hombros rígidos</label>
-        <label><input type="checkbox" class="symptom" value="Mandíbula apretada"> Mandíbula apretada</label>
-        <label><input type="checkbox" class="symptom" value="Otro"> Otro</label>
-      </div>
-
       <div class="slider-group">
-        <label><b>Nivel total</b> de tensión física en este momento</label>
+        <label><b>Nivel total</b> de tensión física ahora</label>
         <input type="range" min="1" max="10" value="5" id="bs_total" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
-
       <div class="slider-group">
-        <label><b>Cansancio físico general</b> al finalizar la jornada</label>
+        <label><b>Cansancio físico general</b></label>
         <input type="range" min="1" max="10" value="5" id="bs_fatiga" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
     </div>
 
     <div class="stack-sm">
-      <button id="btnBodyScanFinish" class="btn">Ver resultados del escaneo</button>
+      <button id="btnBodyScanFinish" class="btn">Ver resultados</button>
       <button id="btnBodyScanBack" class="btn btn-secondary">Volver</button>
-    </div>
-
-    <div class="card max-700">
-      <h3>Terapia Somática</h3>
-      <p class="muted">
-        Finalizar la encuesta con un escaneo corporal es una práctica respaldada por mindfulness y psicología somática.
-        El body scan (Kabat-Zinn) potencia la interocepción: al recorrer mentalmente cada zona, identificas tensiones
-        tempranas y generas una respuesta de relajación en el sistema nervioso. Este cierre entrega datos útiles y,
-        además, un instante real de autocuidado.
-      </p>
-      <details>
-        <summary>Interpretación de niveles 1 a 10</summary>
-        <div class="grid-interpret">
-          <div><b>1–2</b><br/>Relajación profunda</div>
-          <div><b>3–4</b><br/>Ligera tensión</div>
-          <div><b>5</b><br/>Zona neutra / alerta inicial</div>
-          <div><b>6–7</b><br/>Estrés moderado</div>
-          <div><b>8</b><br/>Estrés alto</div>
-          <div><b>9</b><br/>Estrés muy alto</div>
-          <div><b>10</b><br/>Alerta crítica</div>
-        </div>
-      </details>
     </div>
   </div>
 
-  <!-- Pantalla 9: Resultados del escaneo -->
-  <div id="screen9" class="screen">
-    <h2>Resumen Final — Escaneo corporal</h2>
-
+  <div id="screenScanResults" class="screen">
+    <h2>Resumen — Escaneo corporal</h2>
     <div class="results-grid max-900">
       <div class="card">
-        <h3>Puntajes por zona</h3>
-        <ul id="bs_zone_list" class="zones-list"></ul>
+        <h3>Puntajes</h3>
+        <p><b>Cabeza:</b> <span id="bs_head_out">—</span>/10</p>
+        <p><b>Tren superior:</b> <span id="bs_upper_out">—</span>/10</p>
+        <p><b>Tren inferior:</b> <span id="bs_lower_out">—</span>/10</p>
+        <p><b>Tensión media:</b> <span id="bs_avg">—</span>/10</p>
+        <p><b>Total:</b> <span id="bs_total_display">—</span>/10 · <b>Fatiga:</b> <span id="bs_fatiga_display">—</span>/10</p>
+        <p><b>Síntomas:</b> <span id="bs_symptoms_display">Ninguno</span></p>
       </div>
       <div class="card">
-        <h3>Indicadores</h3>
-        <p><b>Tensión media</b>: <span id="bs_avg">—</span>/10</p>
-        <p><b>Nivel total</b>: <span id="bs_total_display">—</span>/10</p>
-        <p><b>Fatiga</b>: <span id="bs_fatiga_display">—</span>/10</p>
-        <p><b>Síntomas</b>: <span id="bs_symptoms_display">Ninguno</span></p>
+        <h3>Distribución</h3>
         <canvas id="bsChart" height="220"></canvas>
       </div>
     </div>
 
     <div class="stack-sm">
-      <button id="btnToIntegration" class="btn">Combinar con decibeles</button>
+      <button id="btnToIntegration" class="btn">Combinar con ruido + selfie</button>
       <button id="btnScanResultsBack" class="btn btn-secondary">Volver</button>
     </div>
   </div>
 
-  <!-- Pantalla 10: Integración Ruido + Escaneo -->
-  <div id="screen10" class="screen">
+  <!-- ====================== INTEGRACIÓN TOTAL ====================== -->
+  <div id="screenIntegration" class="screen">
     <h2>Indicador combinado</h2>
-    <p class="muted">Unimos el promedio de decibeles con la tensión corporal para estimar el indicador real del trabajador.</p>
-
-    <div class="card max-800">
+    <p class="muted">Integramos <b>Selfie emocional</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
+    <div class="card max-900">
       <div class="two-cols">
         <div>
-          <h3>Ruido</h3>
-          <p><b>Último promedio</b>: <span id="ix_db">—</span> dB</p>
-          <p><b>Clasificación</b>: <span id="ix_db_class">—</span></p>
+          <h3>Selfie</h3>
+          <p><b>Emoción:</b> <span id="ix_face_emotion">—</span></p>
+          <p><b>Puntaje (0–100):</b> <span id="ix_face_score">—</span></p>
         </div>
         <div>
-          <h3>Escaneo corporal</h3>
-          <p><b>Tensión media</b>: <span id="ix_bs_avg">—</span>/10</p>
-          <p><b>Total</b>: <span id="ix_bs_total">—</span>/10</p>
+          <h3>Ruido</h3>
+          <p><b>Promedio:</b> <span id="ix_db">—</span> dB</p>
+          <p><b>Clasificación:</b> <span id="ix_db_class">—</span></p>
         </div>
       </div>
 
-      <hr/>
-      <h3>Resultado</h3>
-      <p><b>Índice combinado</b>: <span id="ix_score">—</span>/100</p>
-      <p><b>Interpretación</b>: <span id="ix_label">—</span></p>
-      <p id="ix_reco" class="muted"></p>
+      <div class="two-cols">
+        <div>
+          <h3>Escaneo corporal</h3>
+          <p><b>Tensión media:</b> <span id="ix_bs_avg">—</span>/10</p>
+          <p><b>Total:</b> <span id="ix_bs_total">—</span>/10</p>
+        </div>
+        <div>
+          <h3>Resultado</h3>
+          <p><b>Índice combinado (0–100)</b>: <span id="ix_score">—</span></p>
+          <p><b>Estado:</b> <span id="ix_label">—</span></p>
+          <img id="ix_mascot" class="mascot" alt="">
+          <p id="ix_reco" class="muted"></p>
+        </div>
+      </div>
     </div>
 
     <div class="stack-sm">
@@ -324,7 +346,7 @@
     </div>
   </div>
 
-  <!-- Script principal -->
+  <!-- App -->
   <script src="app.js"></script>
 </body>
 </html>
