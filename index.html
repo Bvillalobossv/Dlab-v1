@@ -4,10 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SenseWell</title>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
+
   <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+  <!-- PWA ready (opcional) -->
+  <meta name="theme-color" content="#0b1020"/>
 </head>
 <body>
 
@@ -15,28 +21,31 @@
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell max-900">
       <div class="slides" id="introSlides">
+        <!-- Slide 1 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/mockup.png" alt="SenseWell" />
           </div>
           <div class="slide-text">
             <h2>Bienvenido a SenseWell</h2>
-            <p>Una app pensada para <b>cuidar tu energía</b> en el trabajo con tres mediciones simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
+            <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
           </div>
         </section>
+        <!-- Slide 2 -->
         <section class="slide">
           <div class="slide-media gradient-card">
             <h3>¿Por qué activar el micrófono?</h3>
             <ul>
               <li>Medimos <b>decibeles</b> del entorno (no grabamos conversaciones).</li>
-              <li>Mejora la precisión del <b>estado anímico</b> y tus recomendaciones.</li>
-              <li>Puedes ajustar una <b>calibración</b> simple (±10 dB).</li>
+              <li>Mejora la precisión de tus <b>recomendaciones</b>.</li>
+              <li>Incluye <b>calibración</b> (±10 dB).</li>
             </ul>
           </div>
           <div class="slide-text">
-            <p class="muted">Tus datos se procesan localmente siempre que sea posible. Revisa nuestra política de privacidad en el perfil.</p>
+            <p class="muted">Tus datos se procesan localmente. Revisa privacidad en “Sobre la app”.</p>
           </div>
         </section>
+        <!-- Slide 3 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/logo.png" alt="SenseWell" class="logo-big" />
@@ -73,11 +82,11 @@
       <form id="formLogin" class="form">
         <div class="form-row">
           <label>Usuario</label>
-          <input type="text" id="login_user" required />
+          <input type="text" id="login_user" autocomplete="username" required />
         </div>
         <div class="form-row">
           <label>Contraseña</label>
-          <input type="password" id="login_pass" required />
+          <input type="password" id="login_pass" autocomplete="current-password" required />
         </div>
         <button type="submit" class="btn">Entrar</button>
       </form>
@@ -85,18 +94,38 @@
       <form id="formSignup" class="form" style="display:none">
         <div class="form-row">
           <label>Nuevo usuario</label>
-          <input type="text" id="su_user" required />
+          <input type="text" id="su_user" autocomplete="username" required />
         </div>
         <div class="form-row">
           <label>Contraseña</label>
-          <input type="password" id="su_pass" required />
+          <input type="password" id="su_pass" autocomplete="new-password" required />
         </div>
         <div class="form-row chk">
           <label><input type="checkbox" id="su_terms" required /> Acepto términos y condiciones</label>
         </div>
         <button type="submit" class="btn">Crear cuenta</button>
       </form>
+
       <p class="muted small">Demo local sin backend: credenciales guardadas en tu navegador.</p>
+      <button id="goAbout" class="btn btn-outline">Sobre la app</button>
+    </div>
+  </div>
+
+  <!-- ====================== SOBRE LA APP ====================== -->
+  <div id="screenAbout" class="screen">
+    <div class="card max-700">
+      <h2>Sobre SenseWell</h2>
+      <p>Esta aplicación está pensada como un <b>espacio integral de bienestar</b>, con herramientas de detección temprana, prevención y apoyo para tu autocuidado. Al encender los sensores abres un entorno creado para apoyarte y <b>respetar tu privacidad</b> (procesamiento local).</p>
+      <ul>
+        <li><b>Selfie emocional</b>: detección de emoción dominante en el rostro (en tu dispositivo).</li>
+        <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s + tabla de referencia de oficina.</li>
+        <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
+      </ul>
+      <p class="small muted">Privacidad: no subimos audio ni imágenes; puedes borrar tus datos en “Cerrar sesión”.</p>
+      <div class="stack-sm">
+        <button id="btnAboutBack" class="btn btn-secondary">Volver</button>
+        <button id="btnAboutStart" class="btn">Comenzar mediciones</button>
+      </div>
     </div>
   </div>
 
@@ -113,7 +142,7 @@
           <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
           <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie y analizar</button>
         </div>
-        <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS.</p>
+        <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS / localhost.</p>
       </div>
       <div>
         <h3>Resultado</h3>
