@@ -144,20 +144,41 @@ function stopFace(){
   }
 }
 
-btnFaceStart.addEventListener('click', async ()=>{
-  try{
+// ** FUNCIÓN CORREGIDA **
+btnFaceStart.addEventListener('click', async () => {
+  const originalText = btnFaceStart.textContent;
+  btnFaceStart.textContent = 'Cargando IA...';
+  btnFaceStart.disabled = true;
+
+  try {
+    // 1. Aseguramos que los modelos de la IA estén cargados ANTES de activar la cámara.
     await ensureModels();
-    // iOS/Safari: user gesture + playsinline + muted en <video>
+    console.log("Modelos de IA cargados correctamente.");
+
+    // 2. Pedimos acceso a la cámara.
+    // iOS/Safari necesita: user gesture + playsinline + muted en <video>
     faceStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode:'user', width:{ideal:640}, height:{ideal:480} },
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       audio: false
     });
     video.srcObject = faceStream;
-    await video.play();            // necesaria tras gesto
-    btnFaceSnap.disabled = false;  // ya se puede capturar
-  }catch(err){
-    console.error(err);
-    alert('No pudimos acceder a la cámara. Revisa permisos o abre la app en HTTPS / localhost.');
+
+    // 3. Esperamos a que el video pueda empezar a reproducirse.
+    video.onloadedmetadata = async () => {
+      await video.play();
+      console.log("Cámara activada y video reproduciéndose.");
+      
+      // 4. SOLO AHORA habilitamos el botón de análisis.
+      btnFaceSnap.disabled = false;
+      btnFaceStart.textContent = 'Cámara Activa'; // Feedback visual
+      $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie.';
+    };
+
+  } catch (err) {
+    console.error("Error al iniciar la cámara o cargar modelos:", err);
+    alert('No pudimos acceder a la cámara o cargar los modelos de IA. Revisa los permisos o tu conexión a internet.');
+    btnFaceStart.textContent = originalText; // Restaurar botón
+    btnFaceStart.disabled = false;
   }
 });
 
@@ -373,6 +394,7 @@ function saveNoiseSession(){
 }
 
 let historyChart = null;
+// ** FUNCIÓN CORREGIDA **
 function renderResults(){
   const arr = loadNoiseHistory();
   const last = arr[arr.length-1] || { avg: 0 };
@@ -385,7 +407,7 @@ function renderResults(){
     type: 'line',
     data: {
       labels: arr.map(r => new Date(r.ts).toLocaleTimeString()),
-      datasets: [{ data: arr.map(r=>r.avg), tension:.25 }]
+      datasets: [{ data: arr.map(r=>r.avg), tension:.25, borderColor: '#7c3aed', borderWidth: 2 }]
     },
     options: {
       plugins:{ legend:{display:false} },
@@ -401,18 +423,28 @@ function renderResults(){
     <span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>
   `;
 
+  // 1. Añade una propiedad 'img' a cada objeto
   const ref = [
-    {range:'<35 dB',   text:'Silencio profundo – descanso y foco fino'},
-    {range:'45–50 dB', text:'Conversación suave – óptimo open plan'},
-    {range:'≈50 dB',   text:'Zumbido saludable – óptimo fisiológico'},
-    {range:'≥70 dB',   text:'Tráfico/aspiradora – no apropiado'}
+    { range: '<35 dB',   text: 'Silencio profundo – descanso y foco fino', img: 'images/ind-silencio.png' },
+    { range: '45–50 dB', text: 'Conversación suave – óptimo open plan', img: 'images/ind-conversacion.png' },
+    { range: '≈50 dB',   text: 'Zumbido saludable – óptimo fisiológico', img: 'images/ind-saludable.png' },
+    { range: '≥70 dB',   text: 'Tráfico/aspiradora – no apropiado', img: 'images/ind-ruido.png' }
   ];
-  const all = $('#allIndicators'); all.innerHTML = '';
-  ref.forEach(r=>{
-    const el = document.createElement('div');
-    el.className = 'indicator-card';
-    el.innerHTML = `<h4>${r.range}</h4><p>${r.text}</p>`;
-    all.appendChild(el);
+
+  const all = $('#allIndicators');
+  all.innerHTML = '';
+
+  // 2. Modifica el innerHTML para que incluya la etiqueta <img>
+  ref.forEach(r => {
+      const el = document.createElement('div');
+      el.className = 'indicator-card';
+      // ¡Añadimos la imagen aquí!
+      el.innerHTML = `
+          <img src="${r.img}" alt="${r.text}" />
+          <h4>${r.range}</h4>
+          <p>${r.text}</p>
+      `;
+      all.appendChild(el);
   });
 }
 
@@ -434,6 +466,8 @@ const bs = {
   total: $('#bs_total'),
   fatiga: $('#bs_fatiga'),
 };
+
+// ** FUNCIÓN CORREGIDA **
 $('#btnBodyScanFinish').addEventListener('click', ()=>{
   const headVal = +bs.head.value, upVal = +bs.upper.value, lowVal = +bs.lower.value;
   const avg = ((headVal + upVal + lowVal) / 3).toFixed(1);
@@ -450,18 +484,54 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
   $('#bs_total_display').textContent = total;
   $('#bs_fatiga_display').textContent = ft;
 
-  // gráfico radar
+  // Destruimos el gráfico anterior si existe para evitar conflictos
+  if (window.myBsChart) {
+      window.myBsChart.destroy();
+  }
   const ctx = $('#bsChart').getContext('2d');
-  new Chart(ctx, {
-    type:'radar',
-    data:{
-      labels:['Cabeza','Tren superior','Tren inferior','Total','Fatiga'],
-      datasets:[{ data:[headVal, upVal, lowVal, total, ft] }]
-    },
-    options:{
-      plugins:{ legend:{display:false} },
-      scales:{ r:{ min:0, max:10 } }
-    }
+  // Creamos un gradiente para el fondo
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); // Color --brand
+  gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');  // Color --brand2
+
+  window.myBsChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+          labels: ['Cabeza', 'Tren Superior', 'Tren Inferior', 'Tensión Total', 'Fatiga'],
+          datasets: [{
+              label: 'Nivel de Tensión',
+              data: [headVal, upVal, lowVal, total, ft],
+              fill: true,
+              backgroundColor: gradient, // Usamos el gradiente
+              borderColor: 'rgba(192, 132, 252, 1)', // Un morado más claro
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(192, 132, 252, 1)',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: 'rgb(124, 58, 237)',
+              borderWidth: 2
+          }]
+      },
+      options: {
+          plugins: {
+              legend: { display: false }
+          },
+          scales: {
+              r: {
+                  min: 0, max: 10,
+                  angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                  grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                  pointLabels: {
+                      font: { size: 13, weight: 'bold' },
+                      color: '#e5e7eb'
+                  },
+                  ticks: {
+                      backdropColor: 'rgba(0,0,0,0.5)',
+                      color: '#fff'
+                  }
+              }
+          },
+          maintainAspectRatio: false
+      }
   });
 
   // guardar para integración

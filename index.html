@@ -5,23 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SenseWell</title>
 
-  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
 
-  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-  <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
 </head>
 <body>
 
-  <!-- ====================== ONBOARDING (CARRUSEL) ====================== -->
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell max-900">
       <div class="slides" id="introSlides">
-        <!-- Slide 1 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/mockup.png" alt="SenseWell" />
@@ -31,28 +26,28 @@
             <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
           </div>
         </section>
-        <!-- Slide 2 -->
         <section class="slide">
           <div class="slide-media gradient-card">
-            <h3>¿Por qué activar el micrófono?</h3>
+            <img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/>
+            <h3>Tu Bienestar, Tu Control</h3>
             <ul>
-              <li>Medimos <b>decibeles</b> del entorno (no grabamos conversaciones).</li>
-              <li>Mejora la precisión de tus <b>recomendaciones</b>.</li>
-              <li>Incluye <b>calibración</b> (±10 dB).</li>
+              <li><b style="color: white;">Medimos, no escuchamos:</b> Solo analizamos los decibeles (dB) del ambiente. Tus conversaciones son y serán siempre privadas.</li>
+              <li><b style="color: white;">Análisis en tu dispositivo:</b> Tu rostro se procesa localmente. Tu imagen nunca sale de tu teléfono.</li>
+              <li><b style="color: white;">Datos anónimos:</b> La información que guardas es para ti. Revisa más en nuestra política de privacidad.</li>
             </ul>
           </div>
           <div class="slide-text">
-            <p class="muted">Tus datos se procesan localmente. Revisa privacidad en “Sobre la app”.</p>
+            <h2>La Privacidad es la base de la Confianza</h2>
+            <p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p>
           </div>
         </section>
-        <!-- Slide 3 -->
         <section class="slide">
           <div class="slide-media">
-            <img src="images/logo.png" alt="SenseWell" class="logo-big" />
+            <img src="images/mockup.png" alt="Análisis SenseWell" />
           </div>
           <div class="slide-text">
-            <h2>Análisis en segundos</h2>
-            <p>Activa cámara y micrófono cuando te lo pidamos. SenseWell te ayuda a mantener tu día <b>en equilibrio</b>.</p>
+            <h2>Tu Termómetro de Bienestar</h2>
+            <p>En solo segundos, obtendrás un indicador que combina tu estado emocional, el ambiente que te rodea y tus sensaciones físicas. Estás a un paso de comenzar un día más consciente y equilibrado.</p>
           </div>
         </section>
       </div>
@@ -67,7 +62,6 @@
     </div>
   </div>
 
-  <!-- ====================== AUTH (LOGIN/REGISTRO) ====================== -->
   <div id="screenAuth" class="screen">
     <img src="images/logo.png" alt="SenseWell" class="logo" />
     <h1>SenseWell</h1>
@@ -111,7 +105,6 @@
     </div>
   </div>
 
-  <!-- ====================== SOBRE LA APP ====================== -->
   <div id="screenAbout" class="screen">
     <div class="card max-700">
       <h2>Sobre SenseWell</h2>
@@ -129,7 +122,6 @@
     </div>
   </div>
 
-  <!-- ====================== SELFIE / ROSTRO ====================== -->
   <div id="screenFace" class="screen">
     <h2>Comencemos el día</h2>
     <p class="muted"><b>¡Tómate una selfie!</b> Detectaremos una emoción dominante (felicidad, neutral, enojo/estrés, tristeza, sorpresa).</p>
@@ -159,7 +151,6 @@
     <p class="muted small">Procesamiento en tu dispositivo (face-api.js). No subimos tu imagen.</p>
   </div>
 
-  <!-- ====================== INTRO MIC ====================== -->
   <div id="screenMicIntro" class="screen">
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
     <h2>Medición ambiental</h2>
@@ -168,7 +159,6 @@
     <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
 
-  <!-- ====================== MEDICIÓN 5s ====================== -->
   <div id="screenMeasure" class="screen">
     <h2>Medición en progreso</h2>
 
@@ -210,7 +200,6 @@
     </div>
   </div>
 
-  <!-- ====================== RESULTADOS (RUIDO) ====================== -->
   <div id="screenResults" class="screen">
     <div class="segmented">
       <button id="tabNoise" class="segment active">Ruido ambiental</button>
@@ -234,13 +223,11 @@
     </div>
   </div>
 
-  <!-- ====================== DETALLE INDICADOR ====================== -->
   <div id="screenIndicatorDetail" class="screen">
     <button id="btnBackResults" class="btn btn-secondary">⬅ Volver</button>
     <div id="indicatorDetail" class="indicator-detail"></div>
   </div>
 
-  <!-- ====================== ESCANEO CORPORAL / ENCUESTA ====================== -->
   <div id="screenScanIntro" class="screen">
     <div class="card max-700">
       <div class="checkmark">✓</div>
@@ -380,7 +367,7 @@
       </div>
       <div class="card">
         <h3>Distribución</h3>
-        <canvas id="bsChart" height="220"></canvas>
+        <canvas id="bsChart"></canvas>
       </div>
     </div>
 
@@ -390,7 +377,6 @@
     </div>
   </div>
 
-  <!-- ====================== INTEGRACIÓN TOTAL ====================== -->
   <div id="screenIntegration" class="screen">
     <h2>Indicador combinado</h2>
     <p class="muted">Integramos <b>Selfie emocional</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
