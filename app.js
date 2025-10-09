@@ -1,17 +1,11 @@
 /* =========================================================
-   SenseWell v4
-   - Auth local (login/signup)
-   - Selfie emocional (face-api) con fix de permisos y sincronización
-   - Medición 5s con velocímetro + countdown + tips
-   - Tabla dB(A) amigable + cards + detalle + histórico (Chart.js)
-   - Encuesta + Body Scan (3 zonas) + radar
-   - Indicador combinado (mascota + recomendación)
+   SenseWell v5 (Front-Only)
    ========================================================= */
 const $  = (q) => document.querySelector(q);
 const $$ = (q) => Array.from(document.querySelectorAll(q));
-
 function show(id){ $$(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); }
 
+/* ======================= STATE ======================= */
 const appState = {
   user: localStorage.getItem("sw_user") || null,
   selfie: { emotion:null, score:0, confidence:0, tip:"" },
@@ -20,17 +14,49 @@ const appState = {
   history: [] // {date, avgDb}
 };
 
+/* ======================= ON LOAD ======================= */
 window.addEventListener("load", () => {
+  bindIntro();
   bindAuth();
   bindFace();
   bindMeasure();
   bindResults();
   bindScan();
   bindIntegration();
-  if(appState.user) show("#screenFace"); else show("#screenAuth");
+  if(appState.user) show("#screenFace"); else show("#screenIntro");
 });
 
-/* =============================== AUTH =============================== */
+/* ======================= INTRO (Carousel) ======================= */
+function bindIntro(){
+  const slides = $("#introSlides");
+  const dotsC  = $("#introDots");
+  const next   = $("#introNext");
+  const prev   = $("#introPrev");
+  const start  = $("#introStart");
+
+  const total = $$("#introSlides .slide").length;
+  let idx=0;
+
+  for(let i=0;i<total;i++){
+    const d=document.createElement("div"); d.className="dot"+(i===0?" active":""); dotsC.appendChild(d);
+  }
+  const dots = $$("#introDots .dot");
+
+  function update(){
+    slides.scrollTo({left: idx*slides.clientWidth, behavior:"smooth"});
+    dots.forEach((d,i)=> d.classList.toggle("active", i===idx));
+    prev.disabled = idx===0;
+    next.style.display = idx<(total-1) ? "" : "none";
+    start.style.display= idx===(total-1) ? "" : "none";
+  }
+  next.onclick = ()=>{ idx=Math.min(total-1, idx+1); update(); };
+  prev.onclick = ()=>{ idx=Math.max(0, idx-1); update(); };
+  start.onclick= ()=> show("#screenAuth");
+  window.addEventListener("resize", ()=> update());
+  update();
+}
+
+/* ======================= AUTH ======================= */
 function bindAuth(){
   const tabLogin  = $("#authTabLogin");
   const tabSignup = $("#authTabSignup");
@@ -52,13 +78,14 @@ function bindAuth(){
     e.preventDefault();
     const u = $("#su_user").value.trim();
     const p = $("#su_pass").value;
+    if(!$("#su_terms").checked) return alert("Debes aceptar los términos.");
     const users = JSON.parse(localStorage.getItem("sw_users")||"{}");
     if(users[u]) return alert("Ese usuario ya existe.");
     users[u]=p; localStorage.setItem("sw_users",JSON.stringify(users)); localStorage.setItem("sw_user",u); appState.user=u; show("#screenFace");
   });
 }
 
-/* =============================== SELFIE =============================== */
+/* ======================= SELFIE (face-api) ======================= */
 let faceStream=null, faceModelsLoaded=false;
 
 async function loadFaceModels(){
@@ -72,35 +99,41 @@ async function loadFaceModels(){
 }
 
 function bindFace(){
+  const video = $("#faceVideo");
+  video.setAttribute("playsinline",""); // iOS
+  video.muted = true;                    // autoplay policy
+
   $("#btnFaceStart").addEventListener("click", async ()=>{
     try{
       await loadFaceModels();
-      faceStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}, audio:false});
-      const v = $("#faceVideo");
-      v.srcObject = faceStream;
-      await v.play(); // iOS fix
+      faceStream = await navigator.mediaDevices.getUserMedia({
+        video:{ facingMode:"user", width:{ideal:640}, height:{ideal:480} }, audio:false
+      });
+      video.srcObject = faceStream;
+      await video.play(); // iOS needs explicit play after user gesture
       $("#btnFaceSnap").disabled = false;
       $("#faceHelp").textContent = "Cámara lista ✅";
+      document.addEventListener("visibilitychange", ()=>{ if(document.hidden){ try{video.pause();}catch(_){} } else { try{video.play();}catch(_){} }});
     }catch(e){
       console.error(e);
-      $("#faceHelp").textContent = "No se pudo acceder a la cámara. Usa HTTPS y otorga permisos.";
+      $("#faceHelp").textContent = readableCameraError(e);
     }
   });
 
   $("#btnFaceSnap").addEventListener("click", async ()=>{
     try{
-      const v = $("#faceVideo");
-      if(!faceModelsLoaded){ await loadFaceModels(); }
-      if(v.readyState < 2){ await new Promise(r=> v.onloadeddata = r); }
+      if(!faceModelsLoaded) await loadFaceModels();
+      if(video.readyState < 2){ await new Promise(r=> video.onloadeddata = r); }
 
       const det = await faceapi
-        .detectSingleFace(v, new faceapi.TinyFaceDetectorOptions({ inputSize:224, scoreThreshold:0.5 }))
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize:224, scoreThreshold:0.5 }))
         .withFaceExpressions();
 
       if(!det || !det.expressions){
         alert("No se detectó rostro. Intenta con más luz y mirando al centro.");
         return;
       }
+
       const exprs = det.expressions;
       const main = Object.keys(exprs).reduce((a,b)=> exprs[a] > exprs[b] ? a : b);
       const conf = (exprs[main]*100).toFixed(1);
@@ -109,7 +142,6 @@ function bindFace(){
       else if(["angry","disgusted"].includes(main)) emotion="enojo";
       else if(main==="sad") emotion="tristeza";
       else if(["fearful","surprised"].includes(main)) emotion="ansiedad";
-      else emotion="neutral";
 
       const score = faceEmotionToScore(emotion);
       const tip   = faceEmotionTip(emotion);
@@ -122,7 +154,7 @@ function bindFace(){
       $("#btnFaceNext").disabled      = false;
     }catch(e){
       console.error(e);
-      alert("Hubo un problema analizando la selfie (permiso, luz o red de modelos). Vuelve a intentar.");
+      alert("Hubo un problema analizando la selfie. Reintenta con más luz o vuelve a activar la cámara.");
     }
   });
 
@@ -132,9 +164,15 @@ function bindFace(){
 
 function stopFace(){ try{ faceStream?.getTracks().forEach(t=>t.stop()); }catch(e){} }
 
-function faceEmotionToScore(e){
-  switch(e){ case "alegria":return 90; case "neutral":return 70; case "ansiedad":return 45; case "tristeza":return 40; case "enojo":return 35; default:return 60; }
+function readableCameraError(e){
+  const s = String(e && (e.name||e.message||e));
+  if(/NotAllowedError|Permission/.test(s)) return "Acceso denegado. Ve a Ajustes del navegador y permite la cámara.";
+  if(/NotFoundError|DevicesNotFound/.test(s)) return "No se encontró cámara disponible.";
+  if(/NotReadableError|TrackStart/.test(s)) return "La cámara está en uso por otra app.";
+  return "No se pudo acceder a la cámara. Usa HTTPS y otorga permisos.";
 }
+
+function faceEmotionToScore(e){ switch(e){ case "alegria":return 90; case "neutral":return 70; case "ansiedad":return 45; case "tristeza":return 40; case "enojo":return 35; default:return 60; } }
 function faceEmotionTip(e){
   switch(e){
     case "alegria":  return "¡Esa energía se contagia! Mantén pausas activas para sostenerla.";
@@ -146,7 +184,7 @@ function faceEmotionTip(e){
   }
 }
 
-/* =============================== MEDICIÓN 5s =============================== */
+/* ======================= MEDICIÓN 5s ======================= */
 let audioCtx, analyser, micSource, rafId, measuring=false;
 const SAMPLE_MS=5000;
 const MOTIVATION=[
@@ -202,7 +240,7 @@ function start5sMeasurement(){
     rms = Math.sqrt(rms / buf.length);
     const dbfs = 20*Math.log10(rms || 1e-8);
     const cal  = Number($("#calibration").value);
-    const db   = Math.max(0, Math.round(dbfs + 90 + cal)); // aprox a dB(A)
+    const db   = Math.max(0, Math.round(dbfs + 90 + cal)); // aprox dB(A)
 
     $("#dbValue").textContent = db;
     updateGaugeLabel(db);
@@ -248,18 +286,18 @@ function drawGauge(db, timePct){
   gauge.clearRect(0,0,w,h);
   gauge.lineWidth = 14;
 
-  // base semicircular
+  // base
   gauge.beginPath(); gauge.strokeStyle="rgba(255,255,255,.15)";
   gauge.arc(cx,cy,r,Math.PI,0); gauge.stroke();
 
-  // arco de dB
+  // arco dB
   const max=90, pct=Math.min(db/max,1);
   const grad = gauge.createLinearGradient(0,0,w,0);
   grad.addColorStop(0,"#22c55e"); grad.addColorStop(0.55,"#facc15"); grad.addColorStop(1,"#ef4444");
   gauge.beginPath(); gauge.strokeStyle = grad;
   gauge.arc(cx,cy,r,Math.PI, Math.PI*(1-pct)); gauge.stroke();
 
-  // anillo de tiempo (fino)
+  // anillo de tiempo
   if(timePct!==undefined){
     gauge.lineWidth = 6;
     gauge.beginPath(); gauge.strokeStyle="rgba(124,58,237,.85)";
@@ -276,26 +314,26 @@ function updateGaugeLabel(db){
   else { lbl.textContent="Muy ruidoso"; lbl.style.background="#3b0d0d"; lbl.style.color="#fecaca"; }
 }
 
-/* =============================== TABLA dB(A) =============================== */
+/* ======================= Tabla dB(A) ======================= */
 const DB_TABLE = [
   {range:"<35",   min:-Infinity, max:35,  title:"Silencio profundo", label:"Muy silencioso", color:"#10b981",
    use:"Puede sentirse “demasiado” quieto.", effect:"Mejora foco, no siempre ideal para interacción.", advice:"Mantén este equilibrio o añade música suave si lo prefieres."},
   {range:"35–40", min:35,        max:40,  title:"Habitación tranquila", label:"Ideal para foco alto", color:"#22c55e",
-   use:"Oficinas privadas/salas de reunión (BS 8233).", effect:"Ambiente muy favorable a la concentración.", advice:"Excelente base para tareas cognitivas exigentes."},
+   use:"Oficinas privadas/salas de reunión (BS 8233).", effect:"Muy favorable a la concentración.", advice:"Excelente base para tareas cognitivas exigentes."},
   {range:"40–45", min:40,        max:45,  title:"Lluvia moderada", label:"Discreto", color:"#84cc16",
-   use:"Diseño frecuente en espacios de concentración.", effect:"Baja distracción si el habla ajena no es inteligible.", advice:"Cuida la inteligibilidad: absorción o enmascaramiento."},
+   use:"Diseño frecuente en espacios de concentración.", effect:"Baja distracción si el habla ajena no es inteligible.", advice:"Cuida la inteligibilidad: absorción/enmascaramiento."},
   {range:"45–50", min:45,        max:50,  title:"Conversación suave", label:"Open plan controlado", color:"#f59e0b",
-   use:"Objetivo típico en open plan (BS 8233 sugiere 45–50).", effect:"Habla cercana inteligible puede distraer.", advice:"Zonas de foco con barreras/auriculares puntuales."},
+   use:"Objetivo típico en open plan.", effect:"Habla cercana inteligible puede distraer.", advice:"Zonas de foco con barreras o auriculares puntuales."},
   {range:"≈50",   min:49.5,      max:50.5,title:"Zumbido saludable", label:"Punto dulce fisiológico", color:"#a855f7",
-   use:"Estudio reciente: ~50 dB(A) maximiza marcadores de bienestar.", effect:"Demasiado bajo/alto reduce bienestar.", advice:"Intenta mantenerte cerca de 50 dB(A)."},
+   use:"~50 dB(A) maximiza marcadores de bienestar.", effect:"Muy bajo/alto reduce bienestar.", advice:"Intenta mantenerte cerca de 50 dB(A)."},
   {range:"50–55", min:50,        max:55,  title:"Conversación normal", label:"Colaborativo", color:"#f97316",
    use:"Zonas colaborativas, pasillos, cafeterías.", effect:"Sube riesgo de distracción; cuida diseño acústico.", advice:"Para foco, muévete a un área más tranquila."},
   {range:"55–60", min:55,        max:60,  title:"Conversación clara", label:"Cuidado con la fatiga", color:"#ef4444",
    use:"Puede causar fatiga cognitiva sostenida.", effect:"Deterioro de memoria de trabajo al subir desde 50 dB.", advice:"Micro-pausas auditivas y limitar exposición."},
   {range:"60–65", min:60,        max:65,  title:"Conversación elevada", label:"No recomendable para foco", color:"#dc2626",
-   use:"Zonas de alta interacción.", effect:"Fuerte distracción por habla (efecto Lombard).", advice:"Usa cancelación de ruido o cambia de espacio."},
+   use:"Zonas de alta interacción.", effect:"Fuerte distracción por habla (efecto Lombard).", advice:"Cancelación de ruido o cambio de espacio."},
   {range:"≥70",   min:70,        max:Infinity, title:"Aspiradora/tráfico", label:"No apropiado", color:"#b91c1c",
-   use:"Solo para eventos puntuales.", effect:"Se acerca a umbrales legales de exposición.", advice:"Reduce tiempo de exposición o aléjate de la fuente."}
+   use:"Solo eventos puntuales.", effect:"Cerca de umbrales legales de exposición.", advice:"Reduce tiempo de exposición o aléjate de la fuente."}
 ];
 
 const MASCOT_IMGS = {
@@ -312,7 +350,7 @@ function classifyDb(db){
   return {...r, detail:`${r.title}. Uso: ${r.use} Efectos: ${r.effect}`, label:r.label};
 }
 
-/* =============================== RESULTADOS (RUIDO) =============================== */
+/* ======================= RESULTADOS (ruido) ======================= */
 let historyChart;
 function bindResults(){
   $("#tabNoise").addEventListener("click", ()=>{ $("#tabNoise").classList.add("active"); $("#tabScan").classList.remove("active"); show("#screenResults"); });
@@ -385,7 +423,7 @@ function pickMascotFromNoise(db){
   return MASCOT_IMGS.enojo;
 }
 
-/* =============================== ESCANEO CORPORAL =============================== */
+/* ======================= ESCANEO CORPORAL ======================= */
 function bindScan(){
   $("#btnScanStart").addEventListener("click", ()=> show("#screenSurvey"));
   $("#btnScanIntroBack").addEventListener("click", ()=> show("#screenResults"));
@@ -435,7 +473,7 @@ function bindScan(){
   $("#btnScanResultsBack").addEventListener("click", ()=> show("#screenBodyScan"));
 }
 
-/* =============================== INTEGRACIÓN =============================== */
+/* ======================= INTEGRACIÓN ======================= */
 function bindIntegration(){
   $("#btnToIntegration").addEventListener("click", ()=>{ computeIntegration(); show("#screenIntegration"); });
   $("#btnIntegrationBack").addEventListener("click", ()=> show("#screenScanResults"));
@@ -443,7 +481,6 @@ function bindIntegration(){
 }
 
 function mapNoiseToScore(db){ const diff=Math.abs(db-50); return Math.max(0, Math.min(100, 100 - diff*3)); }
-
 function labelFromIndex(ix){
   if(ix>=80) return {label:"Muy bien",   reco:"Mantén pausas breves e hidratación. Estás en tu zona 👏", mascot:MASCOT_IMGS.alegria};
   if(ix>=65) return {label:"Bien",       reco:"Sigue con pausas 60–90 min y cuida la postura.",        mascot:MASCOT_IMGS.neutral};
@@ -455,7 +492,7 @@ function labelFromIndex(ix){
 function computeIntegration(){
   const { selfie, noise, body } = appState;
   const bsAvg = Number(((body.head + body.upper + body.lower)/3).toFixed(1));
-  const faceScore  = selfie.score;
+  const faceScore  = selfie.score || 60;
   const noiseScore = mapNoiseToScore(noise.avgDb||50);
   const bodyScore  = 100 - ((bsAvg*4 + body.total*3 + body.fatiga*3)/10);
   const ix = Math.round(0.25*faceScore + 0.35*noiseScore + 0.40*bodyScore);
@@ -472,4 +509,59 @@ function computeIntegration(){
   $("#ix_label").textContent = label;
   $("#ix_reco").textContent  = reco;
   $("#ix_mascot").src        = mascot;
+}
+
+/* ======================= HELPERS ======================= */
+function renderNoiseResults(){
+  const {noise, selfie} = appState;
+  $("#resultsSummary").innerHTML = `Promedio medido: <b>${noise.avgDb} dB(A)</b> · ${noise.item.label}. Selfie emocional: <b>${(selfie.emotion||"—").toUpperCase()}</b>.`;
+  const el = $("#currentIndicator");
+  el.innerHTML = `
+    <img src="${pickMascotFromNoise(noise.avgDb)}" alt="mascota"/>
+    <div class="tag" style="border-color:${noise.item.color}; color:${noise.item.color}">${noise.item.range}</div>
+    <p><b>${noise.item.title}</b></p>
+    <p class="muted small">${noise.item.advice}</p>
+  `;
+  el.onclick = ()=>{
+    $("#indicatorDetail").innerHTML = `
+      <h3>${noise.item.title} (${noise.item.range})</h3>
+      <p><b>Interpretación:</b> ${noise.item.label}</p>
+      <p><b>Uso recomendado:</b> ${noise.item.use}</p>
+      <p><b>Efectos:</b> ${noise.item.effect}</p>
+      <p><b>Consejo:</b> ${noise.item.advice}</p>
+    `;
+    show("#screenIndicatorDetail");
+  };
+
+  const wrap = $("#allIndicators"); wrap.innerHTML="";
+  DB_TABLE.forEach(r=>{
+    const card=document.createElement("div"); card.className="indicator-card";
+    card.innerHTML = `
+      <img src="${pickMascotFromNoise((r.min+r.max)/2)}" alt="">
+      <div class="tag" style="border-color:${r.color}; color:${r.color}">${r.range}</div>
+      <p><b>${r.title}</b></p>
+      <p class="small muted">${r.label}</p>
+    `;
+    card.onclick = ()=>{
+      $("#indicatorDetail").innerHTML = `
+        <h3>${r.title} (${r.range})</h3>
+        <p><b>Interpretación:</b> ${r.label}</p>
+        <p><b>Uso recomendado:</b> ${r.use}</p>
+        <p><b>Efectos:</b> ${r.effect}</p>
+        <p><b>Consejo:</b> ${r.advice}</p>
+      `;
+      show("#screenIndicatorDetail");
+    };
+    wrap.appendChild(card);
+  });
+
+  const ctx = $("#historyChart").getContext("2d");
+  const labels = appState.history.map(h=> new Date(h.date).toLocaleTimeString());
+  const data   = appState.history.map(h=> h.avgDb);
+  try{ historyChart?.destroy(); }catch(_){}
+  historyChart = new Chart(ctx, {
+    type:"line",
+    data:{ labels, datasets:[{ label:"dB(A) promedio (5s)", data, fill:false }] },
+    options:{ responsive:true, scales:{ y:{ beginAtZero:true } } }
+  });
 }

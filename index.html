@@ -5,16 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SenseWell</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Libs -->
+  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 </head>
 <body>
-  <!-- ====================== AUTH ====================== -->
-  <div id="screenAuth" class="screen active">
+
+  <!-- ====================== ONBOARDING (CARRUSEL) ====================== -->
+  <div id="screenIntro" class="screen active">
+    <div class="carousel-shell max-900">
+      <div class="slides" id="introSlides">
+        <section class="slide">
+          <div class="slide-media">
+            <img src="images/mockup.png" alt="SenseWell" />
+          </div>
+          <div class="slide-text">
+            <h2>Bienvenido a SenseWell</h2>
+            <p>Una app pensada para <b>cuidar tu energía</b> en el trabajo con tres mediciones simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
+          </div>
+        </section>
+        <section class="slide">
+          <div class="slide-media gradient-card">
+            <h3>¿Por qué activar el micrófono?</h3>
+            <ul>
+              <li>Medimos <b>decibeles</b> del entorno (no grabamos conversaciones).</li>
+              <li>Mejora la precisión del <b>estado anímico</b> y tus recomendaciones.</li>
+              <li>Puedes ajustar una <b>calibración</b> simple (±10 dB).</li>
+            </ul>
+          </div>
+          <div class="slide-text">
+            <p class="muted">Tus datos se procesan localmente siempre que sea posible. Revisa nuestra política de privacidad en el perfil.</p>
+          </div>
+        </section>
+        <section class="slide">
+          <div class="slide-media">
+            <img src="images/logo.png" alt="SenseWell" class="logo-big" />
+          </div>
+          <div class="slide-text">
+            <h2>Análisis en segundos</h2>
+            <p>Activa cámara y micrófono cuando te lo pidamos. SenseWell te ayuda a mantener tu día <b>en equilibrio</b>.</p>
+          </div>
+        </section>
+      </div>
+
+      <div class="dots" id="introDots"></div>
+
+      <div class="stack-sm">
+        <button id="introPrev" class="btn btn-secondary">Anterior</button>
+        <button id="introNext" class="btn">Siguiente</button>
+        <button id="introStart" class="btn btn-outline" style="display:none">¡Comenzar!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== AUTH (LOGIN/REGISTRO) ====================== -->
+  <div id="screenAuth" class="screen">
     <img src="images/logo.png" alt="SenseWell" class="logo" />
     <h1>SenseWell</h1>
-    <p class="lead">Tu compañero diario para <b>cuidar tu energía</b> en 3 pasos: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
+    <p class="lead">Tu compañero diario para <b>cuidar tu energía</b>.</p>
 
     <div class="card max-600">
       <div class="segmented">
@@ -43,9 +91,12 @@
           <label>Contraseña</label>
           <input type="password" id="su_pass" required />
         </div>
+        <div class="form-row chk">
+          <label><input type="checkbox" id="su_terms" required /> Acepto términos y condiciones</label>
+        </div>
         <button type="submit" class="btn">Crear cuenta</button>
       </form>
-      <p class="muted small">*Demo local sin backend: credenciales guardadas en tu navegador.</p>
+      <p class="muted small">Demo local sin backend: credenciales guardadas en tu navegador.</p>
     </div>
   </div>
 
@@ -56,7 +107,7 @@
 
     <div class="card max-900 two-cols">
       <div>
-        <video id="faceVideo" autoplay playsinline muted class="video"></video>
+        <video id="faceVideo" playsinline muted class="video"></video>
         <canvas id="faceCanvas" class="video" style="display:none"></canvas>
         <div class="stack-sm">
           <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
@@ -84,7 +135,7 @@
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
     <h2>Medición ambiental</h2>
     <p>Tomaremos una muestra de <b>5 segundos</b> para estimar dB(A)* y darte recomendaciones.</p>
-    <p class="muted small">*Aproximación desde dBFS del navegador con calibración.</p>
+    <p class="muted small">*Aproximación desde dBFS del navegador con calibración (±10 dB).</p>
     <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
 
@@ -160,7 +211,7 @@
     <div id="indicatorDetail" class="indicator-detail"></div>
   </div>
 
-  <!-- ====================== ESCANEO CORPORAL ====================== -->
+  <!-- ====================== ESCANEO CORPORAL / ENCUESTA ====================== -->
   <div id="screenScanIntro" class="screen">
     <div class="card max-700">
       <div class="checkmark">✓</div>
@@ -185,11 +236,8 @@
         <div>
           <label>Área / Puesto</label>
           <select id="ws_area" required>
-            <option>Ventas</option>
-            <option>Administración</option>
-            <option>Finanzas</option>
-            <option>TI</option>
-            <option>Marketing</option>
+            <option>Ventas</option><option>Administración</option><option>Finanzas</option>
+            <option>TI</option><option>Marketing</option>
           </select>
         </div>
       </div>
@@ -224,7 +272,6 @@
     </form>
   </div>
 
-  <!-- 3 PARTES: cabeza / tren superior / tren inferior -->
   <div id="screenBodyScan" class="screen">
     <h2>Body Scan (3 zonas)</h2>
     <p class="muted">(1 = relajado, 10 = máxima tensión)</p>
