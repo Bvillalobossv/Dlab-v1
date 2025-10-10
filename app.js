@@ -13,10 +13,9 @@ const SUPABASE_URL = 'https://kdxoxusimqdznduwyvhl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc';
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let currentUser = null; // Variable para guardar el usuario actual
+let currentUser = null;
 
 /* ===================== ONBOARDING ===================== */
-// (Sin cambios en esta sección)
 (() => {
   const slides = $('#introSlides');
   const dots = $('#introDots');
@@ -51,7 +50,6 @@ async function signOut(){
   await db.auth.signOut();
   currentUser = null;
   show('#screenAuth');
-  // Limpia cualquier dato de sesión anterior
   sessionStorage.clear();
   localStorage.clear();
 }
@@ -64,8 +62,7 @@ async function signOut(){
   const goAbout = $('#goAbout');
   const btnAboutBack = $('#btnAboutBack');
   const btnAboutStart = $('#btnAboutStart');
-  const authMessage = $('#auth-message');
-
+  
   tabLogin.addEventListener('click', ()=>{
     tabLogin.classList.add('active'); tabSignup.classList.remove('active');
     formLogin.style.display='block'; formSignup.style.display='none';
@@ -77,28 +74,24 @@ async function signOut(){
 
   formSignup.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = $('#su_user').value.trim();
+    const email = $('#su_email').value.trim();
     const password = $('#su_pass').value;
     const ok = $('#su_terms').checked;
-    if(!username || !password || !ok) return alert('Completa todos los campos y acepta los términos.');
+    if(!email || !password || !ok) return alert('Completa todos los campos y acepta los términos.');
 
-    // Supabase requiere un email, creamos uno falso para el usuario
-    const email = `${username.toLowerCase()}@sensewell.app`;
+    // Extraemos un nombre de usuario del email (la parte antes del @)
+    const username = email.split('@')[0];
 
     const { data, error } = await db.auth.signUp({
       email: email,
       password: password,
-      options: {
-        // Guardamos el nombre de usuario en los metadatos para usarlo después
-        data: { username: username }
-      }
+      options: { data: { username: username } }
     });
 
     if (error) {
       return alert('Error al crear cuenta: ' + error.message);
     }
     
-    // Si el registro es exitoso, guardamos el perfil en nuestra tabla `profiles`
     const { error: profileError } = await db.from('profiles').insert({
       id: data.user.id,
       username: username
@@ -108,16 +101,14 @@ async function signOut(){
       return alert('Error al crear el perfil: ' + profileError.message);
     }
     
-    alert('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.');
-    // Cambiamos a la pestaña de login
+    alert('¡Cuenta creada con éxito! Se ha enviado un correo de confirmación (puedes desactivar esto en Supabase). Ahora puedes iniciar sesión.');
     tabLogin.click();
   });
 
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const username = $('#login_user').value.trim();
+    const email = $('#login_email').value.trim();
     const password = $('#login_pass').value;
-    const email = `${username.toLowerCase()}@sensewell.app`;
 
     const { data, error } = await db.auth.signInWithPassword({
       email: email,
@@ -127,20 +118,16 @@ async function signOut(){
     if (error) {
       return alert('Credenciales inválidas: ' + error.message);
     }
-    
-    // El onAuthStateChange se encargará de redirigir
   });
 
-  // El botón de volver ahora es para cerrar sesión
   btnAboutBack.addEventListener('click', signOut);
-
-  goAbout.addEventListener('click', ()=>show('#screenAbout'));
+  goAbout.addEventListener('click', ()=>show('#screenAuth'));
   btnAboutStart.addEventListener('click', ()=>show('#screenFace'));
 })();
 
-
 /* ===================== SELFIE EMOCIONAL ===================== */
-// (Sin cambios en esta sección)
+// (El resto del código no ha cambiado)
+// ...
 const video = $('#faceVideo');
 const canvas = $('#faceCanvas');
 const btnFaceStart = $('#btnFaceStart');
@@ -269,7 +256,6 @@ function pickMascot(exp){
 }
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
-// (Sin cambios en esta sección)
 const gaugeCanvas = $('#gaugeCanvas');
 const dbValue = $('#dbValue');
 const dbLabel = $('#dbLabel');
@@ -284,7 +270,7 @@ const btnMeasureToResults = $('#btnMeasureToResults');
 let audioCtx, analyser, micStream;
 let running = false, samples = [];
 let smooth = 0.8;
-let lastNoiseAvg = 0; // Guardamos aquí el último promedio de ruido
+let lastNoiseAvg = 0;
 
 function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
@@ -382,7 +368,6 @@ toggleBtn.addEventListener('click', async ()=>{
 });
 
 btnMeasureToResults.addEventListener('click', ()=>{
-  // Calculamos el promedio y lo guardamos temporalmente
   lastNoiseAvg = Math.round(samples.reduce((a,b)=>a+b,0)/Math.max(1,samples.length));
   renderResults();
   show('#screenResults');
@@ -399,9 +384,8 @@ const refData = [
 let historyChart = null;
 
 async function renderResults(){
-  if (!currentUser) return; // No hacer nada si no hay usuario
+  if (!currentUser) return;
 
-  // Obtenemos el historial de la base de datos
   const { data, error } = await db.from('measurements')
     .select('created_at, noise_db')
     .eq('user_id', currentUser.id)
@@ -466,7 +450,6 @@ $('#btnGoToBodyScan').addEventListener('click', ()=> show('#screenScanIntro'));
 $('#btnBackResults').addEventListener('click', ()=> show('#screenResults'));
 
 /* ===================== ENCUESTA + BODY SCAN ===================== */
-// (Sin cambios en esta sección)
 $('#btnScanStart').addEventListener('click', ()=> show('#screenSurvey'));
 $('#btnScanIntroBack').addEventListener('click', ()=> show('#screenResults'));
 $('#btnSurveyBack').addEventListener('click', ()=> show('#screenResults'));
@@ -531,7 +514,7 @@ function noiseScore(db){
   return Math.max(0, 100 - diff*2.2);
 }
 
-$('#btnToIntegration').addEventListener('click', async () => { // Se convierte en async
+$('#btnToIntegration').addEventListener('click', async () => {
   const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
 
   const fScore = faceScore(lastFace);
@@ -545,7 +528,6 @@ $('#btnToIntegration').addEventListener('click', async () => { // Se convierte e
   else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
   else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
 
-  // Pintar en la UI
   $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
   $('#ix_face_score').textContent = fScore.toFixed(0);
   $('#ix_db').textContent = lastNoiseAvg;
@@ -557,7 +539,6 @@ $('#btnToIntegration').addEventListener('click', async () => { // Se convierte e
   $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
   $('#ix_reco').textContent = reco;
 
-  // Guardar en Supabase
   if (currentUser) {
     const { error } = await db.from('measurements').insert({
       user_id: currentUser.id,
@@ -573,19 +554,24 @@ $('#btnToIntegration').addEventListener('click', async () => { // Se convierte e
   show('#screenIntegration');
 });
 
+$('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace'));
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
-$('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace')); // Volver a empezar una nueva medición
 
 /* ===================== MANEJO DE SESIÓN ===================== */
 db.auth.onAuthStateChange((event, session) => {
   if (session) {
-    // El usuario ha iniciado sesión
     currentUser = session.user;
     console.log('Usuario conectado:', currentUser.user_metadata.username);
-    show('#screenAbout'); // Redirigir a la pantalla principal de la app
+    show('#screenAbout');
   } else {
-    // El usuario ha cerrado sesión o no está logueado
     currentUser = null;
-    show('#screenIntro'); // Redirigir a la pantalla de bienvenida
+    show('#screenIntro');
   }
 });
+
+/* ===================== RUTAS DE FLUJO ===================== */
+$('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
+$('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
+$('#btnFaceSkip').addEventListener('click', ()=> show('#screenMicIntro'));
+$('#btnMicGo').addEventListener('click', ()=> show('#screenMeasure'));
+
