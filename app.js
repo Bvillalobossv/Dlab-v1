@@ -262,10 +262,12 @@ btnFaceSnap.addEventListener('click', async ()=>{
 
 btnFaceSkip.addEventListener('click', ()=>{
   lastFace = { expression:'neutral', probability:0.5 };
+  stopFace();
   show('#screenMicIntro');
 });
 
 btnFaceNext.addEventListener('click', ()=>{
+  // No detenemos la cámara aquí para que VitalLens pueda usarla si es necesario
   show('#screenMicIntro');
 });
 
@@ -291,11 +293,9 @@ const btnVitalsDone = $('#btnVitalsDone');
 let lastVitals = null;
 
 async function loadVitalLensScript() {
-    // Si la librería ya está cargada, no hacemos nada.
     if (typeof window.VitalLens === 'function') {
         return Promise.resolve();
     }
-    // Si no está, creamos una promesa que se resolverá cuando el script se cargue.
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://webrtc.rouast.labs.com/vitallens.js';
@@ -326,9 +326,13 @@ btnVitalsStart.addEventListener('click', async () => {
 async function startVitalsMeasurement() {
     let vitalsStream = null;
     try {
-        vitalsStream = await navigator.mediaDevices.getUserMedia({ 
-            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
-        });
+        if(faceStream && faceStream.active) {
+            vitalsStream = faceStream;
+        } else {
+             vitalsStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
+            });
+        }
 
         vitalsVideo.srcObject = vitalsStream;
         await vitalsVideo.play();
@@ -368,15 +372,19 @@ async function startVitalsMeasurement() {
         vitalsStatus.textContent = `Error: ${error.message}`;
         btnVitalsDone.disabled = false;
     } finally {
-        if (vitalsStream) {
-            vitalsStream.getTracks().forEach(track => track.stop());
-        }
+        // No apagamos el stream aquí para poder volver a la pantalla de selfie
     }
 }
 
 btnVitalsDone.addEventListener('click', () => {
+    // Reutiliza el stream de la cámara si sigue activo
+    if (vitalsVideo.srcObject) {
+        video.srcObject = vitalsVideo.srcObject;
+        video.play();
+    }
     show('#screenFace'); 
 });
+
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
 const gaugeCanvas = $('#gaugeCanvas');

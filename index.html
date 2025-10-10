@@ -13,7 +13,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   
-  <!-- Se eliminó el script de VitalLens de aquí -->
+  <!-- El script de VitalLens se cargará dinámicamente -->
 
   <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
@@ -24,51 +24,21 @@
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell max-900">
       <div class="slides" id="introSlides">
-        <!-- Slide 1 -->
         <section class="slide">
-          <div class="slide-media">
-            <img src="images/mockup.png" alt="SenseWell" />
-          </div>
-          <div class="slide-text">
-            <h2>Bienvenido a SenseWell</h2>
-            <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
-          </div>
+          <div class="slide-media"><img src="images/mockup.png" alt="SenseWell" /></div>
+          <div class="slide-text"><h2>Bienvenido a SenseWell</h2><p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p></div>
         </section>
-        <!-- Slide 2 -->
         <section class="slide">
-          <div class="slide-media gradient-card">
-            <img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/>
-            <h3>Tu Bienestar, Tu Control</h3>
-            <ul>
-              <li><b style="color: white;">Medimos, no escuchamos:</b> Solo analizamos los decibeles (dB) del ambiente. Tus conversaciones son y serán siempre privadas.</li>
-              <li><b style="color: white;">Análisis en tu dispositivo:</b> Tu rostro se procesa localmente. Tu imagen nunca sale de tu teléfono.</li>
-              <li><b style="color: white;">Datos anónimos:</b> La información que guardas es para ti. Revisa más en nuestra política de privacidad.</li>
-            </ul>
-          </div>
-          <div class="slide-text">
-            <h2>La Privacidad es la base de la Confianza</h2>
-            <p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p>
-          </div>
+          <div class="slide-media gradient-card"><img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/><h3>Tu Bienestar, Tu Control</h3><ul><li><b style="color: white;">Medimos, no escuchamos:</b> Solo analizamos los decibeles (dB) del ambiente. Tus conversaciones son y serán siempre privadas.</li><li><b style="color: white;">Análisis en tu dispositivo:</b> Tu rostro se procesa localmente. Tu imagen nunca sale de tu teléfono.</li><li><b style="color: white;">Datos anónimos:</b> La información que guardas es para ti. Revisa más en nuestra política de privacidad.</li></ul></div>
+          <div class="slide-text"><h2>La Privacidad es la base de la Confianza</h2><p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p></div>
         </section>
-        <!-- Slide 3 -->
         <section class="slide">
-          <div class="slide-media">
-            <img src="images/mockup.png" alt="Análisis SenseWell" />
-          </div>
-          <div class="slide-text">
-            <h2>Tu Termómetro de Bienestar</h2>
-            <p>En solo segundos, obtendrás un indicador que combina tu estado emocional, el ambiente que te rodea y tus sensaciones físicas. Estás a un paso de comenzar un día más consciente y equilibrado.</p>
-          </div>
+          <div class="slide-media"><img src="images/mockup.png" alt="Análisis SenseWell" /></div>
+          <div class="slide-text"><h2>Tu Termómetro de Bienestar</h2><p>En solo segundos, obtendrás un indicador que combina tu estado emocional, el ambiente que te rodea y tus sensaciones físicas. Estás a un paso de comenzar un día más consciente y equilibrado.</p></div>
         </section>
       </div>
-
       <div class="dots" id="introDots"></div>
-
-      <div class="stack-sm">
-        <button id="introPrev" class="btn btn-secondary">Anterior</button>
-        <button id="introNext" class="btn">Siguiente</button>
-        <button id="introStart" class="btn btn-outline" style="display:none">¡Comenzar!</button>
-      </div>
+      <div class="stack-sm"><button id="introPrev" class="btn btn-secondary">Anterior</button><button id="introNext" class="btn">Siguiente</button><button id="introStart" class="btn btn-outline" style="display:none">¡Comenzar!</button></div>
     </div>
   </div>
 
@@ -77,40 +47,10 @@
     <img src="images/logo.png" alt="SenseWell" class="logo" />
     <h1>SenseWell</h1>
     <p class="lead">Tu compañero diario para <b>cuidar tu energía</b>.</p>
-
     <div class="card max-600">
-      <div class="segmented">
-        <button id="authTabLogin" class="segment active">Iniciar sesión</button>
-        <button id="authTabSignup" class="segment">Crear cuenta</button>
-      </div>
-
-      <form id="formLogin" class="form">
-        <div class="form-row">
-            <label>Usuario</label>
-            <input type="text" id="login_user" autocomplete="username" required />
-        </div>
-        <div class="form-row">
-            <label>Contraseña</label>
-            <input type="password" id="login_pass" autocomplete="current-password" required />
-        </div>
-        <button type="submit" class="btn">Entrar</button>
-      </form>
-
-      <form id="formSignup" class="form" style="display:none">
-        <div class="form-row">
-            <label>Usuario</label>
-            <input type="text" id="su_user" autocomplete="username" required />
-        </div>
-        <div class="form-row">
-            <label>Contraseña (mínimo 6 caracteres)</label>
-            <input type="password" id="su_pass" autocomplete="new-password" minlength="6" required />
-        </div>
-        <div class="form-row chk">
-            <label><input type="checkbox" id="su_terms" required /> Acepto términos y condiciones</label>
-        </div>
-        <button type="submit" class="btn">Crear cuenta</button>
-      </form>
-
+      <div class="segmented"><button id="authTabLogin" class="segment active">Iniciar sesión</button><button id="authTabSignup" class="segment">Crear cuenta</button></div>
+      <form id="formLogin" class="form"><div class="form-row"><label>Usuario</label><input type="text" id="login_user" autocomplete="username" required /></div><div class="form-row"><label>Contraseña</label><input type="password" id="login_pass" autocomplete="current-password" required /></div><button type="submit" class="btn">Entrar</button></form>
+      <form id="formSignup" class="form" style="display:none"><div class="form-row"><label>Usuario</label><input type="text" id="su_user" autocomplete="username" required /></div><div class="form-row"><label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="su_pass" autocomplete="new-password" minlength="6" required /></div><div class="form-row chk"><label><input type="checkbox" id="su_terms" required /> Acepto términos y condiciones</label></div><button type="submit" class="btn">Crear cuenta</button></form>
       <p id="auth-message" class="muted small">Crea una cuenta o inicia sesión para continuar.</p>
       <button id="goAbout" class="btn btn-outline">Sobre la app</button>
     </div>
@@ -120,18 +60,15 @@
   <div id="screenAbout" class="screen">
     <div class="card max-700">
       <h2 id="welcome-user">Sobre SenseWell</h2>
-      <p>Esta aplicación está pensada como un <b>espacio integral de bienestar</b>, con herramientas de detección temprana, prevención y apoyo para tu autocuidado. Al encender los sensores abres un entorno creado para apoyarte y <b>respetar tu privacidad</b> (procesamiento local).</p>
+      <p>Esta aplicación está pensada como un <b>espacio integral de bienestar</b>, con herramientas de detección temprana, prevención y apoyo para tu autocuidado.</p>
       <ul>
-        <li><b>Selfie emocional</b>: detección de emoción dominante en el rostro (en tu dispositivo).</li>
+        <li><b>Selfie emocional</b>: detección de emoción dominante en el rostro.</li>
         <li><b>Signos Vitales</b>: Estimación de frecuencia cardíaca y respiratoria.</li>
         <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s.</li>
         <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
       </ul>
-      <p class="small muted">Privacidad: el análisis de audio y rostro ocurre en tu dispositivo. La medición de signos vitales requiere enviar un video corto a un servidor externo. Revisa nuestros términos.</p>
-      <div class="stack-sm">
-        <button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button>
-        <button id="btnAboutStart" class="btn">Comenzar mediciones</button>
-      </div>
+      <p class="small muted">Privacidad: el análisis de audio y rostro ocurre en tu dispositivo. La medición de signos vitales requiere enviar un video corto a un servidor externo para su análisis.</p>
+      <div class="stack-sm"><button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button><button id="btnAboutStart" class="btn">Comenzar mediciones</button></div>
     </div>
   </div>
 
@@ -139,28 +76,18 @@
   <div id="screenFace" class="screen">
     <h2>Paso 1: Medición Facial</h2>
     <p class="muted">Detectaremos tu emoción dominante y, si lo deseas, tus signos vitales.</p>
-
     <div class="card max-900 two-cols">
       <div>
         <video id="faceVideo" playsinline muted class="video"></video>
         <canvas id="faceCanvas" class="video" style="display:none"></canvas>
-        <div class="stack-sm">
-          <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
-          <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie emocional</button>
-          <button id="btnVitalsStart" class="btn btn-outline" disabled>🩺 Medir Signos Vitales (20s)</button>
-        </div>
+        <div class="stack-sm"><button id="btnFaceStart" class="btn">📸 Activar cámara</button><button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie emocional</button><button id="btnVitalsStart" class="btn btn-outline" disabled>🩺 Medir Signos Vitales (20s)</button></div>
         <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS / localhost.</p>
       </div>
       <div>
         <h3>Resultado Emocional</h3>
-        <p><b>Emoción dominante:</b> <span id="faceEmotion">—</span></p>
-        <p><b>Confianza:</b> <span id="faceConfidence">—</span></p>
-        <img id="faceMascot" class="mascot" alt="" />
-        <p id="faceTip" class="muted"></p>
-        <div class="stack-sm">
-          <button id="btnFaceNext" class="btn" disabled>Siguiente Paso</button>
-          <button id="btnFaceSkip" class="btn btn-secondary">Saltar</button>
-        </div>
+        <p><b>Emoción dominante:</b> <span id="faceEmotion">—</span></p><p><b>Confianza:</b> <span id="faceConfidence">—</span></p>
+        <img id="faceMascot" class="mascot" alt="" /><p id="faceTip" class="muted"></p>
+        <div class="stack-sm"><button id="btnFaceNext" class="btn" disabled>Siguiente Paso</button><button id="btnFaceSkip" class="btn btn-secondary">Saltar</button></div>
       </div>
     </div>
   </div>
@@ -169,20 +96,13 @@
   <div id="screenVitals" class="screen">
     <h2>Medición de Signos Vitales</h2>
     <p class="lead">Por favor, mantén tu rostro quieto y bien iluminado frente a la cámara.</p>
-
     <div class="card max-700">
         <video id="vitalsVideo" playsinline muted class="video"></video>
         <h3 id="vitalsStatus">Iniciando...</h3>
         <p id="vitalsCountdown" class="lead" style="font-size: 2rem; font-weight: bold;"></p>
         <div class="results-grid">
-            <div>
-                <h4>Frecuencia Cardíaca</h4>
-                <p><span id="hrValue" style="font-size: 1.5rem;">--</span> bpm</p>
-            </div>
-            <div>
-                <h4>Frecuencia Respiratoria</h4>
-                <p><span id="rrValue" style="font-size: 1.5rem;">--</span> rpm</p>
-            </div>
+            <div><h4>Frecuencia Cardíaca</h4><p><span id="hrValue" style="font-size: 1.5rem;">--</span> bpm</p></div>
+            <div><h4>Frecuencia Respiratoria</h4><p><span id="rrValue" style="font-size: 1.5rem;">--</span> rpm</p></div>
         </div>
         <p class="muted small">Esta medición es una estimación y no debe usarse para diagnóstico médico.</p>
         <button id="btnVitalsDone" class="btn" disabled>Volver</button>
@@ -208,7 +128,7 @@
     <div class="tips-card card max-700"><h3>Mientras medimos…</h3><p id="motivation">Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨</p></div>
   </div>
   <div id="screenResults" class="screen">
-    <div class="segmented"><button id="tabNoise" class="segment active">Ruido ambiental</button><button id="tabScan" class="segment" onclick="show('#screenScanIntro')">Escaneo corporal</button></div>
+    <div class="segmented"><button class="segment active">Ruido ambiental</button><button class="segment" onclick="show('#screenScanIntro')">Escaneo corporal</button></div>
     <h2>Resultados de tus mediciones</h2><p id="resultsSummary" class="lead">Aquí aparecerá el resumen de tu estado.</p><canvas id="historyChart" height="160"></canvas>
     <h3>Tu indicador actual</h3><div id="currentIndicator" class="indicator-card"></div><h3>Tabla de referencia de dB(A) en oficina</h3><div id="allIndicators" class="carousel"></div>
     <div class="stack-sm"><button id="btnRetry" class="btn">Medir otra vez</button><button id="btnGoToBodyScan" class="btn btn-outline">Ir a Escaneo Corporal</button></div>
@@ -244,28 +164,12 @@
     <p class="muted">Integramos <b>Selfie emocional</b> + <b>Signos Vitales</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
     <div class="card max-900">
       <div class="two-cols">
-        <div>
-          <h3>Selfie</h3>
-          <p><b>Emoción:</b> <span id="ix_face_emotion">—</span></p>
-          <p><b>Puntaje (0–100):</b> <span id="ix_face_score">—</span></p>
-        </div>
-        <div>
-          <h3>Signos Vitales</h3>
-          <p><b>Ritmo Cardíaco:</b> <span id="ix_hr">—</span> bpm</p>
-          <p><b>Ritmo Respiratorio:</b> <span id="ix_rr">—</span> rpm</p>
-        </div>
+        <div><h3>Selfie</h3><p><b>Emoción:</b> <span id="ix_face_emotion">—</span></p><p><b>Puntaje (0–100):</b> <span id="ix_face_score">—</span></p></div>
+        <div><h3>Signos Vitales</h3><p><b>Ritmo Cardíaco:</b> <span id="ix_hr">—</span> bpm</p><p><b>Ritmo Respiratorio:</b> <span id="ix_rr">—</span> rpm</p></div>
       </div>
       <div class="two-cols">
-        <div>
-          <h3>Ruido</h3>
-          <p><b>Promedio:</b> <span id="ix_db">—</span> dB</p>
-          <p><b>Clasificación:</b> <span id="ix_db_class">—</span></p>
-        </div>
-        <div>
-          <h3>Escaneo corporal</h3>
-          <p><b>Tensión media:</b> <span id="ix_bs_avg">—</span>/10</p>
-          <p><b>Total:</b> <span id="ix_bs_total">—</span>/10</p>
-        </div>
+        <div><h3>Ruido</h3><p><b>Promedio:</b> <span id="ix_db">—</span> dB</p><p><b>Clasificación:</b> <span id="ix_db_class">—</span></p></div>
+        <div><h3>Escaneo corporal</h3><p><b>Tensión media:</b> <span id="ix_bs_avg">—</span>/10</p><p><b>Total:</b> <span id="ix_bs_total">—</span>/10</p></div>
       </div>
       <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
       <div style="text-align: center;">
@@ -282,4 +186,5 @@
 
 </body>
 </html>
+
 
