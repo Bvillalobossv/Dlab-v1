@@ -179,6 +179,9 @@ function mapMorphcastEmotion(dominantEmotion) {
 async function initializeMorphcast() {
     if (morphcastInitialized) return;
     try {
+        if (typeof downloadAISDK !== 'function') {
+            throw new Error("El SDK de MorphCast no se ha cargado todavía. Intenta de nuevo.");
+        }
         const sdk = await downloadAISDK();
         await sdk.init();
         morphcastInitialized = true;
@@ -227,13 +230,23 @@ async function initializeMorphcast() {
     } catch (err) {
         console.error("Error al inicializar MorphCast SDK:", err);
         $('#faceHelp').textContent = `Error: ${err.message}. Asegúrate de estar en HTTPS.`;
+        btnFaceStart.disabled = false;
+        btnFaceStart.textContent = 'Reintentar activación';
     }
 }
 
 btnFaceStart.addEventListener('click', () => {
     btnFaceStart.textContent = 'Iniciando cámara...';
     btnFaceStart.disabled = true;
-    initializeMorphcast();
+    
+    // --> CAMBIO: La lógica de inicialización ahora se llama aquí.
+    // Espera a que la ventana esté completamente cargada.
+    if (document.readyState === 'complete') {
+        initializeMorphcast();
+    } else {
+        // Si no ha cargado, espera al evento 'load'.
+        window.addEventListener('load', initializeMorphcast);
+    }
 });
 
 btnFaceSkip.addEventListener('click', ()=>{
