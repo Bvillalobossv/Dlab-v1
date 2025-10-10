@@ -4,9 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SenseWell</title>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Se eliminó la referencia a face-api.js -->
+
+  <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
 </head>
 <body>
@@ -15,13 +23,17 @@
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell max-900">
       <div class="slides" id="introSlides">
+        <!-- Slide 1 -->
         <section class="slide">
-          <div class="slide-media"><img src="images/mockup.png" alt="SenseWell" /></div>
+          <div class="slide-media">
+            <img src="images/mockup.png" alt="SenseWell" />
+          </div>
           <div class="slide-text">
             <h2>Bienvenido a SenseWell</h2>
             <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
           </div>
         </section>
+        <!-- Slide 2 -->
         <section class="slide">
           <div class="slide-media gradient-card">
             <img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/>
@@ -37,15 +49,20 @@
             <p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p>
           </div>
         </section>
+        <!-- Slide 3 -->
         <section class="slide">
-          <div class="slide-media"><img src="images/mockup.png" alt="Análisis SenseWell" /></div>
+          <div class="slide-media">
+            <img src="images/mockup.png" alt="Análisis SenseWell" />
+          </div>
           <div class="slide-text">
             <h2>Tu Termómetro de Bienestar</h2>
             <p>En solo segundos, obtendrás un indicador que combina tu estado emocional, el ambiente que te rodea y tus sensaciones físicas. Estás a un paso de comenzar un día más consciente y equilibrado.</p>
           </div>
         </section>
       </div>
+
       <div class="dots" id="introDots"></div>
+
       <div class="stack-sm">
         <button id="introPrev" class="btn btn-secondary">Anterior</button>
         <button id="introNext" class="btn">Siguiente</button>
@@ -93,7 +110,7 @@
         <button type="submit" class="btn">Crear cuenta</button>
       </form>
 
-      <p class="muted small" id="auth-message">Crea una cuenta o inicia sesión para continuar.</p>
+      <p id="auth-message" class="muted small">Crea una cuenta o inicia sesión para continuar.</p>
       <button id="goAbout" class="btn btn-outline">Sobre la app</button>
     </div>
   </div>
@@ -108,7 +125,7 @@
         <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s + tabla de referencia de oficina.</li>
         <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
       </ul>
-      <p class="small muted">Privacidad: no subimos audio ni imágenes. Tu historial de mediciones se guarda de forma segura en tu cuenta.</p>
+      <p class="small muted">Privacidad: no subimos audio ni imágenes; puedes borrar tus datos en “Cerrar sesión”.</p>
       <div class="stack-sm">
         <button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button>
         <button id="btnAboutStart" class="btn">Comenzar mediciones</button>
@@ -116,36 +133,38 @@
     </div>
   </div>
 
-  <!-- (El resto del HTML no tiene cambios) -->
-  <!-- ... -->
-  <!-- ====================== SELFIE / ROSTRO ====================== -->
+  <!-- ====================== SELFIE / ROSTRO (CON MORPHCAST) ====================== -->
   <div id="screenFace" class="screen">
     <h2>Comencemos el día</h2>
-    <p class="muted"><b>¡Tómate una selfie!</b> Detectaremos una emoción dominante (felicidad, neutral, enojo/estrés, tristeza, sorpresa).</p>
+    <p class="muted"><b>¡Activa tu cámara!</b> Detectaremos tu emoción dominante en tiempo real.</p>
+
     <div class="card max-900 two-cols">
       <div>
-        <video id="faceVideo" playsinline muted class="video"></video>
-        <canvas id="faceCanvas" class="video" style="display:none"></canvas>
+        <!-- Contenedor donde MorphCast insertará el video -->
+        <div id="morphcast-video-container" class="video"></div>
+        
         <div class="stack-sm">
           <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
-          <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie y analizar</button>
+          <!-- Este botón ya no es necesario, la detección es automática -->
+          <button id="btnFaceSnap" class="btn btn-outline" style="display: none;">Tomar selfie y analizar</button>
         </div>
-        <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS / localhost.</p>
+        <p id="faceHelp" class="muted small">La detección comenzará automáticamente. Asegúrate de estar bien iluminado/a.</p>
       </div>
       <div>
-        <h3>Resultado</h3>
+        <h3>Resultado en Tiempo Real</h3>
         <p><b>Emoción dominante:</b> <span id="faceEmotion">—</span></p>
         <p><b>Confianza:</b> <span id="faceConfidence">—</span></p>
         <img id="faceMascot" class="mascot" alt="" />
         <p id="faceTip" class="muted"></p>
         <div class="stack-sm">
-          <button id="btnFaceNext" class="btn" disabled>Ir a medir ruido</button>
+          <button id="btnFaceNext" class="btn" disabled>Capturar y continuar</button>
           <button id="btnFaceSkip" class="btn btn-secondary">Saltar selfie</button>
         </div>
       </div>
     </div>
-    <p class="muted small">Procesamiento en tu dispositivo (face-api.js). No subimos tu imagen.</p>
+    <p class="muted small">Procesamiento en tu dispositivo (MorphCast SDK). No subimos tu imagen.</p>
   </div>
+  
   <!-- ====================== INTRO MIC ====================== -->
   <div id="screenMicIntro" class="screen">
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
@@ -154,9 +173,11 @@
     <p class="muted small">*Aproximación desde dBFS del navegador con calibración (±10 dB).</p>
     <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
+
   <!-- ====================== MEDICIÓN 5s ====================== -->
   <div id="screenMeasure" class="screen">
     <h2>Medición en progreso</h2>
+
     <div class="gauge-wrapper">
       <canvas id="gaugeCanvas" width="280" height="280"></canvas>
       <div class="gauge-center">
@@ -166,11 +187,14 @@
         <div id="countdown" class="countdown">5.0 s</div>
       </div>
     </div>
+
     <p id="status">Listo para empezar.</p>
+
     <div class="control-row">
       <label>Calibración: <span id="calVal">0</span>dB</label>
       <input type="range" id="calibration" min="-10" max="10" value="0" />
     </div>
+
     <div class="control-row">
       <label>Suavizado:</label>
       <select id="smoothing">
@@ -180,38 +204,48 @@
         <option value="0.9">0.9</option>
       </select>
     </div>
+
     <div class="stack-sm">
       <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
       <button id="btnMeasureToResults" class="btn btn-secondary" disabled>Ver resultados</button>
     </div>
+
     <div class="tips-card card max-700">
       <h3>Mientras medimos…</h3>
       <p id="motivation">Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨</p>
     </div>
   </div>
+
   <!-- ====================== RESULTADOS (RUIDO) ====================== -->
   <div id="screenResults" class="screen">
     <div class="segmented">
       <button id="tabNoise" class="segment active">Ruido ambiental</button>
-      <button id="tabScan" class="segment">Escaneo corporal</button>
+      <button id="tabScan" class="segment" onclick="show('#screenScanIntro')">Escaneo corporal</button>
     </div>
+
     <h2>Resultados de tus mediciones</h2>
     <p id="resultsSummary" class="lead">Aquí aparecerá el resumen de tu estado.</p>
+
     <canvas id="historyChart" height="160"></canvas>
+
     <h3>Tu indicador actual</h3>
     <div id="currentIndicator" class="indicator-card"></div>
+
     <h3>Tabla de referencia de dB(A) en oficina</h3>
     <div id="allIndicators" class="carousel"></div>
+
     <div class="stack-sm">
       <button id="btnRetry" class="btn">Medir otra vez</button>
-      <button id="btnGoToBodyScan" class="btn btn-outline">Continuar a Escaneo Corporal</button>
+      <button id="btnGoToBodyScan" class="btn btn-outline">Ir a Escaneo Corporal</button>
     </div>
   </div>
+
   <!-- ====================== DETALLE INDICADOR ====================== -->
   <div id="screenIndicatorDetail" class="screen">
     <button id="btnBackResults" class="btn btn-secondary">⬅ Volver</button>
     <div id="indicatorDetail" class="indicator-detail"></div>
   </div>
+
   <!-- ====================== ESCANEO CORPORAL / ENCUESTA ====================== -->
   <div id="screenScanIntro" class="screen">
     <div class="card max-700">
@@ -225,6 +259,7 @@
       </div>
     </div>
   </div>
+
   <div id="screenSurvey" class="screen">
     <h2>Encuesta breve de contexto</h2>
     <form id="workSurvey" class="form max-700">
@@ -241,34 +276,41 @@
           </select>
         </div>
       </div>
+
       <div class="form-row">
         <label>Horas trabajadas</label>
         <input type="number" id="ws_hours" min="0" max="24" placeholder="Ej: 6" required />
       </div>
+
       <div class="slider-group">
         <label>Carga de trabajo hoy</label>
         <input type="range" min="1" max="10" value="5" id="ws_carga" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
+
       <div class="slider-group">
         <label>Ritmo de trabajo</label>
         <input type="range" min="1" max="10" value="5" id="ws_ritmo" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
+
       <div class="slider-group">
         <label>Estrés general</label>
         <input type="range" min="1" max="10" value="5" id="ws_estres" />
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
+
       <div class="stack-sm">
         <button type="button" id="btnToBodyScan" class="btn">Continuar</button>
         <button type="button" id="btnSurveyBack" class="btn btn-secondary">Volver</button>
       </div>
     </form>
   </div>
+
   <div id="screenBodyScan" class="screen">
     <h2>Body Scan (3 zonas)</h2>
     <p class="muted">(1 = relajado, 10 = máxima tensión)</p>
+
     <div class="card max-900">
       <h3>1) Cabeza</h3>
       <div class="slider-group">
@@ -282,6 +324,7 @@
         <label><input type="checkbox" class="symptomHead" value="Visión cansada"> Visión cansada</label>
       </div>
     </div>
+
     <div class="card max-900">
       <h3>2) Tren superior</h3>
       <div class="slider-group">
@@ -295,6 +338,7 @@
         <label><input type="checkbox" class="symptomUpper" value="Dolor espalda alta"> Dolor espalda alta</label>
       </div>
     </div>
+
     <div class="card max-900">
       <h3>3) Tren inferior</h3>
       <div class="slider-group">
@@ -308,6 +352,7 @@
         <label><input type="checkbox" class="symptomLower" value="Tensión caderas"> Tensión caderas</label>
       </div>
     </div>
+
     <div class="card max-700">
       <div class="slider-group">
         <label><b>Nivel total</b> de tensión física ahora</label>
@@ -320,11 +365,13 @@
         <div class="range-ticks"><span>1</span><span>10</span></div>
       </div>
     </div>
+
     <div class="stack-sm">
       <button id="btnBodyScanFinish" class="btn">Ver resultados</button>
       <button id="btnBodyScanBack" class="btn btn-secondary">Volver</button>
     </div>
   </div>
+
   <div id="screenScanResults" class="screen">
     <h2>Resumen — Escaneo corporal</h2>
     <div class="results-grid max-900">
@@ -342,11 +389,13 @@
         <canvas id="bsChart"></canvas>
       </div>
     </div>
+
     <div class="stack-sm">
       <button id="btnToIntegration" class="btn">Combinar con ruido + selfie</button>
       <button id="btnScanResultsBack" class="btn btn-secondary">Volver</button>
     </div>
   </div>
+
   <!-- ====================== INTEGRACIÓN TOTAL ====================== -->
   <div id="screenIntegration" class="screen">
     <h2>Indicador combinado</h2>
@@ -364,6 +413,7 @@
           <p><b>Clasificación:</b> <span id="ix_db_class">—</span></p>
         </div>
       </div>
+
       <div class="two-cols">
         <div>
           <h3>Escaneo corporal</h3>
@@ -379,16 +429,18 @@
         </div>
       </div>
     </div>
+
     <div class="stack-sm">
+      <button id="btnIntegrationHome" class="btn">Nueva Medición</button>
       <button id="btnIntegrationBack" class="btn btn-secondary">Volver</button>
-      <button id="btnIntegrationHome" class="btn btn-outline">Ir al inicio</button>
     </div>
   </div>
-
-  <!-- ======== LIBRERÍAS FINALES ======== -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <script src="app.js"></script>
+
+  <!-- NUEVO SCRIPT DE MORPHCAST -->
+  <script>class ScriptLoader{static loadScript(e,t=null){return new Promise((o=>{const a=document.createElement("script");a.type="text/javascript",a.readyState?a.onreadystatechange=function(){("loaded"==a.readyState||"complete"==a.readyState)&&(a.onreadystatechange=null,o())}:a.onload=function(){o()},(t&&a.setAttribute("data-config",t)),a.src=e,document.getElementsByTagName("head")[0].appendChild(a)}))}function downloadAISDK(){return null==ScriptLoader.p&&(ScriptLoader.p=ScriptLoader.loadScript("https://sdk.morphcast.com/mphtools/v1.1/mphtools.js","cameraPrivacyPopup,compatibilityUI,compatibilityAutoCheck").then((()=>ScriptLoader.loadScript("https://ai-sdk.morphcast.com/v1.16/ai-sdk.js"))).then((()=>CY)).then((o=>ScriptLoader.p=downloadAISDK().then((e=>{ScriptLoader.loadScript("https://sdk.morphcast.com/mphoverlay/v0.1/mph-ai-overlay.js").loader(),(licenseKey="sk3f85859e0bcffd099e34bc0ddf4b259043346c091404"),addModule(e.modules).FACE_AROUSAL_VALENCE.name,{smoothness:.7}),addModule(e.modules).FACE_EMOTION.name,{smoothness:.4}),addModule(e.modules).FACE_ATTENTION.name,{smoothness:.83}),addModule(e.modules).DATA_AGGREGATOR.name,{initialWaitMs:2e3,periodMs:1e3}),load(),then((({start:e,stop:t})=>window.addEventListener(e.modules).DATA_AGGREGATOR.EVENT_BARRIER.eventName,(e=>(console.log("EVENT_BARRIER result",e.detail),window.addEventListener(e.modules).DATA_AGGREGATOR.eventName,(e=>console.log("DATA_AGGREGATOR result",e.detail)))),MphTools.CameraPrivacyPopup.setUX({title:"Allow us to use your camera",description:"This experience is designed to be viewed with your camera on. The next screen will ask your consent to access data from your camera.",uri:"https://bvillalobossv.github.io/Dlab-v1/"})})))}</script>
+
 </body>
 </html>
-
 

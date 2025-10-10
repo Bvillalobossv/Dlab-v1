@@ -140,122 +140,111 @@ async function signOut(){
   btnAboutStart.addEventListener('click', ()=>show('#screenFace'));
 })();
 
-
-/* ===================== SELFIE EMOCIONAL ===================== */
-const video = $('#faceVideo');
-const canvas = $('#faceCanvas');
+/* ===================== SELFIE EMOCIONAL (MORPHCAST) ===================== */
 const btnFaceStart = $('#btnFaceStart');
-const btnFaceSnap  = $('#btnFaceSnap');
 const btnFaceNext  = $('#btnFaceNext');
 const btnFaceSkip  = $('#btnFaceSkip');
 const faceEmotion  = $('#faceEmotion');
 const faceConfidence = $('#faceConfidence');
 const faceTip = $('#faceTip');
 const faceMascot = $('#faceMascot');
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-let faceStream = null;
-let modelsLoaded = false;
+const videoContainer = $('#morphcast-video-container');
+
 let lastFace = null;
+let morphcastInitialized = false;
+
 const emotionCopy = {
-  happy:  { label:'Feliz',    tip:'¡Arranque brillante! Mantén mini-pausas cada 50 min para sostener esa energía.' },
-  neutral:{ label:'Neutral',  tip:'Buen punto de partida. Un vaso de agua y una breve caminata elevarán tu foco.' },
-  angry:  { label:'Tenso',    tip:'Se percibe tensión. Prueba respiración 4–6 y estiramiento de hombros 1 minuto.' },
-  sad:    { label:'Bajo ánimo', tip:'Con suavidad: escucha tu cuerpo y agenda un micro-descanso mental.' },
-  surprised:{ label:'Sorprendido', tip:'Gran apertura. Canaliza esa activación en tu primera tarea clave.' },
-  fearful:{ label:'Aprensivo', tip:'Paso a paso. Un “to-do” pequeño y alcanzable te dará tracción.' },
-  disgusted:{ label:'Molesto', tip:'Date permiso para reencuadrar. 60s de respiración nasal pueden ayudar.' }
+  Anger:  { label:'Tenso',    tip:'Se percibe tensión. Prueba respiración 4–6 y estiramiento de hombros 1 minuto.' },
+  Disgust:{ label:'Molesto',  tip:'Date permiso para reencuadrar. 60s de respiración nasal pueden ayudar.' },
+  Fear:   { label:'Aprensivo',tip:'Paso a paso. Un “to-do” pequeño y alcanzable te dará tracción.' },
+  Sadness:{ label:'Bajo ánimo', tip:'Con suavidad: escucha tu cuerpo y agenda un micro-descanso mental.' },
+  Joy:    { label:'Feliz',    tip:'¡Arranque brillante! Mantén mini-pausas cada 50 min para sostener esa energía.' },
+  Surprise:{label:'Sorprendido', tip:'Gran apertura. Canaliza esa activación en tu primera tarea clave.' },
+  Neutral:{ label:'Neutral',  tip:'Buen punto de partida. Un vaso de agua y una breve caminata elevarán tu foco.' },
 };
-async function ensureModels(){
-  if(modelsLoaded) return;
-  await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-  await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-  modelsLoaded = true;
-}
-function stopFace(){
-  if(faceStream){
-    faceStream.getTracks().forEach(t => t.stop());
-    faceStream = null;
-  }
-}
-btnFaceStart.addEventListener('click', async () => {
-  const originalText = btnFaceStart.textContent;
-  btnFaceStart.textContent = 'Cargando IA...';
-  btnFaceStart.disabled = true;
-  try {
-    await ensureModels();
-    faceStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-      audio: false
-    });
-    video.srcObject = faceStream;
-    video.onloadedmetadata = async () => {
-      await video.play();
-      btnFaceSnap.disabled = false;
-      btnFaceStart.textContent = 'Cámara Activa';
-      $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie.';
+
+function mapMorphcastEmotion(dominantEmotion) {
+    const map = {
+        'Anger': 'angry',
+        'Disgust': 'disgusted',
+        'Fear': 'fearful',
+        'Sadness': 'sad',
+        'Joy': 'happy',
+        'Surprise': 'surprised',
+        'Neutral': 'neutral'
     };
-  } catch (err) {
-    console.error("Error al iniciar la cámara o cargar modelos:", err);
-    alert('No pudimos acceder a la cámara o cargar los modelos de IA. Revisa los permisos o tu conexión a internet.');
-    btnFaceStart.textContent = originalText;
-    btnFaceStart.disabled = false;
-  }
-});
-btnFaceSnap.addEventListener('click', async ()=>{
-  try{
-    await ensureModels();
-    canvas.width = video.videoWidth || 480;
-    canvas.height = video.videoHeight || 360;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return map[dominantEmotion] || 'neutral';
+}
 
-    const det = await faceapi
-      .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
-      .withFaceExpressions();
+async function initializeMorphcast() {
+    if (morphcastInitialized) return;
+    try {
+        const sdk = await downloadAISDK();
+        await sdk.init();
+        morphcastInitialized = true;
+        
+        const videoElement = await sdk.getVideo();
+        videoContainer.innerHTML = '';
+        videoContainer.appendChild(videoElement);
+        
+        await sdk.start();
+        console.log("MorphCast SDK iniciado y detectando.");
 
-    if(!det){
-      faceEmotion.textContent = 'No detectado';
-      faceConfidence.textContent = '—';
-      faceTip.textContent = 'Asegúrate de estar bien iluminado/a y centrado/a.';
-      btnFaceNext.disabled = true;
-      return;
+        window.addEventListener('CY_FACE_EMOTION_RESULT', (evt) => {
+            if (!evt.detail.output || !evt.detail.output.dominantEmotion) return;
+
+            const dominantEmotion = evt.detail.output.dominantEmotion;
+            const probability = evt.detail.output.emotion[dominantEmotion];
+            
+            let finalEmotion = dominantEmotion;
+            let finalProbability = probability;
+
+            if (finalEmotion === 'Neutral' && evt.detail.output.emotion.Joy < 0.1) {
+                const negativeScore = (evt.detail.output.emotion.Anger || 0) + (evt.detail.output.emotion.Disgust || 0);
+                if (negativeScore > 0.25) {
+                    finalEmotion = 'Anger';
+                    finalProbability = negativeScore;
+                }
+            }
+
+            const mappedGifKey = mapMorphcastEmotion(finalEmotion);
+            const map = emotionCopy[finalEmotion] || emotionCopy['Neutral'];
+
+            faceEmotion.textContent = map.label;
+            faceConfidence.textContent = (finalProbability * 100).toFixed(1) + '%';
+            faceTip.textContent = map.tip;
+            faceMascot.src = pickMascot(mappedGifKey);
+            faceMascot.alt = map.label;
+
+            lastFace = {
+                expression: mappedGifKey,
+                probability: finalProbability
+            };
+
+            btnFaceNext.disabled = false;
+        });
+
+    } catch (err) {
+        console.error("Error al inicializar MorphCast SDK:", err);
+        $('#faceHelp').textContent = `Error: ${err.message}. Asegúrate de estar en HTTPS.`;
     }
+}
 
-    const arr = det.expressions.asSortedArray();
-    let { expression, probability } = arr[0];
-
-    // --> CAMBIO: Filtro inteligente para detectar enojo/estrés sutil
-    if (expression === 'neutral' && det.expressions.happy < 0.1) {
-        const negativeScore = det.expressions.angry + det.expressions.disgusted;
-        if (negativeScore > 0.25) { // Si la suma de enojo + molestia es superior al 25%
-            expression = 'angry'; // Se reclasifica como 'enojado' (que en el mapa es 'Tenso')
-            probability = negativeScore; // La nueva confianza es la suma de las probabilidades negativas
-        }
-    }
-
-    lastFace = { expression, probability };
-
-    const map = emotionCopy[expression] || emotionCopy['neutral'];
-    faceEmotion.textContent = map.label + ` (${expression})`;
-    faceConfidence.textContent = (probability*100).toFixed(1) + '%';
-    faceTip.textContent = map.tip;
-    faceMascot.src = pickMascot(expression);
-    faceMascot.alt = map.label;
-    btnFaceNext.disabled = false;
-  }catch(err){
-    console.error(err);
-    alert('Ocurrió un problema al analizar el rostro.');
-    btnFaceNext.disabled = true;
-  }
+btnFaceStart.addEventListener('click', () => {
+    btnFaceStart.textContent = 'Iniciando cámara...';
+    btnFaceStart.disabled = true;
+    initializeMorphcast();
 });
+
 btnFaceSkip.addEventListener('click', ()=>{
   lastFace = { expression:'neutral', probability:0.5 };
   show('#screenMicIntro');
 });
+
 btnFaceNext.addEventListener('click', ()=>{
-  stopFace();
   show('#screenMicIntro');
 });
+
 function pickMascot(exp){
   const map = {
     happy: 'images/mascots/happy.gif',
@@ -268,6 +257,7 @@ function pickMascot(exp){
   };
   return map[exp] || 'images/mascots/neutral.gif';
 }
+
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
 const gaugeCanvas = $('#gaugeCanvas');
 const dbValue = $('#dbValue');
@@ -552,7 +542,7 @@ $('#btnToIntegration').addEventListener('click', async () => {
   else if(score >= 60){ label='Bien'; reco='Sigue con respiraciones 4–6 entre tareas y micro-estiramientos.'; }
   else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
   else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
-  $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
+  $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[mapMorphcastEmotion(lastFace.expression)]?.label || lastFace.expression) : '—';
   $('#ix_face_score').textContent = fScore.toFixed(0);
   $('#ix_db').textContent = lastNoiseAvg;
   $('#ix_db_class').textContent = labelFor(lastNoiseAvg);
