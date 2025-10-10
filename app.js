@@ -86,8 +86,8 @@ async function signOut(){
     
     authMessage.textContent = 'Creando cuenta...';
 
-    // Se crea un email "falso" a partir del nombre de usuario para Supabase
-    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}${Date.now()}@sensewell.app`;
+    // Se crea un email "falso" a partir del nombre de usuario con un dominio válido
+    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
 
     const { data, error } = await db.auth.signUp({
       email: email,
@@ -113,6 +113,8 @@ async function signOut(){
         
         authMessage.textContent = '¡Cuenta creada con éxito! Por favor, inicia sesión.';
         tabLogin.click();
+        $('#login_user').value = username; // Pre-rellena el usuario para facilitar el login
+        $('#login_pass').focus();
     }
   });
 
@@ -122,34 +124,16 @@ async function signOut(){
     const username = $('#login_user').value.trim();
     const password = $('#login_pass').value;
 
-    // Buscamos en nuestra tabla `profiles` el usuario para obtener su ID de Supabase
-    const { data: profile, error: profileError } = await db.from('profiles')
-      .select('id')
-      .eq('username', username)
-      .single();
-
-    if (profileError || !profile) {
-      authMessage.textContent = 'Usuario no encontrado.';
-      return;
-    }
+    // Reconstruimos el email "falso" a partir del nombre de usuario
+    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
     
-    // Ahora que tenemos el ID, podemos obtener el email asociado a ese usuario
-    const { data: user, error: userError } = await db.auth.admin.getUserById(profile.id);
-
-    if (userError) {
-        authMessage.textContent = 'Error al verificar usuario.';
-        return;
-    }
-    
-    const email = user.email;
-
     const { error } = await db.auth.signInWithPassword({
       email: email,
       password: password,
     });
 
     if (error) {
-      authMessage.textContent = 'Contraseña inválida.';
+      authMessage.textContent = 'Usuario o contraseña inválidos.';
     }
     // Si el login es exitoso, onAuthStateChange se encargará del resto
   });
@@ -159,8 +143,8 @@ async function signOut(){
   btnAboutStart.addEventListener('click', ()=>show('#screenFace'));
 })();
 
+
 /* ===================== SELFIE EMOCIONAL ===================== */
-// (El resto del código no tiene cambios)
 const video = $('#faceVideo');
 const canvas = $('#faceCanvas');
 const btnFaceStart = $('#btnFaceStart');
