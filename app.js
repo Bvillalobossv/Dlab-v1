@@ -86,7 +86,6 @@ async function signOut(){
     
     authMessage.textContent = 'Creando cuenta...';
 
-    // Se crea un email "falso" a partir del nombre de usuario con un dominio válido
     const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
 
     const { data, error } = await db.auth.signUp({
@@ -113,7 +112,7 @@ async function signOut(){
         
         authMessage.textContent = '¡Cuenta creada con éxito! Por favor, inicia sesión.';
         tabLogin.click();
-        $('#login_user').value = username; // Pre-rellena el usuario para facilitar el login
+        $('#login_user').value = username;
         $('#login_pass').focus();
     }
   });
@@ -124,7 +123,6 @@ async function signOut(){
     const username = $('#login_user').value.trim();
     const password = $('#login_pass').value;
 
-    // Reconstruimos el email "falso" a partir del nombre de usuario
     const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
     
     const { error } = await db.auth.signInWithPassword({
@@ -135,7 +133,6 @@ async function signOut(){
     if (error) {
       authMessage.textContent = 'Usuario o contraseña inválidos.';
     }
-    // Si el login es exitoso, onAuthStateChange se encargará del resto
   });
 
   btnAboutBack.addEventListener('click', signOut);
@@ -268,10 +265,49 @@ const calVal = $('#calVal');
 const smoothingSel = $('#smoothing');
 const toggleBtn = $('#toggleBtn');
 const btnMeasureToResults = $('#btnMeasureToResults');
+const motivationEl = $('#motivation');
+
 let audioCtx, analyser, micStream;
 let running = false, samples = [];
 let smooth = 0.8;
 let lastNoiseAvg = 0;
+let motivationInterval = null;
+
+// --> CAMBIO: Lista de frases motivacionales
+const motivationPhrases = [
+    "Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨",
+    "Toma un pequeño sorbo de agua para mantenerte hidratado.",
+    "Parpadea varias veces para lubricar tus ojos.",
+    "Estira suavemente tu cuello, inclinando la cabeza de lado a lado.",
+    "Levántate y estira las piernas por 10 segundos.",
+    "Piensa en algo que te hizo sonreír hoy.",
+    "Rota tus hombros hacia atrás 5 veces para liberar tensión."
+];
+
+// --> CAMBIO: Función para iniciar el carrusel de frases
+function startMotivationCarousel() {
+    let currentIndex = 0;
+    motivationEl.textContent = motivationPhrases[currentIndex];
+    
+    if (motivationInterval) clearInterval(motivationInterval);
+
+    motivationInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % motivationPhrases.length;
+        motivationEl.style.opacity = 0;
+        setTimeout(() => {
+            motivationEl.textContent = motivationPhrases[currentIndex];
+            motivationEl.style.opacity = 1;
+        }, 500); // 0.5s para la transición de fade
+    }, 4000); // Cambia cada 4 segundos
+}
+
+function stopMotivationCarousel() {
+    if (motivationInterval) {
+        clearInterval(motivationInterval);
+        motivationInterval = null;
+    }
+}
+
 function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
   const w = gaugeCanvas.width, h = gaugeCanvas.height;
@@ -302,6 +338,7 @@ function labelFor(dB){
   if(dB < 75) return 'Ruidoso';
   return 'Alto ruido';
 }
+
 async function startMic(){
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
@@ -310,11 +347,13 @@ async function startMic(){
   analyser.fftSize = 2048;
   src.connect(analyser);
 }
+
 function stopMic(){
   if(micStream) micStream.getTracks().forEach(t=>t.stop());
   if(audioCtx) audioCtx.close();
   micStream = null; audioCtx = null;
 }
+
 async function runMeasure(){
   await startMic();
   samples = [];
@@ -342,8 +381,18 @@ async function runMeasure(){
     if(left <= 0){
       running = false;
       stopMic();
-      btnMeasureToResults.disabled = false;
-      statusEl.textContent = 'Medición completa.';
+      
+      // --> CAMBIO: Calcular y mostrar el promedio al finalizar
+      statusEl.textContent = 'Calculando promedio...';
+      setTimeout(() => {
+        lastNoiseAvg = Math.round(samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length));
+        dbValue.textContent = lastNoiseAvg;
+        dbLabel.textContent = labelFor(lastNoiseAvg);
+        drawGauge(lastNoiseAvg);
+        statusEl.textContent = 'Medición completa.';
+        btnMeasureToResults.disabled = false;
+      }, 500); // Pequeño delay para dar efecto
+
       countdown.textContent = '0.0 s';
       return;
     }
@@ -362,11 +411,12 @@ toggleBtn.addEventListener('click', async ()=>{
   await runMeasure();
 });
 btnMeasureToResults.addEventListener('click', ()=>{
-  lastNoiseAvg = Math.round(samples.reduce((a,b)=>a+b,0)/Math.max(1,samples.length));
   renderResults();
   show('#screenResults');
 });
+
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
+// ... (El resto del código no tiene cambios funcionales importantes)
 const refData = [
     { range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png', description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental.', recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.'] },
     { range: '45–55 dB', title: 'Conversación suave', img: 'images/ind-conversacion.png', description: 'Considerado el nivel ideal para un trabajo de oficina colaborativo. Permite conversaciones suaves sin ser disruptivo.', recommendations: ['Es un buen momento para una lluvia de ideas con tu equipo.', 'Si necesitas concentrarte, un poco de música instrumental puede aislarte positivamente.'] },
@@ -538,5 +588,9 @@ db.auth.onAuthStateChange((event, session) => {
 $('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
 $('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
 $('#btnFaceSkip').addEventListener('click', ()=> show('#screenMicIntro'));
-$('#btnMicGo').addEventListener('click', ()=> show('#screenMeasure'));
+// --> CAMBIO: Se inicia el carrusel de frases al ir a la pantalla de medición
+$('#btnMicGo').addEventListener('click', ()=> {
+  startMotivationCarousel();
+  show('#screenMeasure');
+});
 
