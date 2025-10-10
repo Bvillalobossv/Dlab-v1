@@ -232,29 +232,27 @@ async function initializeMorphcast() {
     }
 }
 
-// --> CAMBIO: Se implementa la lógica de "polling" para esperar al SDK.
 btnFaceStart.addEventListener('click', () => {
     btnFaceStart.textContent = 'Iniciando cámara...';
     btnFaceStart.disabled = true;
 
-    const maxTries = 50; // Intentar por 5 segundos (50 * 100ms)
+    const maxTries = 50;
     let tries = 0;
 
     const interval = setInterval(() => {
-        // Comprueba si la función downloadAISDK ya existe en el objeto window
         if (typeof window.downloadAISDK === 'function') {
-            clearInterval(interval); // Detiene el "buscador"
-            initializeMorphcast();   // Ejecuta la inicialización
+            clearInterval(interval);
+            initializeMorphcast();
         } else {
             tries++;
             if (tries > maxTries) {
-                clearInterval(interval); // Se rinde después de 5 segundos
+                clearInterval(interval);
                 $('#faceHelp').textContent = 'Error: El SDK de MorphCast tardó demasiado en cargar. Recarga la página e intenta de nuevo.';
                 btnFaceStart.disabled = false;
                 btnFaceStart.textContent = 'Reintentar activación';
             }
         }
-    }, 100); // Revisa cada 100 milisegundos
+    }, 100);
 });
 
 
@@ -609,3 +607,4 @@ $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
 });
+
