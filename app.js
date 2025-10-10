@@ -168,10 +168,16 @@ const emotionCopy = {
   disgusted:{ label:'Molesto', tip:'Date permiso para reencuadrar. 60s de respiración nasal pueden ayudar.' }
 };
 
+// --> CAMBIO: Función de carga de modelos más robusta
 async function ensureModels(){
   if(modelsLoaded) return;
-  await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-  await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+  await Promise.all([
+    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+    faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+  ]);
+  // Esta inicialización extra fuerza a la librería a estar 100% lista.
+  await faceapi.nets.ssdMobilenetv1.load(MODEL_URL); 
+  await faceapi.nets.faceExpressionNet.load(MODEL_URL);
   modelsLoaded = true;
 }
 
@@ -197,7 +203,7 @@ btnFaceStart.addEventListener('click', async () => {
     video.onloadedmetadata = async () => {
       await video.play();
       btnFaceSnap.disabled = false;
-      btnVitalsStart.disabled = false; // Habilitar botón de signos vitales
+      btnVitalsStart.disabled = false; 
       btnFaceStart.textContent = 'Cámara Activa';
       $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie o medir tus signos vitales.';
     };
@@ -292,7 +298,7 @@ btnVitalsStart.addEventListener('click', async () => {
     
     try {
         if (faceStream) {
-            vitalsStream = faceStream; // Reutilizar el stream de la cámara si ya está activo
+            vitalsStream = faceStream; 
         } else {
             vitalsStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
@@ -340,7 +346,6 @@ btnVitalsStart.addEventListener('click', async () => {
 });
 
 btnVitalsDone.addEventListener('click', () => {
-    // No detenemos el faceStream principal
     show('#screenFace'); 
 });
 
