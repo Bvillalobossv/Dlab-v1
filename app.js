@@ -152,7 +152,9 @@ const faceEmotion  = $('#faceEmotion');
 const faceConfidence = $('#faceConfidence');
 const faceTip = $('#faceTip');
 const faceMascot = $('#faceMascot');
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js/weights';
+
+// --> CAMBIO: La URL de los modelos ahora especifica la misma versión que la librería.
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
 let faceStream = null;
 let modelsLoaded = false;
@@ -168,16 +170,12 @@ const emotionCopy = {
   disgusted:{ label:'Molesto', tip:'Date permiso para reencuadrar. 60s de respiración nasal pueden ayudar.' }
 };
 
-// --> CAMBIO: Función de carga de modelos más robusta
 async function ensureModels(){
   if(modelsLoaded) return;
   await Promise.all([
     faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
     faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
   ]);
-  // Esta inicialización extra fuerza a la librería a estar 100% lista.
-  await faceapi.nets.ssdMobilenetv1.load(MODEL_URL); 
-  await faceapi.nets.faceExpressionNet.load(MODEL_URL);
   modelsLoaded = true;
 }
 
