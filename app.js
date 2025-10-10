@@ -273,7 +273,6 @@ let smooth = 0.8;
 let lastNoiseAvg = 0;
 let motivationInterval = null;
 
-// --> CAMBIO: Lista de frases motivacionales
 const motivationPhrases = [
     "Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨",
     "Toma un pequeño sorbo de agua para mantenerte hidratado.",
@@ -284,7 +283,6 @@ const motivationPhrases = [
     "Rota tus hombros hacia atrás 5 veces para liberar tensión."
 ];
 
-// --> CAMBIO: Función para iniciar el carrusel de frases
 function startMotivationCarousel() {
     let currentIndex = 0;
     motivationEl.textContent = motivationPhrases[currentIndex];
@@ -297,8 +295,8 @@ function startMotivationCarousel() {
         setTimeout(() => {
             motivationEl.textContent = motivationPhrases[currentIndex];
             motivationEl.style.opacity = 1;
-        }, 500); // 0.5s para la transición de fade
-    }, 4000); // Cambia cada 4 segundos
+        }, 500);
+    }, 4000);
 }
 
 function stopMotivationCarousel() {
@@ -382,7 +380,6 @@ async function runMeasure(){
       running = false;
       stopMic();
       
-      // --> CAMBIO: Calcular y mostrar el promedio al finalizar
       statusEl.textContent = 'Calculando promedio...';
       setTimeout(() => {
         lastNoiseAvg = Math.round(samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length));
@@ -391,7 +388,7 @@ async function runMeasure(){
         drawGauge(lastNoiseAvg);
         statusEl.textContent = 'Medición completa.';
         btnMeasureToResults.disabled = false;
-      }, 500); // Pequeño delay para dar efecto
+      }, 500);
 
       countdown.textContent = '0.0 s';
       return;
@@ -416,7 +413,6 @@ btnMeasureToResults.addEventListener('click', ()=>{
 });
 
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
-// ... (El resto del código no tiene cambios funcionales importantes)
 const refData = [
     { range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png', description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental.', recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.'] },
     { range: '45–55 dB', title: 'Conversación suave', img: 'images/ind-conversacion.png', description: 'Considerado el nivel ideal para un trabajo de oficina colaborativo. Permite conversaciones suaves sin ser disruptivo.', recommendations: ['Es un buen momento para una lluvia de ideas con tu equipo.', 'Si necesitas concentrarte, un poco de música instrumental puede aislarte positivamente.'] },
@@ -426,29 +422,45 @@ const refData = [
 let historyChart = null;
 async function renderResults(){
   if (!currentUser) return;
+
+  // --> CAMBIO: Obtiene todas las mediciones de ruido del usuario actual desde Supabase
   const { data, error } = await db.from('measurements')
     .select('created_at, noise_db')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: true });
+
   if (error) {
     console.error('Error al cargar historial:', error);
     return;
   }
+
   const last = { avg: lastNoiseAvg };
   $('#resultsSummary').textContent = `Promedio de tu última medición: ${last.avg} dB — ${labelFor(last.avg)}`;
+  
   const ctx = $('#historyChart').getContext('2d');
   if(historyChart) historyChart.destroy();
+  
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: data.map(r => new Date(r.created_at).toLocaleTimeString()),
-      datasets: [{ data: data.map(r => r.noise_db), tension:.25, borderColor: '#7c3aed', borderWidth: 2 }]
+      // --> CAMBIO: Usa los datos de la base de datos para las etiquetas y los puntos del gráfico
+      labels: data.map(r => new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+      datasets: [{
+        label: 'Nivel de Ruido (dB)',
+        data: data.map(r => r.noise_db),
+        tension: 0.25,
+        borderColor: '#7c3aed',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointRadius: 4
+      }]
     },
     options: {
       plugins:{ legend:{display:false} },
       scales:{ y:{ suggestedMin:30, suggestedMax:90 } }
     }
   });
+
   const current = $('#currentIndicator');
   current.innerHTML = `<h4>${labelFor(last.avg)}</h4><p><b>${last.avg} dB(A)</b></p><span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>`;
   const currentLabel = labelFor(last.avg);
@@ -457,6 +469,7 @@ async function renderResults(){
     current.setAttribute('onclick', `showIndicatorDetail(${currentDataIndex})`);
     current.style.cursor = 'pointer';
   }
+
   const all = $('#allIndicators'); 
   all.innerHTML = '';
   refData.forEach((r, i) => {
@@ -570,6 +583,7 @@ $('#btnToIntegration').addEventListener('click', async () => {
   }
   show('#screenIntegration');
 });
+// --> CAMBIO: El botón "Ir al inicio" ahora te lleva a la pantalla de la cámara
 $('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace'));
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
 /* ===================== MANEJO DE SESIÓN ===================== */
@@ -588,7 +602,6 @@ db.auth.onAuthStateChange((event, session) => {
 $('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
 $('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
 $('#btnFaceSkip').addEventListener('click', ()=> show('#screenMicIntro'));
-// --> CAMBIO: Se inicia el carrusel de frases al ir a la pantalla de medición
 $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
