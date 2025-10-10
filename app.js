@@ -82,7 +82,7 @@ function signOut(){
     users[u] = p;
     saveUsers(users);
     setSession(u);
-    show('#screenAbout'); // storytelling: conoce la app y luego empieza
+    show('#screenAbout');
   });
 
   formLogin.addEventListener('submit', (e)=>{
@@ -144,40 +144,28 @@ function stopFace(){
   }
 }
 
-// ** FUNCIÓN CORREGIDA **
 btnFaceStart.addEventListener('click', async () => {
   const originalText = btnFaceStart.textContent;
   btnFaceStart.textContent = 'Cargando IA...';
   btnFaceStart.disabled = true;
 
   try {
-    // 1. Aseguramos que los modelos de la IA estén cargados ANTES de activar la cámara.
     await ensureModels();
-    console.log("Modelos de IA cargados correctamente.");
-
-    // 2. Pedimos acceso a la cámara.
-    // iOS/Safari necesita: user gesture + playsinline + muted en <video>
     faceStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
       audio: false
     });
     video.srcObject = faceStream;
-
-    // 3. Esperamos a que el video pueda empezar a reproducirse.
     video.onloadedmetadata = async () => {
       await video.play();
-      console.log("Cámara activada y video reproduciéndose.");
-      
-      // 4. SOLO AHORA habilitamos el botón de análisis.
       btnFaceSnap.disabled = false;
-      btnFaceStart.textContent = 'Cámara Activa'; // Feedback visual
+      btnFaceStart.textContent = 'Cámara Activa';
       $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie.';
     };
-
   } catch (err) {
     console.error("Error al iniciar la cámara o cargar modelos:", err);
     alert('No pudimos acceder a la cámara o cargar los modelos de IA. Revisa los permisos o tu conexión a internet.');
-    btnFaceStart.textContent = originalText; // Restaurar botón
+    btnFaceStart.textContent = originalText;
     btnFaceStart.disabled = false;
   }
 });
@@ -185,13 +173,11 @@ btnFaceStart.addEventListener('click', async () => {
 btnFaceSnap.addEventListener('click', async ()=>{
   try{
     await ensureModels();
-    // pintar frame en canvas
     canvas.width = video.videoWidth || 480;
     canvas.height = video.videoHeight || 360;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // detectar 1 rostro con expresiones
     const det = await faceapi
       .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
       .withFaceExpressions();
@@ -204,18 +190,16 @@ btnFaceSnap.addEventListener('click', async ()=>{
       return;
     }
 
-    const arr = det.expressions.asSortedArray(); // [{expression, probability}...]
+    const arr = det.expressions.asSortedArray();
     const { expression, probability } = arr[0];
     lastFace = { expression, probability };
 
-    // map a etiqueta UX
     const map = emotionCopy[expression] || emotionCopy['neutral'];
     faceEmotion.textContent = map.label + ` (${expression})`;
     faceConfidence.textContent = (probability*100).toFixed(1) + '%';
     faceTip.textContent = map.tip;
     faceMascot.src = pickMascot(expression);
     faceMascot.alt = map.label;
-
     btnFaceNext.disabled = false;
   }catch(err){
     console.error(err);
@@ -229,23 +213,24 @@ btnFaceSkip.addEventListener('click', ()=>{
   btnFaceNext.disabled = false;
   show('#screenMicIntro');
 });
+
 btnFaceNext.addEventListener('click', ()=>{
   stopFace();
   show('#screenMicIntro');
 });
 
+// --> CAMBIO: Apunta a archivos .gif en lugar de .png
 function pickMascot(exp){
-  // usa tus propias imágenes si las tienes en /images; fallback a emojis como data URI
   const map = {
-    happy: 'images/mascots/happy.png',
-    neutral: 'images/mascots/neutral.png',
-    angry: 'images/mascots/angry.png',
-    sad: 'images/mascots/sad.png',
-    surprised: 'images/mascots/surprised.png',
-    fearful: 'images/mascots/fear.png',
-    disgusted: 'images/mascots/disgust.png'
+    happy: 'images/mascots/happy.gif',
+    neutral: 'images/mascots/neutral.gif',
+    angry: 'images/mascots/angry.gif',
+    sad: 'images/mascots/sad.gif',
+    surprised: 'images/mascots/surprised.gif',
+    fearful: 'images/mascots/fear.gif',
+    disgusted: 'images/mascots/disgust.gif'
   };
-  return map[exp] || 'images/mascots/neutral.png';
+  return map[exp] || 'images/mascots/neutral.gif';
 }
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
@@ -268,19 +253,13 @@ function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
   const w = gaugeCanvas.width, h = gaugeCanvas.height;
   ctx.clearRect(0,0,w,h);
-
-  const min = 30, max = 90; // rango visible
+  const min = 30, max = 90;
   const pct = Math.max(0, Math.min(1, (val - min)/(max-min)));
-
-  // arco base
   ctx.lineWidth = 18;
   ctx.strokeStyle = 'rgba(255,255,255,.15)';
   ctx.beginPath();
   ctx.arc(w/2, h/2, w/2-22, Math.PI*0.75, Math.PI*2.25);
   ctx.stroke();
-
-  // arco valor
-  ctx.strokeStyle = `linear-gradient(90deg, ${getColor(val)}, ${getColor(val)})`; // compat genérica
   ctx.strokeStyle = getColor(val);
   ctx.beginPath();
   ctx.arc(w/2, h/2, w/2-22, Math.PI*0.75, Math.PI*0.75 + pct*Math.PI*1.5);
@@ -322,32 +301,24 @@ async function runMeasure(){
   running = true;
   const duration = 5_000;
   const start = performance.now();
-
   function tick(){
     if(!running) return;
-
     const now = performance.now();
     const left = Math.max(0, duration - (now - start));
     countdown.textContent = (left/1000).toFixed(1) + ' s';
-
-    // tomar frame audio
     const buf = new Float32Array(analyser.fftSize);
     analyser.getFloatTimeDomainData(buf);
     let sum = 0;
     for(let i=0;i<buf.length;i++) sum += buf[i]*buf[i];
     let rms = Math.sqrt(sum/buf.length) || 0.0000001;
-
-    // convertir a dB(A) aproximado + calibración
     const cal = parseInt(calib.value||'0',10);
     const dB = 20*Math.log10(rms) + 90 + cal;
     const prev = samples.length ? samples[samples.length-1] : dB;
     const smoothed = prev*(smooth) + dB*(1-smooth);
     samples.push(smoothed);
-
     dbValue.textContent = Math.round(smoothed);
     dbLabel.textContent = labelFor(smoothed);
     drawGauge(smoothed);
-
     if(left <= 0){
       running = false;
       stopMic();
@@ -381,6 +352,29 @@ btnMeasureToResults.addEventListener('click', ()=>{
 
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
 const KEY_NOISE_HISTORY = 'sw_noise_history';
+const refData = [
+    { 
+      range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png',
+      description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental. Es similar a una biblioteca silenciosa.',
+      recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.', 'Disfruta del silencio para reducir la carga cognitiva.']
+    },
+    { 
+      range: '45–55 dB', title: 'Ambiente Óptimo', img: 'images/ind-conversacion.png',
+      description: 'Considerado el nivel ideal para un trabajo de oficina colaborativo. Permite conversaciones suaves sin ser disruptivo, fomentando la creatividad y la comunicación.',
+      recommendations: ['Es un buen momento para una lluvia de ideas con tu equipo.', 'Si necesitas concentrarte, un poco de música instrumental puede aislarte positivamente.', 'Mantén tu voz a un nivel conversacional para no molestar a otros.']
+    },
+    { 
+      range: '55-70 dB', title: 'Oficina Activa / Ruidosa', img: 'images/ind-saludable.png',
+      description: 'El ruido de una oficina activa puede empezar a afectar la concentración y aumentar el estrés a largo plazo. Es el sonido de conversaciones fuertes, teléfonos y movimiento constante.',
+      recommendations: ['Considera usar audífonos con cancelación de ruido por bloques de 45 minutos.', 'Busca una sala de reuniones vacía o una zona tranquila para tareas que requieran foco.', 'Habla con tu equipo sobre establecer "horas de silencio" para la concentración profunda.']
+    },
+    { 
+      range: '≥70 dB', title: 'Ruido Elevado', img: 'images/ind-ruido.png',
+      description: 'Este nivel es perjudicial para la productividad y el bienestar. Se compara con el ruido de una aspiradora o tráfico intenso y puede causar fatiga y estrés significativos.',
+      recommendations: ['Es crucial que te tomes un descanso en un lugar más silencioso.', 'Si es posible, notifica a un supervisor sobre el nivel de ruido constante.', 'Protege tu audición. La exposición prolongada a más de 85 dB puede ser dañina.']
+    }
+];
+
 function loadNoiseHistory(){
   try { return JSON.parse(localStorage.getItem(KEY_NOISE_HISTORY)) || []; }
   catch(e){ return []; }
@@ -394,13 +388,11 @@ function saveNoiseSession(){
 }
 
 let historyChart = null;
-// ** FUNCIÓN CORREGIDA **
 function renderResults(){
   const arr = loadNoiseHistory();
   const last = arr[arr.length-1] || { avg: 0 };
   $('#resultsSummary').textContent = `Promedio de ruido: ${last.avg} dB — ${labelFor(last.avg)}`;
 
-  // Chart
   const ctx = $('#historyChart').getContext('2d');
   if(historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
@@ -415,37 +407,46 @@ function renderResults(){
     }
   });
 
-  // Indicador actual + tabla de referencia
   const current = $('#currentIndicator');
+  const currentDataIndex = refData.findIndex(d => labelFor(last.avg) === d.title || (last.avg < 35 && d.range === '<35 dB') || (last.avg >= 70 && d.range === '≥70 dB'));
   current.innerHTML = `
     <h4>${labelFor(last.avg)}</h4>
     <p><b>${last.avg} dB(A)</b></p>
     <span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>
   `;
+  if (currentDataIndex !== -1) {
+    current.setAttribute('onclick', `showIndicatorDetail(${currentDataIndex})`);
+    current.style.cursor = 'pointer';
+  }
 
-  // 1. Añade una propiedad 'img' a cada objeto
-  const ref = [
-    { range: '<35 dB',   text: 'Silencio profundo – descanso y foco fino', img: 'images/ind-silencio.png' },
-    { range: '45–50 dB', text: 'Conversación suave – óptimo open plan', img: 'images/ind-conversacion.png' },
-    { range: '≈50 dB',   text: 'Zumbido saludable – óptimo fisiológico', img: 'images/ind-saludable.png' },
-    { range: '≥70 dB',   text: 'Tráfico/aspiradora – no apropiado', img: 'images/ind-ruido.png' }
-  ];
-
-  const all = $('#allIndicators');
+  const all = $('#allIndicators'); 
   all.innerHTML = '';
-
-  // 2. Modifica el innerHTML para que incluya la etiqueta <img>
-  ref.forEach(r => {
-      const el = document.createElement('div');
-      el.className = 'indicator-card';
-      // ¡Añadimos la imagen aquí!
-      el.innerHTML = `
-          <img src="${r.img}" alt="${r.text}" />
-          <h4>${r.range}</h4>
-          <p>${r.text}</p>
-      `;
-      all.appendChild(el);
+  refData.forEach((r, i) => {
+    const el = document.createElement('div');
+    el.className = 'indicator-card';
+    el.setAttribute('onclick', `showIndicatorDetail(${i})`);
+    el.innerHTML = `
+        <img src="${r.img}" alt="${r.title}" />
+        <h4>${r.range}</h4>
+        <p>${r.title}</p>
+    `;
+    all.appendChild(el);
   });
+}
+
+function showIndicatorDetail(index) {
+    const data = refData[index];
+    const detailContainer = $('#indicatorDetail');
+    detailContainer.innerHTML = `
+        <h2>${data.title} (${data.range})</h2>
+        <p class="lead">${data.description}</p>
+        <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
+        <h3>Recomendaciones:</h3>
+        <ul>
+            ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+        </ul>
+    `;
+    show('#screenIndicatorDetail');
 }
 
 $('#btnRetry').addEventListener('click', ()=> show('#screenMeasure'));
@@ -467,16 +468,12 @@ const bs = {
   fatiga: $('#bs_fatiga'),
 };
 
-// ** FUNCIÓN CORREGIDA **
 $('#btnBodyScanFinish').addEventListener('click', ()=>{
   const headVal = +bs.head.value, upVal = +bs.upper.value, lowVal = +bs.lower.value;
   const avg = ((headVal + upVal + lowVal) / 3).toFixed(1);
   const total = +bs.total.value, ft = +bs.fatiga.value;
-
-  // síntomas
   const sym = [...$$('.symptomHead:checked'), ...$$('.symptomUpper:checked'), ...$$('.symptomLower:checked')].map(x=>x.value);
   $('#bs_symptoms_display').textContent = sym.length? sym.join(', ') : 'Ninguno';
-
   $('#bs_head_out').textContent = headVal;
   $('#bs_upper_out').textContent = upVal;
   $('#bs_lower_out').textContent = lowVal;
@@ -484,16 +481,13 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
   $('#bs_total_display').textContent = total;
   $('#bs_fatiga_display').textContent = ft;
 
-  // Destruimos el gráfico anterior si existe para evitar conflictos
   if (window.myBsChart) {
       window.myBsChart.destroy();
   }
   const ctx = $('#bsChart').getContext('2d');
-  // Creamos un gradiente para el fondo
   const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-  gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)'); // Color --brand
-  gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');  // Color --brand2
-
+  gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+  gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');
   window.myBsChart = new Chart(ctx, {
       type: 'radar',
       data: {
@@ -502,8 +496,8 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
               label: 'Nivel de Tensión',
               data: [headVal, upVal, lowVal, total, ft],
               fill: true,
-              backgroundColor: gradient, // Usamos el gradiente
-              borderColor: 'rgba(192, 132, 252, 1)', // Un morado más claro
+              backgroundColor: gradient,
+              borderColor: 'rgba(192, 132, 252, 1)',
               pointBackgroundColor: '#fff',
               pointBorderColor: 'rgba(192, 132, 252, 1)',
               pointHoverBackgroundColor: '#fff',
@@ -512,29 +506,19 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
           }]
       },
       options: {
-          plugins: {
-              legend: { display: false }
-          },
+          plugins: { legend: { display: false } },
           scales: {
               r: {
                   min: 0, max: 10,
                   angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
                   grid: { color: 'rgba(255, 255, 255, 0.2)' },
-                  pointLabels: {
-                      font: { size: 13, weight: 'bold' },
-                      color: '#e5e7eb'
-                  },
-                  ticks: {
-                      backdropColor: 'rgba(0,0,0,0.5)',
-                      color: '#fff'
-                  }
+                  pointLabels: { font: { size: 13, weight: 'bold' }, color: '#e5e7eb' },
+                  ticks: { backdropColor: 'rgba(0,0,0,0.5)', color: '#fff' }
               }
           },
           maintainAspectRatio: false
       }
   });
-
-  // guardar para integración
   sessionStorage.setItem('sw_bs', JSON.stringify({ head:headVal, upper:upVal, lower:lowVal, avg:+avg, total, fatiga:ft }));
   show('#screenScanResults');
 });
@@ -544,7 +528,6 @@ $('#btnScanResultsBack').addEventListener('click', ()=> show('#screenBodyScan'))
 function faceScore(face){
   if(!face) return 50;
   const e = face.expression;
-  // escala simple: 100 positivo, 50 neutral/sorpresa, 30-40 negativo
   if(e==='happy') return 92;
   if(e==='neutral' || e==='surprised') return 65;
   if(e==='sad') return 40;
@@ -552,9 +535,8 @@ function faceScore(face){
   return 60;
 }
 function noiseScore(db){
-  // pico saludable ~50 dB; penaliza lejos del óptimo
   const diff = Math.abs(db - 50);
-  return Math.max(0, 100 - diff*2.2); // cada ~1 dB resta ~2.2 puntos
+  return Math.max(0, 100 - diff*2.2);
 }
 
 $('#btnToIntegration').addEventListener('click', ()=>{
@@ -564,27 +546,24 @@ $('#btnToIntegration').addEventListener('click', ()=>{
 
   const fScore = faceScore(lastFace);
   const nScore = last ? noiseScore(last.avg) : 50;
-  const bScore = bsData.avg ? (100 - bsData.avg*9) : 50; // 0–10 → ~0–90 invertido
-
+  const bScore = bsData.avg ? (100 - bsData.avg*9) : 50;
   const score = Math.round(fScore*0.25 + nScore*0.35 + bScore*0.40);
 
-  // etiquetas
   let label = 'Atento/a', reco = 'Buen rumbo: mantén pausas activas y agua cerca.';
   if(score >= 80){ label='Muy bien'; reco='Excelente energía. Prioriza tareas importantes y cuida tu ritmo.'; }
   else if(score >= 60){ label='Bien'; reco='Sigue con respiraciones 4–6 entre tareas y micro-estiramientos.'; }
   else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
   else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
 
-  // pintar
   $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
-  $('#ix_face_score').textContent = fScore;
+  $('#ix_face_score').textContent = fScore.toFixed(0);
   $('#ix_db').textContent = last? last.avg : '—';
   $('#ix_db_class').textContent = last? labelFor(last.avg) : '—';
   $('#ix_bs_avg').textContent = bsData.avg ?? '—';
   $('#ix_bs_total').textContent = bsData.total ?? '—';
   $('#ix_score').textContent = score;
   $('#ix_label').textContent = label;
-  $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.png';
+  $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
   $('#ix_reco').textContent = reco;
 
   show('#screenIntegration');
@@ -592,12 +571,11 @@ $('#btnToIntegration').addEventListener('click', ()=>{
 
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
 $('#btnIntegrationHome').addEventListener('click', ()=>{
-  signOut(); // para volver a flujo inicial limpio
+  signOut();
 });
 
 /* ===================== NAVEGACIÓN BÁSICA INICIAL ===================== */
 window.addEventListener('DOMContentLoaded', ()=>{
-  // si ya hay sesión, salta a sobre la app
   if(getSession()) show('#screenAbout');
 });
 
