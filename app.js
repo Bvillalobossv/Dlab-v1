@@ -152,8 +152,6 @@ const faceEmotion  = $('#faceEmotion');
 const faceConfidence = $('#faceConfidence');
 const faceTip = $('#faceTip');
 const faceMascot = $('#faceMascot');
-
-// --> CAMBIO: La URL de los modelos ahora especifica la misma versión que la librería.
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
 let faceStream = null;
@@ -289,19 +287,44 @@ const rrValue = $('#rrValue');
 const btnVitalsDone = $('#btnVitalsDone');
 
 let lastVitals = null;
-let vitalsStream = null;
 
-btnVitalsStart.addEventListener('click', async () => {
+// --> CAMBIO: Lógica de "polling" para esperar a que la API esté lista.
+btnVitalsStart.addEventListener('click', () => {
+    btnVitalsStart.textContent = 'Cargando API...';
+    btnVitalsStart.disabled = true;
+
+    const maxTries = 50; // Esperar hasta 5 segundos
+    let tries = 0;
+
+    const intervalId = setInterval(() => {
+        // Comprueba si la clase VitalLens ya fue cargada por el script externo
+        if (typeof window.VitalLens === 'function') {
+            clearInterval(intervalId); // Detiene la búsqueda
+            btnVitalsStart.textContent = '🩺 Medir Signos Vitales (20s)';
+            btnVitalsStart.disabled = false;
+            startVitalsMeasurement(); // Inicia la medición
+        } else {
+            tries++;
+            if (tries > maxTries) {
+                clearInterval(intervalId); // Se rinde
+                show('#screenVitals');
+                vitalsStatus.textContent = 'Error: La API de Signos Vitales no pudo cargarse. Recarga la página.';
+                btnVitalsStart.textContent = 'Reintentar';
+                btnVitalsStart.disabled = false;
+            }
+        }
+    }, 100);
+});
+
+async function startVitalsMeasurement() {
     show('#screenVitals');
+    let vitalsStream = null; // Stream local para esta función
     
     try {
-        if (faceStream) {
-            vitalsStream = faceStream; 
-        } else {
-            vitalsStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
-            });
-        }
+        // Siempre pedir un nuevo stream para no interferir con el de face-api
+        vitalsStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
+        });
 
         vitalsVideo.srcObject = vitalsStream;
         await vitalsVideo.play();
@@ -316,10 +339,10 @@ btnVitalsStart.addEventListener('click', async () => {
         const DURATION = 20;
         let countdown = DURATION;
         vitalsCountdown.textContent = `${countdown}s`;
-        const interval = setInterval(() => {
+        const countdownInterval = setInterval(() => {
             countdown--;
             vitalsCountdown.textContent = `${countdown}s`;
-            if (countdown <= 0) clearInterval(interval);
+            if (countdown <= 0) clearInterval(countdownInterval);
         }, 1000);
 
         const results = await vitallens.estimate(vitalsStream, DURATION);
@@ -340,8 +363,14 @@ btnVitalsStart.addEventListener('click', async () => {
         console.error("Error con VitalLens:", error);
         vitalsStatus.textContent = `Error: ${error.message}`;
         btnVitalsDone.disabled = false;
+    } finally {
+        // Nos aseguramos de apagar la cámara usada para los signos vitales al terminar
+        if (vitalsStream) {
+            vitalsStream.getTracks().forEach(track => track.stop());
+        }
     }
-});
+}
+
 
 btnVitalsDone.addEventListener('click', () => {
     show('#screenFace'); 
@@ -690,4 +719,5 @@ $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
 });
+
 
