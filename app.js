@@ -208,9 +208,11 @@ btnFaceSnap.addEventListener('click', async ()=>{
     canvas.height = video.videoHeight || 360;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     const det = await faceapi
       .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
       .withFaceExpressions();
+
     if(!det){
       faceEmotion.textContent = 'No detectado';
       faceConfidence.textContent = '—';
@@ -218,9 +220,21 @@ btnFaceSnap.addEventListener('click', async ()=>{
       btnFaceNext.disabled = true;
       return;
     }
+
     const arr = det.expressions.asSortedArray();
-    const { expression, probability } = arr[0];
+    let { expression, probability } = arr[0];
+
+    // --> CAMBIO: Filtro inteligente para detectar enojo/estrés sutil
+    if (expression === 'neutral' && det.expressions.happy < 0.1) {
+        const negativeScore = det.expressions.angry + det.expressions.disgusted;
+        if (negativeScore > 0.25) { // Si la suma de enojo + molestia es superior al 25%
+            expression = 'angry'; // Se reclasifica como 'enojado' (que en el mapa es 'Tenso')
+            probability = negativeScore; // La nueva confianza es la suma de las probabilidades negativas
+        }
+    }
+
     lastFace = { expression, probability };
+
     const map = emotionCopy[expression] || emotionCopy['neutral'];
     faceEmotion.textContent = map.label + ` (${expression})`;
     faceConfidence.textContent = (probability*100).toFixed(1) + '%';
@@ -266,13 +280,11 @@ const smoothingSel = $('#smoothing');
 const toggleBtn = $('#toggleBtn');
 const btnMeasureToResults = $('#btnMeasureToResults');
 const motivationEl = $('#motivation');
-
 let audioCtx, analyser, micStream;
 let running = false, samples = [];
 let smooth = 0.8;
 let lastNoiseAvg = 0;
 let motivationInterval = null;
-
 const motivationPhrases = [
     "Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨",
     "Toma un pequeño sorbo de agua para mantenerte hidratado.",
@@ -282,13 +294,10 @@ const motivationPhrases = [
     "Piensa en algo que te hizo sonreír hoy.",
     "Rota tus hombros hacia atrás 5 veces para liberar tensión."
 ];
-
 function startMotivationCarousel() {
     let currentIndex = 0;
     motivationEl.textContent = motivationPhrases[currentIndex];
-    
     if (motivationInterval) clearInterval(motivationInterval);
-
     motivationInterval = setInterval(() => {
         currentIndex = (currentIndex + 1) % motivationPhrases.length;
         motivationEl.style.opacity = 0;
@@ -298,14 +307,12 @@ function startMotivationCarousel() {
         }, 500);
     }, 4000);
 }
-
 function stopMotivationCarousel() {
     if (motivationInterval) {
         clearInterval(motivationInterval);
         motivationInterval = null;
     }
 }
-
 function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
   const w = gaugeCanvas.width, h = gaugeCanvas.height;
@@ -336,7 +343,6 @@ function labelFor(dB){
   if(dB < 75) return 'Ruidoso';
   return 'Alto ruido';
 }
-
 async function startMic(){
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
@@ -345,13 +351,11 @@ async function startMic(){
   analyser.fftSize = 2048;
   src.connect(analyser);
 }
-
 function stopMic(){
   if(micStream) micStream.getTracks().forEach(t=>t.stop());
   if(audioCtx) audioCtx.close();
   micStream = null; audioCtx = null;
 }
-
 async function runMeasure(){
   await startMic();
   samples = [];
@@ -379,7 +383,6 @@ async function runMeasure(){
     if(left <= 0){
       running = false;
       stopMic();
-      
       statusEl.textContent = 'Calculando promedio...';
       setTimeout(() => {
         lastNoiseAvg = Math.round(samples.reduce((a, b) => a + b, 0) / Math.max(1, samples.length));
@@ -389,7 +392,6 @@ async function runMeasure(){
         statusEl.textContent = 'Medición completa.';
         btnMeasureToResults.disabled = false;
       }, 500);
-
       countdown.textContent = '0.0 s';
       return;
     }
@@ -411,7 +413,6 @@ btnMeasureToResults.addEventListener('click', ()=>{
   renderResults();
   show('#screenResults');
 });
-
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
 const refData = [
     { range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png', description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental.', recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.'] },
@@ -422,28 +423,21 @@ const refData = [
 let historyChart = null;
 async function renderResults(){
   if (!currentUser) return;
-
-  // --> CAMBIO: Obtiene todas las mediciones de ruido del usuario actual desde Supabase
   const { data, error } = await db.from('measurements')
     .select('created_at, noise_db')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: true });
-
   if (error) {
     console.error('Error al cargar historial:', error);
     return;
   }
-
   const last = { avg: lastNoiseAvg };
   $('#resultsSummary').textContent = `Promedio de tu última medición: ${last.avg} dB — ${labelFor(last.avg)}`;
-  
   const ctx = $('#historyChart').getContext('2d');
   if(historyChart) historyChart.destroy();
-  
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
-      // --> CAMBIO: Usa los datos de la base de datos para las etiquetas y los puntos del gráfico
       labels: data.map(r => new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
       datasets: [{
         label: 'Nivel de Ruido (dB)',
@@ -460,7 +454,6 @@ async function renderResults(){
       scales:{ y:{ suggestedMin:30, suggestedMax:90 } }
     }
   });
-
   const current = $('#currentIndicator');
   current.innerHTML = `<h4>${labelFor(last.avg)}</h4><p><b>${last.avg} dB(A)</b></p><span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>`;
   const currentLabel = labelFor(last.avg);
@@ -469,7 +462,6 @@ async function renderResults(){
     current.setAttribute('onclick', `showIndicatorDetail(${currentDataIndex})`);
     current.style.cursor = 'pointer';
   }
-
   const all = $('#allIndicators'); 
   all.innerHTML = '';
   refData.forEach((r, i) => {
@@ -583,7 +575,6 @@ $('#btnToIntegration').addEventListener('click', async () => {
   }
   show('#screenIntegration');
 });
-// --> CAMBIO: El botón "Ir al inicio" ahora te lleva a la pantalla de la cámara
 $('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace'));
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
 /* ===================== MANEJO DE SESIÓN ===================== */
