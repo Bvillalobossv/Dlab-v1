@@ -179,9 +179,6 @@ function mapMorphcastEmotion(dominantEmotion) {
 async function initializeMorphcast() {
     if (morphcastInitialized) return;
     try {
-        if (typeof downloadAISDK !== 'function') {
-            throw new Error("El SDK de MorphCast no se ha cargado todavía. Intenta de nuevo.");
-        }
         const sdk = await downloadAISDK();
         await sdk.init();
         morphcastInitialized = true;
@@ -235,19 +232,31 @@ async function initializeMorphcast() {
     }
 }
 
+// --> CAMBIO: Se implementa la lógica de "polling" para esperar al SDK.
 btnFaceStart.addEventListener('click', () => {
     btnFaceStart.textContent = 'Iniciando cámara...';
     btnFaceStart.disabled = true;
-    
-    // --> CAMBIO: La lógica de inicialización ahora se llama aquí.
-    // Espera a que la ventana esté completamente cargada.
-    if (document.readyState === 'complete') {
-        initializeMorphcast();
-    } else {
-        // Si no ha cargado, espera al evento 'load'.
-        window.addEventListener('load', initializeMorphcast);
-    }
+
+    const maxTries = 50; // Intentar por 5 segundos (50 * 100ms)
+    let tries = 0;
+
+    const interval = setInterval(() => {
+        // Comprueba si la función downloadAISDK ya existe en el objeto window
+        if (typeof window.downloadAISDK === 'function') {
+            clearInterval(interval); // Detiene el "buscador"
+            initializeMorphcast();   // Ejecuta la inicialización
+        } else {
+            tries++;
+            if (tries > maxTries) {
+                clearInterval(interval); // Se rinde después de 5 segundos
+                $('#faceHelp').textContent = 'Error: El SDK de MorphCast tardó demasiado en cargar. Recarga la página e intenta de nuevo.';
+                btnFaceStart.disabled = false;
+                btnFaceStart.textContent = 'Reintentar activación';
+            }
+        }
+    }, 100); // Revisa cada 100 milisegundos
 });
+
 
 btnFaceSkip.addEventListener('click', ()=>{
   lastFace = { expression:'neutral', probability:0.5 };
@@ -600,4 +609,3 @@ $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
 });
-
