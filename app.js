@@ -51,7 +51,6 @@ async function signOut(){
   currentUser = null;
   show('#screenAuth');
   sessionStorage.clear();
-  localStorage.clear();
 }
 
 (() => {
@@ -62,25 +61,33 @@ async function signOut(){
   const goAbout = $('#goAbout');
   const btnAboutBack = $('#btnAboutBack');
   const btnAboutStart = $('#btnAboutStart');
-  
+  const authMessage = $('#auth-message');
+
   tabLogin.addEventListener('click', ()=>{
     tabLogin.classList.add('active'); tabSignup.classList.remove('active');
     formLogin.style.display='block'; formSignup.style.display='none';
+    authMessage.textContent = 'Crea una cuenta o inicia sesión para continuar.';
   });
   tabSignup.addEventListener('click', ()=>{
     tabSignup.classList.add('active'); tabLogin.classList.remove('active');
     formLogin.style.display='none'; formSignup.style.display='block';
+    authMessage.textContent = 'Crea una cuenta o inicia sesión para continuar.';
   });
 
   formSignup.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = $('#su_email').value.trim();
+    const username = $('#su_user').value.trim();
     const password = $('#su_pass').value;
     const ok = $('#su_terms').checked;
-    if(!email || !password || !ok) return alert('Completa todos los campos y acepta los términos.');
+    if(!username || !password || !ok) {
+        authMessage.textContent = 'Completa todos los campos y acepta los términos.';
+        return;
+    }
+    
+    authMessage.textContent = 'Creando cuenta...';
 
-    // Extraemos un nombre de usuario del email (la parte antes del @)
-    const username = email.split('@')[0];
+    // Se crea un email "falso" a partir del nombre de usuario para Supabase
+    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}${Date.now()}@sensewell.app`;
 
     const { data, error } = await db.auth.signUp({
       email: email,
@@ -89,35 +96,62 @@ async function signOut(){
     });
 
     if (error) {
-      return alert('Error al crear cuenta: ' + error.message);
+      authMessage.textContent = `Error: ${error.message}`;
+      return;
     }
     
-    const { error: profileError } = await db.from('profiles').insert({
-      id: data.user.id,
-      username: username
-    });
+    if (data.user) {
+        const { error: profileError } = await db.from('profiles').insert({
+            id: data.user.id,
+            username: username
+        });
 
-    if (profileError) {
-      return alert('Error al crear el perfil: ' + profileError.message);
+        if (profileError) {
+            authMessage.textContent = `Error al crear el perfil: ${profileError.message}`;
+            return;
+        }
+        
+        authMessage.textContent = '¡Cuenta creada con éxito! Por favor, inicia sesión.';
+        tabLogin.click();
     }
-    
-    alert('¡Cuenta creada con éxito! Se ha enviado un correo de confirmación (puedes desactivar esto en Supabase). Ahora puedes iniciar sesión.');
-    tabLogin.click();
   });
 
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = $('#login_email').value.trim();
+    authMessage.textContent = 'Iniciando sesión...';
+    const username = $('#login_user').value.trim();
     const password = $('#login_pass').value;
 
-    const { data, error } = await db.auth.signInWithPassword({
+    // Buscamos en nuestra tabla `profiles` el usuario para obtener su ID de Supabase
+    const { data: profile, error: profileError } = await db.from('profiles')
+      .select('id')
+      .eq('username', username)
+      .single();
+
+    if (profileError || !profile) {
+      authMessage.textContent = 'Usuario no encontrado.';
+      return;
+    }
+    
+    // Ahora que tenemos el ID, podemos obtener el email asociado a ese usuario
+    const { data: user, error: userError } = await db.auth.admin.getUserById(profile.id);
+
+    if (userError) {
+        authMessage.textContent = 'Error al verificar usuario.';
+        return;
+    }
+    
+    const email = user.email;
+
+    const { error } = await db.auth.signInWithPassword({
       email: email,
       password: password,
     });
 
     if (error) {
-      return alert('Credenciales inválidas: ' + error.message);
+      authMessage.textContent = 'Contraseña inválida.';
     }
+    // Si el login es exitoso, onAuthStateChange se encargará del resto
   });
 
   btnAboutBack.addEventListener('click', signOut);
@@ -126,8 +160,7 @@ async function signOut(){
 })();
 
 /* ===================== SELFIE EMOCIONAL ===================== */
-// (El resto del código no ha cambiado)
-// ...
+// (El resto del código no tiene cambios)
 const video = $('#faceVideo');
 const canvas = $('#faceCanvas');
 const btnFaceStart = $('#btnFaceStart');
@@ -139,11 +172,9 @@ const faceConfidence = $('#faceConfidence');
 const faceTip = $('#faceTip');
 const faceMascot = $('#faceMascot');
 const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-
 let faceStream = null;
 let modelsLoaded = false;
 let lastFace = null;
-
 const emotionCopy = {
   happy:  { label:'Feliz',    tip:'¡Arranque brillante! Mantén mini-pausas cada 50 min para sostener esa energía.' },
   neutral:{ label:'Neutral',  tip:'Buen punto de partida. Un vaso de agua y una breve caminata elevarán tu foco.' },
@@ -153,26 +184,22 @@ const emotionCopy = {
   fearful:{ label:'Aprensivo', tip:'Paso a paso. Un “to-do” pequeño y alcanzable te dará tracción.' },
   disgusted:{ label:'Molesto', tip:'Date permiso para reencuadrar. 60s de respiración nasal pueden ayudar.' }
 };
-
 async function ensureModels(){
   if(modelsLoaded) return;
   await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
   await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
   modelsLoaded = true;
 }
-
 function stopFace(){
   if(faceStream){
     faceStream.getTracks().forEach(t => t.stop());
     faceStream = null;
   }
 }
-
 btnFaceStart.addEventListener('click', async () => {
   const originalText = btnFaceStart.textContent;
   btnFaceStart.textContent = 'Cargando IA...';
   btnFaceStart.disabled = true;
-
   try {
     await ensureModels();
     faceStream = await navigator.mediaDevices.getUserMedia({
@@ -193,7 +220,6 @@ btnFaceStart.addEventListener('click', async () => {
     btnFaceStart.disabled = false;
   }
 });
-
 btnFaceSnap.addEventListener('click', async ()=>{
   try{
     await ensureModels();
@@ -201,11 +227,9 @@ btnFaceSnap.addEventListener('click', async ()=>{
     canvas.height = video.videoHeight || 360;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
     const det = await faceapi
       .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
       .withFaceExpressions();
-
     if(!det){
       faceEmotion.textContent = 'No detectado';
       faceConfidence.textContent = '—';
@@ -213,11 +237,9 @@ btnFaceSnap.addEventListener('click', async ()=>{
       btnFaceNext.disabled = true;
       return;
     }
-
     const arr = det.expressions.asSortedArray();
     const { expression, probability } = arr[0];
     lastFace = { expression, probability };
-
     const map = emotionCopy[expression] || emotionCopy['neutral'];
     faceEmotion.textContent = map.label + ` (${expression})`;
     faceConfidence.textContent = (probability*100).toFixed(1) + '%';
@@ -231,17 +253,14 @@ btnFaceSnap.addEventListener('click', async ()=>{
     btnFaceNext.disabled = true;
   }
 });
-
 btnFaceSkip.addEventListener('click', ()=>{
   lastFace = { expression:'neutral', probability:0.5 };
   show('#screenMicIntro');
 });
-
 btnFaceNext.addEventListener('click', ()=>{
   stopFace();
   show('#screenMicIntro');
 });
-
 function pickMascot(exp){
   const map = {
     happy: 'images/mascots/happy.gif',
@@ -254,7 +273,6 @@ function pickMascot(exp){
   };
   return map[exp] || 'images/mascots/neutral.gif';
 }
-
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
 const gaugeCanvas = $('#gaugeCanvas');
 const dbValue = $('#dbValue');
@@ -266,12 +284,10 @@ const calVal = $('#calVal');
 const smoothingSel = $('#smoothing');
 const toggleBtn = $('#toggleBtn');
 const btnMeasureToResults = $('#btnMeasureToResults');
-
 let audioCtx, analyser, micStream;
 let running = false, samples = [];
 let smooth = 0.8;
 let lastNoiseAvg = 0;
-
 function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
   const w = gaugeCanvas.width, h = gaugeCanvas.height;
@@ -302,7 +318,6 @@ function labelFor(dB){
   if(dB < 75) return 'Ruidoso';
   return 'Alto ruido';
 }
-
 async function startMic(){
   audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   micStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
@@ -311,13 +326,11 @@ async function startMic(){
   analyser.fftSize = 2048;
   src.connect(analyser);
 }
-
 function stopMic(){
   if(micStream) micStream.getTracks().forEach(t=>t.stop());
   if(audioCtx) audioCtx.close();
   micStream = null; audioCtx = null;
 }
-
 async function runMeasure(){
   await startMic();
   samples = [];
@@ -354,25 +367,21 @@ async function runMeasure(){
   }
   requestAnimationFrame(tick);
 }
-
 calib.addEventListener('input', ()=> calVal.textContent = calib.value);
 smoothingSel.addEventListener('change', ()=>{
   smooth = parseFloat(smoothingSel.value);
 });
-
 toggleBtn.addEventListener('click', async ()=>{
   if(running) return;
   statusEl.textContent = 'Midiendo… mantén el móvil quieto.';
   btnMeasureToResults.disabled = true;
   await runMeasure();
 });
-
 btnMeasureToResults.addEventListener('click', ()=>{
   lastNoiseAvg = Math.round(samples.reduce((a,b)=>a+b,0)/Math.max(1,samples.length));
   renderResults();
   show('#screenResults');
 });
-
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
 const refData = [
     { range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png', description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental.', recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.'] },
@@ -380,28 +389,21 @@ const refData = [
     { range: '55-70 dB', title: 'Oficina activa', img: 'images/ind-saludable.png', description: 'El ruido de una oficina activa puede empezar a afectar la concentración y aumentar el estrés a largo plazo.', recommendations: ['Considera usar audífonos con cancelación de ruido por bloques de 45 minutos.', 'Busca una zona tranquila para tareas que requieran foco.'] },
     { range: '≥70 dB', title: 'Alto ruido', img: 'images/ind-ruido.png', description: 'Este nivel es perjudicial para la productividad y el bienestar. Se compara con el ruido de una aspiradora o tráfico intenso.', recommendations: ['Es crucial que te tomes un descanso en un lugar más silencioso.', 'Notifica a un supervisor sobre el nivel de ruido constante si es posible.'] }
 ];
-
 let historyChart = null;
-
 async function renderResults(){
   if (!currentUser) return;
-
   const { data, error } = await db.from('measurements')
     .select('created_at, noise_db')
     .eq('user_id', currentUser.id)
     .order('created_at', { ascending: true });
-  
   if (error) {
     console.error('Error al cargar historial:', error);
     return;
   }
-
   const last = { avg: lastNoiseAvg };
   $('#resultsSummary').textContent = `Promedio de tu última medición: ${last.avg} dB — ${labelFor(last.avg)}`;
-
   const ctx = $('#historyChart').getContext('2d');
   if(historyChart) historyChart.destroy();
-  
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -413,20 +415,14 @@ async function renderResults(){
       scales:{ y:{ suggestedMin:30, suggestedMax:90 } }
     }
   });
-
   const current = $('#currentIndicator');
-  current.innerHTML = `
-    <h4>${labelFor(last.avg)}</h4>
-    <p><b>${last.avg} dB(A)</b></p>
-    <span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>
-  `;
+  current.innerHTML = `<h4>${labelFor(last.avg)}</h4><p><b>${last.avg} dB(A)</b></p><span class="tag" style="border-color:${getColor(last.avg)}; color:${getColor(last.avg)}">Ambiente</span>`;
   const currentLabel = labelFor(last.avg);
   const currentDataIndex = refData.findIndex(d => d.title.toLowerCase() === currentLabel.toLowerCase());
   if (currentDataIndex !== -1) {
     current.setAttribute('onclick', `showIndicatorDetail(${currentDataIndex})`);
     current.style.cursor = 'pointer';
   }
-
   const all = $('#allIndicators'); 
   all.innerHTML = '';
   refData.forEach((r, i) => {
@@ -437,25 +433,21 @@ async function renderResults(){
     all.appendChild(el);
   });
 }
-
 function showIndicatorDetail(index) {
     const data = refData[index];
     const detailContainer = $('#indicatorDetail');
     detailContainer.innerHTML = `<h2>${data.title} (${data.range})</h2><p class="lead">${data.description}</p><hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;"><h3>Recomendaciones:</h3><ul>${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
     show('#screenIndicatorDetail');
 }
-
 $('#btnRetry').addEventListener('click', ()=> show('#screenMeasure'));
 $('#btnGoToBodyScan').addEventListener('click', ()=> show('#screenScanIntro'));
 $('#btnBackResults').addEventListener('click', ()=> show('#screenResults'));
-
 /* ===================== ENCUESTA + BODY SCAN ===================== */
 $('#btnScanStart').addEventListener('click', ()=> show('#screenSurvey'));
 $('#btnScanIntroBack').addEventListener('click', ()=> show('#screenResults'));
 $('#btnSurveyBack').addEventListener('click', ()=> show('#screenResults'));
 $('#btnToBodyScan').addEventListener('click', ()=> show('#screenBodyScan'));
 $('#btnBodyScanBack').addEventListener('click', ()=> show('#screenSurvey'));
-
 const bs = {
   head: $('#bs_head_tension'),
   upper: $('#bs_upper_tension'),
@@ -463,7 +455,6 @@ const bs = {
   total: $('#bs_total'),
   fatiga: $('#bs_fatiga'),
 };
-
 $('#btnBodyScanFinish').addEventListener('click', ()=>{
   const headVal = +bs.head.value, upVal = +bs.upper.value, lowVal = +bs.lower.value;
   const avg = ((headVal + upVal + lowVal) / 3).toFixed(1);
@@ -476,7 +467,6 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
   $('#bs_avg').textContent = avg;
   $('#bs_total_display').textContent = total;
   $('#bs_fatiga_display').textContent = ft;
-
   if (window.myBsChart) window.myBsChart.destroy();
   const ctx = $('#bsChart').getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 220);
@@ -498,7 +488,6 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
   show('#screenScanResults');
 });
 $('#btnScanResultsBack').addEventListener('click', ()=> show('#screenBodyScan'));
-
 /* ===================== INTEGRACIÓN FINAL ===================== */
 function faceScore(face){
   if(!face) return 50;
@@ -513,21 +502,17 @@ function noiseScore(db){
   const diff = Math.abs(db - 50);
   return Math.max(0, 100 - diff*2.2);
 }
-
 $('#btnToIntegration').addEventListener('click', async () => {
   const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
-
   const fScore = faceScore(lastFace);
   const nScore = noiseScore(lastNoiseAvg);
   const bScore = bsData.avg ? (100 - bsData.avg*9) : 50;
   const score = Math.round(fScore*0.25 + nScore*0.35 + bScore*0.40);
-
   let label = 'Atento/a', reco = 'Buen rumbo: mantén pausas activas y agua cerca.';
   if(score >= 80){ label='Muy bien'; reco='Excelente energía. Prioriza tareas importantes y cuida tu ritmo.'; }
   else if(score >= 60){ label='Bien'; reco='Sigue con respiraciones 4–6 entre tareas y micro-estiramientos.'; }
   else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
   else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
-
   $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
   $('#ix_face_score').textContent = fScore.toFixed(0);
   $('#ix_db').textContent = lastNoiseAvg;
@@ -538,7 +523,6 @@ $('#btnToIntegration').addEventListener('click', async () => {
   $('#ix_label').textContent = label;
   $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
   $('#ix_reco').textContent = reco;
-
   if (currentUser) {
     const { error } = await db.from('measurements').insert({
       user_id: currentUser.id,
@@ -550,25 +534,22 @@ $('#btnToIntegration').addEventListener('click', async () => {
     if (error) console.error('Error al guardar la medición:', error);
     else console.log('¡Medición guardada en Supabase!');
   }
-
   show('#screenIntegration');
 });
-
 $('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace'));
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
-
 /* ===================== MANEJO DE SESIÓN ===================== */
 db.auth.onAuthStateChange((event, session) => {
-  if (session) {
+  if (session && session.user) {
     currentUser = session.user;
-    console.log('Usuario conectado:', currentUser.user_metadata.username);
+    const username = currentUser.user_metadata.username || currentUser.email.split('@')[0];
+    $('#welcome-user').textContent = `¡Hola, ${username}!`;
     show('#screenAbout');
   } else {
     currentUser = null;
     show('#screenIntro');
   }
 });
-
 /* ===================== RUTAS DE FLUJO ===================== */
 $('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
 $('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
