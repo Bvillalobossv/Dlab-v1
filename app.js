@@ -7,7 +7,16 @@ function show(id) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+/* ===================== CONEXIÓN A SUAPBASE ===================== */
+const { createClient } = supabase;
+const SUPABASE_URL = 'https://kdxoxusimqdznduwyvhl.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc';
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null; // Variable para guardar el usuario actual
+
 /* ===================== ONBOARDING ===================== */
+// (Sin cambios en esta sección)
 (() => {
   const slides = $('#introSlides');
   const dots = $('#introDots');
@@ -37,20 +46,14 @@ function show(id) {
   renderDots(); go(0);
 })();
 
-/* ===================== AUTH (LOCAL) ===================== */
-const KEY_USERS = 'sw_users';
-const KEY_SESSION = 'sw_session';
-
-function loadUsers(){
-  try{ return JSON.parse(localStorage.getItem(KEY_USERS)) || {}; }
-  catch(e){ return {}; }
-}
-function saveUsers(obj){ localStorage.setItem(KEY_USERS, JSON.stringify(obj)); }
-function setSession(user){ sessionStorage.setItem(KEY_SESSION, user); }
-function getSession(){ return sessionStorage.getItem(KEY_SESSION); }
-function signOut(){
-  sessionStorage.removeItem(KEY_SESSION);
+/* ===================== AUTH (CON SUPABASE) ===================== */
+async function signOut(){
+  await db.auth.signOut();
+  currentUser = null;
   show('#screenAuth');
+  // Limpia cualquier dato de sesión anterior
+  sessionStorage.clear();
+  localStorage.clear();
 }
 
 (() => {
@@ -61,6 +64,7 @@ function signOut(){
   const goAbout = $('#goAbout');
   const btnAboutBack = $('#btnAboutBack');
   const btnAboutStart = $('#btnAboutStart');
+  const authMessage = $('#auth-message');
 
   tabLogin.addEventListener('click', ()=>{
     tabLogin.classList.add('active'); tabSignup.classList.remove('active');
@@ -71,39 +75,72 @@ function signOut(){
     formLogin.style.display='none'; formSignup.style.display='block';
   });
 
-  formSignup.addEventListener('submit', (e)=>{
+  formSignup.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = $('#su_user').value.trim();
-    const p = $('#su_pass').value;
+    const username = $('#su_user').value.trim();
+    const password = $('#su_pass').value;
     const ok = $('#su_terms').checked;
-    if(!u || !p || !ok) return alert('Completa todos los campos y acepta los términos.');
-    const users = loadUsers();
-    if(users[u]) return alert('El usuario ya existe.');
-    users[u] = p;
-    saveUsers(users);
-    setSession(u);
-    show('#screenAbout');
+    if(!username || !password || !ok) return alert('Completa todos los campos y acepta los términos.');
+
+    // Supabase requiere un email, creamos uno falso para el usuario
+    const email = `${username.toLowerCase()}@sensewell.app`;
+
+    const { data, error } = await db.auth.signUp({
+      email: email,
+      password: password,
+      options: {
+        // Guardamos el nombre de usuario en los metadatos para usarlo después
+        data: { username: username }
+      }
+    });
+
+    if (error) {
+      return alert('Error al crear cuenta: ' + error.message);
+    }
+    
+    // Si el registro es exitoso, guardamos el perfil en nuestra tabla `profiles`
+    const { error: profileError } = await db.from('profiles').insert({
+      id: data.user.id,
+      username: username
+    });
+
+    if (profileError) {
+      return alert('Error al crear el perfil: ' + profileError.message);
+    }
+    
+    alert('¡Cuenta creada con éxito! Ahora puedes iniciar sesión.');
+    // Cambiamos a la pestaña de login
+    tabLogin.click();
   });
 
-  formLogin.addEventListener('submit', (e)=>{
+  formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = $('#login_user').value.trim();
-    const p = $('#login_pass').value;
-    const users = loadUsers();
-    if(users[u] && users[u]===p){
-      setSession(u);
-      show('#screenAbout');
-    } else {
-      alert('Credenciales inválidas.');
+    const username = $('#login_user').value.trim();
+    const password = $('#login_pass').value;
+    const email = `${username.toLowerCase()}@sensewell.app`;
+
+    const { data, error } = await db.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      return alert('Credenciales inválidas: ' + error.message);
     }
+    
+    // El onAuthStateChange se encargará de redirigir
   });
+
+  // El botón de volver ahora es para cerrar sesión
+  btnAboutBack.addEventListener('click', signOut);
 
   goAbout.addEventListener('click', ()=>show('#screenAbout'));
-  btnAboutBack.addEventListener('click', ()=>show('#screenAuth'));
   btnAboutStart.addEventListener('click', ()=>show('#screenFace'));
 })();
 
+
 /* ===================== SELFIE EMOCIONAL ===================== */
+// (Sin cambios en esta sección)
 const video = $('#faceVideo');
 const canvas = $('#faceCanvas');
 const btnFaceStart = $('#btnFaceStart');
@@ -132,7 +169,6 @@ const emotionCopy = {
 
 async function ensureModels(){
   if(modelsLoaded) return;
-  // --> CAMBIO: Se carga el modelo SsdMobilenetv1 en lugar de TinyFaceDetector
   await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
   await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
   modelsLoaded = true;
@@ -179,7 +215,6 @@ btnFaceSnap.addEventListener('click', async ()=>{
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-    // --> CAMBIO: Se utiliza el nuevo detector SsdMobilenetv1Options
     const det = await faceapi
       .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
       .withFaceExpressions();
@@ -212,7 +247,6 @@ btnFaceSnap.addEventListener('click', async ()=>{
 
 btnFaceSkip.addEventListener('click', ()=>{
   lastFace = { expression:'neutral', probability:0.5 };
-  btnFaceNext.disabled = false;
   show('#screenMicIntro');
 });
 
@@ -235,6 +269,7 @@ function pickMascot(exp){
 }
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
+// (Sin cambios en esta sección)
 const gaugeCanvas = $('#gaugeCanvas');
 const dbValue = $('#dbValue');
 const dbLabel = $('#dbLabel');
@@ -249,6 +284,7 @@ const btnMeasureToResults = $('#btnMeasureToResults');
 let audioCtx, analyser, micStream;
 let running = false, samples = [];
 let smooth = 0.8;
+let lastNoiseAvg = 0; // Guardamos aquí el último promedio de ruido
 
 function drawGauge(val){
   const ctx = gaugeCanvas.getContext('2d');
@@ -346,65 +382,47 @@ toggleBtn.addEventListener('click', async ()=>{
 });
 
 btnMeasureToResults.addEventListener('click', ()=>{
-  saveNoiseSession();
+  // Calculamos el promedio y lo guardamos temporalmente
+  lastNoiseAvg = Math.round(samples.reduce((a,b)=>a+b,0)/Math.max(1,samples.length));
   renderResults();
   show('#screenResults');
 });
 
 /* ===================== RESULTADOS Y HISTÓRICO ===================== */
-const KEY_NOISE_HISTORY = 'sw_noise_history';
 const refData = [
-    { 
-      range: '<35 dB', title: 'Silencio Profundo',
-      img: 'images/ind-silencio.png',
-      description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental. Es similar a una biblioteca silenciosa.',
-      recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.', 'Disfruta del silencio para reducir la carga cognitiva.']
-    },
-    { 
-      range: '45–55 dB', title: 'Conversación suave',
-      img: 'images/ind-conversacion.png',
-      description: 'Considerado el nivel ideal para un trabajo de oficina colaborativo. Permite conversaciones suaves sin ser disruptivo, fomentando la creatividad y la comunicación.',
-      recommendations: ['Es un buen momento para una lluvia de ideas con tu equipo.', 'Si necesitas concentrarte, un poco de música instrumental puede aislarte positivamente.', 'Mantén tu voz a un nivel conversacional para no molestar a otros.']
-    },
-    { 
-      range: '55-70 dB', title: 'Oficina activa',
-      img: 'images/ind-saludable.png',
-      description: 'El ruido de una oficina activa puede empezar a afectar la concentración y aumentar el estrés a largo plazo. Es el sonido de conversaciones fuertes, teléfonos y movimiento constante.',
-      recommendations: ['Considera usar audífonos con cancelación de ruido por bloques de 45 minutos.', 'Busca una sala de reuniones vacía o una zona tranquila para tareas que requieran foco.', 'Habla con tu equipo sobre establecer "horas de silencio" para la concentración profunda.']
-    },
-    { 
-      range: '≥70 dB', title: 'Alto ruido',
-      img: 'images/ind-ruido.png',
-      description: 'Este nivel es perjudicial para la productividad y el bienestar. Se compara con el ruido de una aspiradora o tráfico intenso y puede causar fatiga y estrés significativos.',
-      recommendations: ['Es crucial que te tomes un descanso en un lugar más silencioso.', 'Si es posible, notifica a un supervisor sobre el nivel de ruido constante.', 'Protege tu audición. La exposición prolongada a más de 85 dB puede ser dañina.']
-    }
+    { range: '<35 dB', title: 'Silencio Profundo', img: 'images/ind-silencio.png', description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental.', recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.'] },
+    { range: '45–55 dB', title: 'Conversación suave', img: 'images/ind-conversacion.png', description: 'Considerado el nivel ideal para un trabajo de oficina colaborativo. Permite conversaciones suaves sin ser disruptivo.', recommendations: ['Es un buen momento para una lluvia de ideas con tu equipo.', 'Si necesitas concentrarte, un poco de música instrumental puede aislarte positivamente.'] },
+    { range: '55-70 dB', title: 'Oficina activa', img: 'images/ind-saludable.png', description: 'El ruido de una oficina activa puede empezar a afectar la concentración y aumentar el estrés a largo plazo.', recommendations: ['Considera usar audífonos con cancelación de ruido por bloques de 45 minutos.', 'Busca una zona tranquila para tareas que requieran foco.'] },
+    { range: '≥70 dB', title: 'Alto ruido', img: 'images/ind-ruido.png', description: 'Este nivel es perjudicial para la productividad y el bienestar. Se compara con el ruido de una aspiradora o tráfico intenso.', recommendations: ['Es crucial que te tomes un descanso en un lugar más silencioso.', 'Notifica a un supervisor sobre el nivel de ruido constante si es posible.'] }
 ];
 
-function loadNoiseHistory(){
-  try { return JSON.parse(localStorage.getItem(KEY_NOISE_HISTORY)) || []; }
-  catch(e){ return []; }
-}
-function saveNoiseSession(){
-  const avg = Math.round(samples.reduce((a,b)=>a+b,0)/Math.max(1,samples.length));
-  const rec = { ts: Date.now(), avg };
-  const arr = loadNoiseHistory();
-  arr.push(rec);
-  localStorage.setItem(KEY_NOISE_HISTORY, JSON.stringify(arr));
-}
-
 let historyChart = null;
-function renderResults(){
-  const arr = loadNoiseHistory();
-  const last = arr[arr.length-1] || { avg: 0 };
-  $('#resultsSummary').textContent = `Promedio de ruido: ${last.avg} dB — ${labelFor(last.avg)}`;
+
+async function renderResults(){
+  if (!currentUser) return; // No hacer nada si no hay usuario
+
+  // Obtenemos el historial de la base de datos
+  const { data, error } = await db.from('measurements')
+    .select('created_at, noise_db')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: true });
+  
+  if (error) {
+    console.error('Error al cargar historial:', error);
+    return;
+  }
+
+  const last = { avg: lastNoiseAvg };
+  $('#resultsSummary').textContent = `Promedio de tu última medición: ${last.avg} dB — ${labelFor(last.avg)}`;
 
   const ctx = $('#historyChart').getContext('2d');
   if(historyChart) historyChart.destroy();
+  
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: arr.map(r => new Date(r.ts).toLocaleTimeString()),
-      datasets: [{ data: arr.map(r=>r.avg), tension:.25, borderColor: '#7c3aed', borderWidth: 2 }]
+      labels: data.map(r => new Date(r.created_at).toLocaleTimeString()),
+      datasets: [{ data: data.map(r => r.noise_db), tension:.25, borderColor: '#7c3aed', borderWidth: 2 }]
     },
     options: {
       plugins:{ legend:{display:false} },
@@ -431,11 +449,7 @@ function renderResults(){
     const el = document.createElement('div');
     el.className = 'indicator-card';
     el.setAttribute('onclick', `showIndicatorDetail(${i})`);
-    el.innerHTML = `
-        <img src="${r.img}" alt="${r.title}" />
-        <h4>${r.range}</h4>
-        <p>${r.title}</p>
-    `;
+    el.innerHTML = `<img src="${r.img}" alt="${r.title}" /><h4>${r.range}</h4><p>${r.title}</p>`;
     all.appendChild(el);
   });
 }
@@ -443,23 +457,16 @@ function renderResults(){
 function showIndicatorDetail(index) {
     const data = refData[index];
     const detailContainer = $('#indicatorDetail');
-    detailContainer.innerHTML = `
-        <h2>${data.title} (${data.range})</h2>
-        <p class="lead">${data.description}</p>
-        <hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;">
-        <h3>Recomendaciones:</h3>
-        <ul>
-            ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-        </ul>
-    `;
+    detailContainer.innerHTML = `<h2>${data.title} (${data.range})</h2><p class="lead">${data.description}</p><hr style="border-color: rgba(255,255,255,0.2); margin: 1rem 0;"><h3>Recomendaciones:</h3><ul>${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}</ul>`;
     show('#screenIndicatorDetail');
 }
 
 $('#btnRetry').addEventListener('click', ()=> show('#screenMeasure'));
-$('#btnGoIntegration').addEventListener('click', ()=> show('#screenScanIntro'));
+$('#btnGoToBodyScan').addEventListener('click', ()=> show('#screenScanIntro'));
 $('#btnBackResults').addEventListener('click', ()=> show('#screenResults'));
 
 /* ===================== ENCUESTA + BODY SCAN ===================== */
+// (Sin cambios en esta sección)
 $('#btnScanStart').addEventListener('click', ()=> show('#screenSurvey'));
 $('#btnScanIntroBack').addEventListener('click', ()=> show('#screenResults'));
 $('#btnSurveyBack').addEventListener('click', ()=> show('#screenResults'));
@@ -487,9 +494,7 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
   $('#bs_total_display').textContent = total;
   $('#bs_fatiga_display').textContent = ft;
 
-  if (window.myBsChart) {
-      window.myBsChart.destroy();
-  }
+  if (window.myBsChart) window.myBsChart.destroy();
   const ctx = $('#bsChart').getContext('2d');
   const gradient = ctx.createLinearGradient(0, 0, 0, 220);
   gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
@@ -498,30 +503,11 @@ $('#btnBodyScanFinish').addEventListener('click', ()=>{
       type: 'radar',
       data: {
           labels: ['Cabeza', 'Tren Superior', 'Tren Inferior', 'Tensión Total', 'Fatiga'],
-          datasets: [{
-              label: 'Nivel de Tensión',
-              data: [headVal, upVal, lowVal, total, ft],
-              fill: true,
-              backgroundColor: gradient,
-              borderColor: 'rgba(192, 132, 252, 1)',
-              pointBackgroundColor: '#fff',
-              pointBorderColor: 'rgba(192, 132, 252, 1)',
-              pointHoverBackgroundColor: '#fff',
-              pointHoverBorderColor: 'rgb(124, 58, 237)',
-              borderWidth: 2
-          }]
+          datasets: [{ label: 'Nivel de Tensión', data: [headVal, upVal, lowVal, total, ft], fill: true, backgroundColor: gradient, borderColor: 'rgba(192, 132, 252, 1)', pointBackgroundColor: '#fff', pointBorderColor: 'rgba(192, 132, 252, 1)', pointHoverBackgroundColor: '#fff', pointHoverBorderColor: 'rgb(124, 58, 237)', borderWidth: 2 }]
       },
       options: {
           plugins: { legend: { display: false } },
-          scales: {
-              r: {
-                  min: 0, max: 10,
-                  angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
-                  grid: { color: 'rgba(255, 255, 255, 0.2)' },
-                  pointLabels: { font: { size: 13, weight: 'bold' }, color: '#e5e7eb' },
-                  ticks: { backdropColor: 'rgba(0,0,0,0.5)', color: '#fff' }
-              }
-          },
+          scales: { r: { min: 0, max: 10, angleLines: { color: 'rgba(255, 255, 255, 0.2)' }, grid: { color: 'rgba(255, 255, 255, 0.2)' }, pointLabels: { font: { size: 13, weight: 'bold' }, color: '#e5e7eb' }, ticks: { backdropColor: 'rgba(0,0,0,0.5)', color: '#fff' } } },
           maintainAspectRatio: false
       }
   });
@@ -545,13 +531,11 @@ function noiseScore(db){
   return Math.max(0, 100 - diff*2.2);
 }
 
-$('#btnToIntegration').addEventListener('click', ()=>{
-  const arr = loadNoiseHistory();
-  const last = arr[arr.length-1];
+$('#btnToIntegration').addEventListener('click', async () => { // Se convierte en async
   const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
 
   const fScore = faceScore(lastFace);
-  const nScore = last ? noiseScore(last.avg) : 50;
+  const nScore = noiseScore(lastNoiseAvg);
   const bScore = bsData.avg ? (100 - bsData.avg*9) : 50;
   const score = Math.round(fScore*0.25 + nScore*0.35 + bScore*0.40);
 
@@ -561,10 +545,11 @@ $('#btnToIntegration').addEventListener('click', ()=>{
   else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
   else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
 
+  // Pintar en la UI
   $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
   $('#ix_face_score').textContent = fScore.toFixed(0);
-  $('#ix_db').textContent = last? last.avg : '—';
-  $('#ix_db_class').textContent = last? labelFor(last.avg) : '—';
+  $('#ix_db').textContent = lastNoiseAvg;
+  $('#ix_db_class').textContent = labelFor(lastNoiseAvg);
   $('#ix_bs_avg').textContent = bsData.avg ?? '—';
   $('#ix_bs_total').textContent = bsData.total ?? '—';
   $('#ix_score').textContent = score;
@@ -572,21 +557,35 @@ $('#btnToIntegration').addEventListener('click', ()=>{
   $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
   $('#ix_reco').textContent = reco;
 
+  // Guardar en Supabase
+  if (currentUser) {
+    const { error } = await db.from('measurements').insert({
+      user_id: currentUser.id,
+      face_emotion: lastFace ? lastFace.expression : 'skipped',
+      noise_db: lastNoiseAvg,
+      body_scan_avg: bsData.avg ?? 0,
+      combined_score: score
+    });
+    if (error) console.error('Error al guardar la medición:', error);
+    else console.log('¡Medición guardada en Supabase!');
+  }
+
   show('#screenIntegration');
 });
 
 $('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
-$('#btnIntegrationHome').addEventListener('click', ()=>{
-  signOut();
-});
+$('#btnIntegrationHome').addEventListener('click', ()=> show('#screenFace')); // Volver a empezar una nueva medición
 
-/* ===================== NAVEGACIÓN BÁSICA INICIAL ===================== */
-window.addEventListener('DOMContentLoaded', ()=>{
-  if(getSession()) show('#screenAbout');
+/* ===================== MANEJO DE SESIÓN ===================== */
+db.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    // El usuario ha iniciado sesión
+    currentUser = session.user;
+    console.log('Usuario conectado:', currentUser.user_metadata.username);
+    show('#screenAbout'); // Redirigir a la pantalla principal de la app
+  } else {
+    // El usuario ha cerrado sesión o no está logueado
+    currentUser = null;
+    show('#screenIntro'); // Redirigir a la pantalla de bienvenida
+  }
 });
-
-/* ===================== RUTAS DE FLUJO ===================== */
-$('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
-$('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
-$('#btnFaceSkip').addEventListener('click', ()=> show('#screenMicIntro'));
-$('#btnMicGo').addEventListener('click', ()=> show('#screenMeasure'));

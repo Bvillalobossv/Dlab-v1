@@ -5,18 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SenseWell</title>
 
+  <!-- Styles -->
   <link rel="stylesheet" href="styles.css" />
 
+  <!-- Librerías externas -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
+  <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
 </head>
 <body>
 
+  <!-- ====================== ONBOARDING (CARRUSEL) ====================== -->
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell max-900">
       <div class="slides" id="introSlides">
+        <!-- Slide 1 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/mockup.png" alt="SenseWell" />
@@ -26,6 +31,7 @@
             <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
           </div>
         </section>
+        <!-- Slide 2 -->
         <section class="slide">
           <div class="slide-media gradient-card">
             <img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/>
@@ -41,6 +47,7 @@
             <p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p>
           </div>
         </section>
+        <!-- Slide 3 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/mockup.png" alt="Análisis SenseWell" />
@@ -62,6 +69,7 @@
     </div>
   </div>
 
+  <!-- ====================== AUTH (LOGIN/REGISTRO) ====================== -->
   <div id="screenAuth" class="screen">
     <img src="images/logo.png" alt="SenseWell" class="logo" />
     <h1>SenseWell</h1>
@@ -91,8 +99,8 @@
           <input type="text" id="su_user" autocomplete="username" required />
         </div>
         <div class="form-row">
-          <label>Contraseña</label>
-          <input type="password" id="su_pass" autocomplete="new-password" required />
+          <label>Contraseña (mínimo 6 caracteres)</label>
+          <input type="password" id="su_pass" autocomplete="new-password" required minlength="6" />
         </div>
         <div class="form-row chk">
           <label><input type="checkbox" id="su_terms" required /> Acepto términos y condiciones</label>
@@ -100,11 +108,12 @@
         <button type="submit" class="btn">Crear cuenta</button>
       </form>
 
-      <p class="muted small">Demo local sin backend: credenciales guardadas en tu navegador.</p>
+      <p class="muted small" id="auth-message">Crea una cuenta o inicia sesión para continuar.</p>
       <button id="goAbout" class="btn btn-outline">Sobre la app</button>
     </div>
   </div>
 
+  <!-- ====================== SOBRE LA APP ====================== -->
   <div id="screenAbout" class="screen">
     <div class="card max-700">
       <h2>Sobre SenseWell</h2>
@@ -114,14 +123,15 @@
         <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s + tabla de referencia de oficina.</li>
         <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
       </ul>
-      <p class="small muted">Privacidad: no subimos audio ni imágenes; puedes borrar tus datos en “Cerrar sesión”.</p>
+      <p class="small muted">Privacidad: no subimos audio ni imágenes. Tu historial de mediciones se guarda de forma segura en tu cuenta.</p>
       <div class="stack-sm">
-        <button id="btnAboutBack" class="btn btn-secondary">Volver</button>
+        <button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button>
         <button id="btnAboutStart" class="btn">Comenzar mediciones</button>
       </div>
     </div>
   </div>
 
+  <!-- ====================== SELFIE / ROSTRO ====================== -->
   <div id="screenFace" class="screen">
     <h2>Comencemos el día</h2>
     <p class="muted"><b>¡Tómate una selfie!</b> Detectaremos una emoción dominante (felicidad, neutral, enojo/estrés, tristeza, sorpresa).</p>
@@ -151,6 +161,7 @@
     <p class="muted small">Procesamiento en tu dispositivo (face-api.js). No subimos tu imagen.</p>
   </div>
 
+  <!-- ====================== INTRO MIC ====================== -->
   <div id="screenMicIntro" class="screen">
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
     <h2>Medición ambiental</h2>
@@ -159,6 +170,7 @@
     <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
 
+  <!-- ====================== MEDICIÓN 5s ====================== -->
   <div id="screenMeasure" class="screen">
     <h2>Medición en progreso</h2>
 
@@ -200,6 +212,7 @@
     </div>
   </div>
 
+  <!-- ====================== RESULTADOS (RUIDO) ====================== -->
   <div id="screenResults" class="screen">
     <div class="segmented">
       <button id="tabNoise" class="segment active">Ruido ambiental</button>
@@ -219,15 +232,17 @@
 
     <div class="stack-sm">
       <button id="btnRetry" class="btn">Medir otra vez</button>
-      <button id="btnGoIntegration" class="btn btn-outline">Ver indicador combinado</button>
+      <button id="btnGoToBodyScan" class="btn btn-outline">Continuar a Escaneo Corporal</button>
     </div>
   </div>
 
+  <!-- ====================== DETALLE INDICADOR ====================== -->
   <div id="screenIndicatorDetail" class="screen">
     <button id="btnBackResults" class="btn btn-secondary">⬅ Volver</button>
     <div id="indicatorDetail" class="indicator-detail"></div>
   </div>
 
+  <!-- ====================== ESCANEO CORPORAL / ENCUESTA ====================== -->
   <div id="screenScanIntro" class="screen">
     <div class="card max-700">
       <div class="checkmark">✓</div>
@@ -377,6 +392,7 @@
     </div>
   </div>
 
+  <!-- ====================== INTEGRACIÓN TOTAL ====================== -->
   <div id="screenIntegration" class="screen">
     <h2>Indicador combinado</h2>
     <p class="muted">Integramos <b>Selfie emocional</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
@@ -416,6 +432,9 @@
     </div>
   </div>
 
+  <!-- ======== LIBRERÍAS FINALES ======== -->
+  <!-- AÑADIDO: Librería de Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
