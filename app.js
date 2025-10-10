@@ -132,7 +132,8 @@ const emotionCopy = {
 
 async function ensureModels(){
   if(modelsLoaded) return;
-  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  // --> CAMBIO: Se carga el modelo SsdMobilenetv1 en lugar de TinyFaceDetector
+  await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
   await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
   modelsLoaded = true;
 }
@@ -178,8 +179,9 @@ btnFaceSnap.addEventListener('click', async ()=>{
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    // --> CAMBIO: Se utiliza el nuevo detector SsdMobilenetv1Options
     const det = await faceapi
-      .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
+      .detectSingleFace(canvas, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
       .withFaceExpressions();
 
     if(!det){
