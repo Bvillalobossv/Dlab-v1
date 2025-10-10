@@ -12,8 +12,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-  <!-- NUEVA LIBRERÍA: VITAL LENS -->
-  <script src="https://webrtc.rouast.labs.com/vitallens.js"></script>
+  
+  <!-- Se eliminó el script de VitalLens de aquí -->
 
   <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
@@ -34,7 +34,7 @@
             <p>Una app para <b>cuidar tu energía</b> en el trabajo. Tres pasos simples: <b>selfie emocional</b>, <b>ruido ambiental</b> y <b>body scan</b>.</p>
           </div>
         </section>
-        <!-- Slide 2 (Mejorado) -->
+        <!-- Slide 2 -->
         <section class="slide">
           <div class="slide-media gradient-card">
             <img src="images/logo.png" alt="Privacidad" class="logo-big" style="opacity: 0.5;"/>
@@ -50,7 +50,7 @@
             <p>Para darte las mejores recomendaciones, SenseWell necesita acceso a tu cámara y micrófono. Te garantizamos que tu privacidad es nuestra máxima prioridad.</p>
           </div>
         </section>
-        <!-- Slide 3 (Mejorado) -->
+        <!-- Slide 3 -->
         <section class="slide">
           <div class="slide-media">
             <img src="images/mockup.png" alt="Análisis SenseWell" />
@@ -127,7 +127,7 @@
         <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s.</li>
         <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
       </ul>
-      <p class="small muted">Privacidad: no subimos audio ni imágenes; puedes borrar tus datos en “Cerrar sesión”.</p>
+      <p class="small muted">Privacidad: el análisis de audio y rostro ocurre en tu dispositivo. La medición de signos vitales requiere enviar un video corto a un servidor externo. Revisa nuestros términos.</p>
       <div class="stack-sm">
         <button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button>
         <button id="btnAboutStart" class="btn">Comenzar mediciones</button>
@@ -137,8 +137,8 @@
 
   <!-- ====================== SELFIE / ROSTRO ====================== -->
   <div id="screenFace" class="screen">
-    <h2>Comencemos el día</h2>
-    <p class="muted"><b>¡Tómate una selfie!</b> Detectaremos una emoción dominante y estimaremos tus signos vitales.</p>
+    <h2>Paso 1: Medición Facial</h2>
+    <p class="muted">Detectaremos tu emoción dominante y, si lo deseas, tus signos vitales.</p>
 
     <div class="card max-900 two-cols">
       <div>
@@ -146,7 +146,7 @@
         <canvas id="faceCanvas" class="video" style="display:none"></canvas>
         <div class="stack-sm">
           <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
-          <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie y analizar</button>
+          <button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie emocional</button>
           <button id="btnVitalsStart" class="btn btn-outline" disabled>🩺 Medir Signos Vitales (20s)</button>
         </div>
         <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS / localhost.</p>
@@ -158,12 +158,11 @@
         <img id="faceMascot" class="mascot" alt="" />
         <p id="faceTip" class="muted"></p>
         <div class="stack-sm">
-          <button id="btnFaceNext" class="btn" disabled>Ir a medir ruido</button>
-          <button id="btnFaceSkip" class="btn btn-secondary">Saltar selfie</button>
+          <button id="btnFaceNext" class="btn" disabled>Siguiente Paso</button>
+          <button id="btnFaceSkip" class="btn btn-secondary">Saltar</button>
         </div>
       </div>
     </div>
-    <p class="muted small">El análisis emocional se procesa en tu dispositivo. La medición de signos vitales requiere enviar un video corto a un servidor seguro.</p>
   </div>
 
   <!-- ====================== PANTALLA DE SIGNOS VITALES ====================== -->
@@ -186,20 +185,19 @@
             </div>
         </div>
         <p class="muted small">Esta medición es una estimación y no debe usarse para diagnóstico médico.</p>
-        <button id="btnVitalsDone" class="btn" disabled>Continuar</button>
+        <button id="btnVitalsDone" class="btn" disabled>Volver</button>
     </div>
   </div>
   
   <!-- ====================== INTRO MIC ====================== -->
   <div id="screenMicIntro" class="screen">
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
-    <h2>Medición ambiental</h2>
+    <h2>Paso 2: Medición Ambiental</h2>
     <p>Tomaremos una muestra de <b>5 segundos</b> para estimar dB(A)* y darte recomendaciones.</p>
     <p class="muted small">*Aproximación desde dBFS del navegador con calibración (±10 dB).</p>
     <button id="btnMicGo" class="btn">Ir a medir</button>
   </div>
-
-  <!-- ====================== MEDICIÓN 5s ====================== -->
+  
   <div id="screenMeasure" class="screen">
     <h2>Medición en progreso</h2>
     <div class="gauge-wrapper"><canvas id="gaugeCanvas" width="280" height="280"></canvas><div class="gauge-center"><span id="dbValue" class="db-value">0</span><span class="db-unit">dB</span><div id="dbLabel" class="db-label">Silencioso</div><div id="countdown" class="countdown">5.0 s</div></div></div>
@@ -209,21 +207,14 @@
     <div class="stack-sm"><button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button><button id="btnMeasureToResults" class="btn btn-secondary" disabled>Ver resultados</button></div>
     <div class="tips-card card max-700"><h3>Mientras medimos…</h3><p id="motivation">Respira 4 segundos por la nariz y suelta 6 por la boca. Tu foco te lo agradece ✨</p></div>
   </div>
-
-  <!-- ====================== RESULTADOS (RUIDO) ====================== -->
   <div id="screenResults" class="screen">
     <div class="segmented"><button id="tabNoise" class="segment active">Ruido ambiental</button><button id="tabScan" class="segment" onclick="show('#screenScanIntro')">Escaneo corporal</button></div>
     <h2>Resultados de tus mediciones</h2><p id="resultsSummary" class="lead">Aquí aparecerá el resumen de tu estado.</p><canvas id="historyChart" height="160"></canvas>
     <h3>Tu indicador actual</h3><div id="currentIndicator" class="indicator-card"></div><h3>Tabla de referencia de dB(A) en oficina</h3><div id="allIndicators" class="carousel"></div>
     <div class="stack-sm"><button id="btnRetry" class="btn">Medir otra vez</button><button id="btnGoToBodyScan" class="btn btn-outline">Ir a Escaneo Corporal</button></div>
   </div>
-
-  <!-- ====================== DETALLE INDICADOR ====================== -->
   <div id="screenIndicatorDetail" class="screen"><button id="btnBackResults" class="btn btn-secondary">⬅ Volver</button><div id="indicatorDetail" class="indicator-detail"></div></div>
-
-  <!-- ====================== ESCANEO CORPORAL / ENCUESTA ====================== -->
-  <div id="screenScanIntro" class="screen"><div class="card max-700"><div class="checkmark">✓</div><h2>Escaneo corporal</h2><p>Ahora registraremos cómo se siente tu cuerpo. Tres áreas, escala 1–10 y algunos síntomas.</p><p class="muted">Tu privacidad es prioridad. Los datos se usan para mejorar tu bienestar.</p><div class="stack-sm"><button id="btnScanStart" class="btn">Comenzar</button><button id="btnScanIntroBack" class="btn btn-secondary">Volver</button></div></div></div>
-  
+  <div id="screenScanIntro" class="screen"><div class="card max-700"><div class="checkmark">✓</div><h2>Paso 3: Escaneo Corporal</h2><p>Ahora registraremos cómo se siente tu cuerpo. Tres áreas, escala 1–10 y algunos síntomas.</p><p class="muted">Tu privacidad es prioridad. Los datos se usan para mejorar tu bienestar.</p><div class="stack-sm"><button id="btnScanStart" class="btn">Comenzar</button><button id="btnScanIntroBack" class="btn btn-secondary">Volver</button></div></div></div>
   <div id="screenSurvey" class="screen">
     <h2>Encuesta breve de contexto</h2>
     <form id="workSurvey" class="form max-700">
@@ -235,7 +226,6 @@
       <div class="stack-sm"><button type="button" id="btnToBodyScan" class="btn">Continuar</button><button type="button" id="btnSurveyBack" class="btn btn-secondary">Volver</button></div>
     </form>
   </div>
-  
   <div id="screenBodyScan" class="screen">
     <h2>Body Scan (3 zonas)</h2><p class="muted">(1 = relajado, 10 = máxima tensión)</p>
     <div class="card max-900"><h3>1) Cabeza</h3><div class="slider-group"><label>Tensión en frente/ojos/mandíbula</label><input type="range" id="bs_head_tension" min="1" max="10" value="5"><div class="range-ticks"><span>1</span><span>10</span></div></div><div class="checks"><label><input type="checkbox" class="symptomHead" value="Dolor de cabeza"> Dolor de cabeza</label><label><input type="checkbox" class="symptomHead" value="Mandíbula apretada"> Mandíbula apretada</label><label><input type="checkbox" class="symptomHead" value="Visión cansada"> Visión cansada</label></div></div>
@@ -244,16 +234,13 @@
     <div class="card max-700"><div class="slider-group"><label><b>Nivel total</b> de tensión física ahora</label><input type="range" min="1" max="10" value="5" id="bs_total" /><div class="range-ticks"><span>1</span><span>10</span></div></div><div class="slider-group"><label><b>Cansancio físico general</b></label><input type="range" min="1" max="10" value="5" id="bs_fatiga" /><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
     <div class="stack-sm"><button id="btnBodyScanFinish" class="btn">Ver resultados</button><button id="btnBodyScanBack" class="btn btn-secondary">Volver</button></div>
   </div>
-
   <div id="screenScanResults" class="screen">
     <h2>Resumen — Escaneo corporal</h2>
     <div class="results-grid max-900"><div class="card"><h3>Puntajes</h3><p><b>Cabeza:</b> <span id="bs_head_out">—</span>/10</p><p><b>Tren superior:</b> <span id="bs_upper_out">—</span>/10</p><p><b>Tren inferior:</b> <span id="bs_lower_out">—</span>/10</p><p><b>Tensión media:</b> <span id="bs_avg">—</span>/10</p><p><b>Total:</b> <span id="bs_total_display">—</span>/10 · <b>Fatiga:</b> <span id="bs_fatiga_display">—</span>/10</p><p><b>Síntomas:</b> <span id="bs_symptoms_display">Ninguno</span></p></div><div class="card"><h3>Distribución</h3><canvas id="bsChart"></canvas></div></div>
-    <div class="stack-sm"><button id="btnToIntegration" class="btn">Combinar con ruido + selfie</button><button id="btnScanResultsBack" class="btn btn-secondary">Volver</button></div>
+    <div class="stack-sm"><button id="btnToIntegration" class="btn">Ver Informe Final</button><button id="btnScanResultsBack" class="btn btn-secondary">Volver</button></div>
   </div>
-  
-  <!-- ====================== INTEGRACIÓN TOTAL ====================== -->
   <div id="screenIntegration" class="screen">
-    <h2>Indicador combinado</h2>
+    <h2>Informe de Bienestar</h2>
     <p class="muted">Integramos <b>Selfie emocional</b> + <b>Signos Vitales</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
     <div class="card max-900">
       <div class="two-cols">

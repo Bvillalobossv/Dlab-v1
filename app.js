@@ -188,6 +188,8 @@ btnFaceStart.addEventListener('click', async () => {
   const originalText = btnFaceStart.textContent;
   btnFaceStart.textContent = 'Cargando IA...';
   btnFaceStart.disabled = true;
+  btnFaceSnap.disabled = true;
+  btnVitalsStart.disabled = true;
 
   try {
     await ensureModels();
@@ -288,40 +290,42 @@ const btnVitalsDone = $('#btnVitalsDone');
 
 let lastVitals = null;
 
-// --> CAMBIO: Lógica de "polling" para esperar a que la API esté lista.
-btnVitalsStart.addEventListener('click', () => {
+async function loadVitalLensScript() {
+    // Si la librería ya está cargada, no hacemos nada.
+    if (typeof window.VitalLens === 'function') {
+        return Promise.resolve();
+    }
+    // Si no está, creamos una promesa que se resolverá cuando el script se cargue.
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = 'https://webrtc.rouast.labs.com/vitallens.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('No se pudo cargar la API de Signos Vitales.'));
+        document.head.appendChild(script);
+    });
+}
+
+btnVitalsStart.addEventListener('click', async () => {
     btnVitalsStart.textContent = 'Cargando API...';
     btnVitalsStart.disabled = true;
+    show('#screenVitals');
+    vitalsStatus.textContent = 'Preparando medición...';
 
-    const maxTries = 50; // Esperar hasta 5 segundos
-    let tries = 0;
-
-    const intervalId = setInterval(() => {
-        // Comprueba si la clase VitalLens ya fue cargada por el script externo
-        if (typeof window.VitalLens === 'function') {
-            clearInterval(intervalId); // Detiene la búsqueda
-            btnVitalsStart.textContent = '🩺 Medir Signos Vitales (20s)';
-            btnVitalsStart.disabled = false;
-            startVitalsMeasurement(); // Inicia la medición
-        } else {
-            tries++;
-            if (tries > maxTries) {
-                clearInterval(intervalId); // Se rinde
-                show('#screenVitals');
-                vitalsStatus.textContent = 'Error: La API de Signos Vitales no pudo cargarse. Recarga la página.';
-                btnVitalsStart.textContent = 'Reintentar';
-                btnVitalsStart.disabled = false;
-            }
-        }
-    }, 100);
+    try {
+        await loadVitalLensScript();
+        await startVitalsMeasurement();
+    } catch (error) {
+        vitalsStatus.textContent = `Error: ${error.message}`;
+        btnVitalsDone.disabled = false;
+    } finally {
+        btnVitalsStart.textContent = '🩺 Medir Signos Vitales (20s)';
+        btnVitalsStart.disabled = false;
+    }
 });
 
 async function startVitalsMeasurement() {
-    show('#screenVitals');
-    let vitalsStream = null; // Stream local para esta función
-    
+    let vitalsStream = null;
     try {
-        // Siempre pedir un nuevo stream para no interferir con el de face-api
         vitalsStream = await navigator.mediaDevices.getUserMedia({ 
             video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
         });
@@ -364,18 +368,15 @@ async function startVitalsMeasurement() {
         vitalsStatus.textContent = `Error: ${error.message}`;
         btnVitalsDone.disabled = false;
     } finally {
-        // Nos aseguramos de apagar la cámara usada para los signos vitales al terminar
         if (vitalsStream) {
             vitalsStream.getTracks().forEach(track => track.stop());
         }
     }
 }
 
-
 btnVitalsDone.addEventListener('click', () => {
     show('#screenFace'); 
 });
-
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
 const gaugeCanvas = $('#gaugeCanvas');
@@ -719,5 +720,4 @@ $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
 });
-
 
