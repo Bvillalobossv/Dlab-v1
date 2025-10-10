@@ -221,7 +221,6 @@ btnFaceNext.addEventListener('click', ()=>{
 
 function pickMascot(exp){
   const map = {
-    // --> VERIFICA ESTA RUTA: Debe ser images/mascots/nombre.gif
     happy: 'images/mascots/happy.gif',
     neutral: 'images/mascots/neutral.gif',
     angry: 'images/mascots/angry.gif',
@@ -355,7 +354,6 @@ const KEY_NOISE_HISTORY = 'sw_noise_history';
 const refData = [
     { 
       range: '<35 dB', title: 'Silencio Profundo',
-      // --> VERIFICA ESTA RUTA: Debe ser images/nombre.png
       img: 'images/ind-silencio.png',
       description: 'Este nivel de ruido es ideal para tareas que requieren máxima concentración y para momentos de descanso mental. Es similar a una biblioteca silenciosa.',
       recommendations: ['Aprovecha este momento para realizar tu tarea más compleja del día.', 'Realiza una meditación de 2 minutos para recargar energías.', 'Disfruta del silencio para reducir la carga cognitiva.']
@@ -460,13 +458,133 @@ $('#btnGoIntegration').addEventListener('click', ()=> show('#screenScanIntro'));
 $('#btnBackResults').addEventListener('click', ()=> show('#screenResults'));
 
 /* ===================== ENCUESTA + BODY SCAN ===================== */
-// (El resto del código no cambia y se mantiene igual)
-// ...
-// ...
+$('#btnScanStart').addEventListener('click', ()=> show('#screenSurvey'));
+$('#btnScanIntroBack').addEventListener('click', ()=> show('#screenResults'));
+$('#btnSurveyBack').addEventListener('click', ()=> show('#screenResults'));
+$('#btnToBodyScan').addEventListener('click', ()=> show('#screenBodyScan'));
+$('#btnBodyScanBack').addEventListener('click', ()=> show('#screenSurvey'));
+
+const bs = {
+  head: $('#bs_head_tension'),
+  upper: $('#bs_upper_tension'),
+  lower: $('#bs_lower_tension'),
+  total: $('#bs_total'),
+  fatiga: $('#bs_fatiga'),
+};
+
+$('#btnBodyScanFinish').addEventListener('click', ()=>{
+  const headVal = +bs.head.value, upVal = +bs.upper.value, lowVal = +bs.lower.value;
+  const avg = ((headVal + upVal + lowVal) / 3).toFixed(1);
+  const total = +bs.total.value, ft = +bs.fatiga.value;
+  const sym = [...$$('.symptomHead:checked'), ...$$('.symptomUpper:checked'), ...$$('.symptomLower:checked')].map(x=>x.value);
+  $('#bs_symptoms_display').textContent = sym.length? sym.join(', ') : 'Ninguno';
+  $('#bs_head_out').textContent = headVal;
+  $('#bs_upper_out').textContent = upVal;
+  $('#bs_lower_out').textContent = lowVal;
+  $('#bs_avg').textContent = avg;
+  $('#bs_total_display').textContent = total;
+  $('#bs_fatiga_display').textContent = ft;
+
+  if (window.myBsChart) {
+      window.myBsChart.destroy();
+  }
+  const ctx = $('#bsChart').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, 'rgba(124, 58, 237, 0.5)');
+  gradient.addColorStop(1, 'rgba(6, 182, 212, 0.3)');
+  window.myBsChart = new Chart(ctx, {
+      type: 'radar',
+      data: {
+          labels: ['Cabeza', 'Tren Superior', 'Tren Inferior', 'Tensión Total', 'Fatiga'],
+          datasets: [{
+              label: 'Nivel de Tensión',
+              data: [headVal, upVal, lowVal, total, ft],
+              fill: true,
+              backgroundColor: gradient,
+              borderColor: 'rgba(192, 132, 252, 1)',
+              pointBackgroundColor: '#fff',
+              pointBorderColor: 'rgba(192, 132, 252, 1)',
+              pointHoverBackgroundColor: '#fff',
+              pointHoverBorderColor: 'rgb(124, 58, 237)',
+              borderWidth: 2
+          }]
+      },
+      options: {
+          plugins: { legend: { display: false } },
+          scales: {
+              r: {
+                  min: 0, max: 10,
+                  angleLines: { color: 'rgba(255, 255, 255, 0.2)' },
+                  grid: { color: 'rgba(255, 255, 255, 0.2)' },
+                  pointLabels: { font: { size: 13, weight: 'bold' }, color: '#e5e7eb' },
+                  ticks: { backdropColor: 'rgba(0,0,0,0.5)', color: '#fff' }
+              }
+          },
+          maintainAspectRatio: false
+      }
+  });
+  sessionStorage.setItem('sw_bs', JSON.stringify({ head:headVal, upper:upVal, lower:lowVal, avg:+avg, total, fatiga:ft }));
+  show('#screenScanResults');
+});
+$('#btnScanResultsBack').addEventListener('click', ()=> show('#screenBodyScan'));
+
 /* ===================== INTEGRACIÓN FINAL ===================== */
-// (El resto del código no cambia y se mantiene igual)
-// ...
-// ...
+function faceScore(face){
+  if(!face) return 50;
+  const e = face.expression;
+  if(e==='happy') return 92;
+  if(e==='neutral' || e==='surprised') return 65;
+  if(e==='sad') return 40;
+  if(e==='angry' || e==='disgusted' || e==='fearful') return 35;
+  return 60;
+}
+function noiseScore(db){
+  const diff = Math.abs(db - 50);
+  return Math.max(0, 100 - diff*2.2);
+}
+
+$('#btnToIntegration').addEventListener('click', ()=>{
+  const arr = loadNoiseHistory();
+  const last = arr[arr.length-1];
+  const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
+
+  const fScore = faceScore(lastFace);
+  const nScore = last ? noiseScore(last.avg) : 50;
+  const bScore = bsData.avg ? (100 - bsData.avg*9) : 50;
+  const score = Math.round(fScore*0.25 + nScore*0.35 + bScore*0.40);
+
+  let label = 'Atento/a', reco = 'Buen rumbo: mantén pausas activas y agua cerca.';
+  if(score >= 80){ label='Muy bien'; reco='Excelente energía. Prioriza tareas importantes y cuida tu ritmo.'; }
+  else if(score >= 60){ label='Bien'; reco='Sigue con respiraciones 4–6 entre tareas y micro-estiramientos.'; }
+  else if(score >= 40){ label='Atento/a'; reco='Baja el ritmo 3 minutos y reorganiza tu lista en bloques breves.'; }
+  else { label='Alto estrés'; reco='Necesitas una pausa real. Camina 5 min, hidrátate y busca un espacio tranquilo.'; }
+
+  $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression]?.label || lastFace.expression) : '—';
+  $('#ix_face_score').textContent = fScore.toFixed(0);
+  $('#ix_db').textContent = last? last.avg : '—';
+  $('#ix_db_class').textContent = last? labelFor(last.avg) : '—';
+  $('#ix_bs_avg').textContent = bsData.avg ?? '—';
+  $('#ix_bs_total').textContent = bsData.total ?? '—';
+  $('#ix_score').textContent = score;
+  $('#ix_label').textContent = label;
+  $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
+  $('#ix_reco').textContent = reco;
+
+  show('#screenIntegration');
+});
+
+$('#btnIntegrationBack').addEventListener('click', ()=> show('#screenScanResults'));
+$('#btnIntegrationHome').addEventListener('click', ()=>{
+  signOut();
+});
+
 /* ===================== NAVEGACIÓN BÁSICA INICIAL ===================== */
-// (El resto del código no cambia y se mantiene igual)
-// ...
+window.addEventListener('DOMContentLoaded', ()=>{
+  if(getSession()) show('#screenAbout');
+});
+
+/* ===================== RUTAS DE FLUJO ===================== */
+$('#btnAboutStart').addEventListener('click', ()=> show('#screenFace'));
+$('#btnFaceNext').addEventListener('click', ()=> show('#screenMicIntro'));
+$('#btnFaceSkip').addEventListener('click', ()=> show('#screenMicIntro'));
+$('#btnMicGo').addEventListener('click', ()=> show('#screenMeasure'));
