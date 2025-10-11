@@ -12,8 +12,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-  
-  <!-- El script de VitalLens se cargará dinámicamente -->
 
   <!-- PWA ready (opcional) -->
   <meta name="theme-color" content="#0b1020"/>
@@ -61,26 +59,21 @@
     <div class="card max-700">
       <h2 id="welcome-user">Sobre SenseWell</h2>
       <p>Esta aplicación está pensada como un <b>espacio integral de bienestar</b>, con herramientas de detección temprana, prevención y apoyo para tu autocuidado.</p>
-      <ul>
-        <li><b>Selfie emocional</b>: detección de emoción dominante en el rostro.</li>
-        <li><b>Signos Vitales</b>: Estimación de frecuencia cardíaca y respiratoria.</li>
-        <li><b>Ruido ambiental</b>: estimación de dB(A) en 5s.</li>
-        <li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li>
-      </ul>
-      <p class="small muted">Privacidad: el análisis de audio y rostro ocurre en tu dispositivo. La medición de signos vitales requiere enviar un video corto a un servidor externo para su análisis.</p>
+      <ul><li><b>Selfie emocional</b>: detección de emoción dominante en el rostro.</li><li><b>Ruido ambiental</b>: estimación de dB(A) en 5s.</li><li><b>Body Scan</b>: tensión en 3 zonas con resumen y gráfico.</li></ul>
+      <p class="small muted">Privacidad: el análisis de audio y rostro ocurre en tu dispositivo. Puedes borrar tus datos en “Cerrar sesión”.</p>
       <div class="stack-sm"><button id="btnAboutBack" class="btn btn-secondary">Cerrar Sesión</button><button id="btnAboutStart" class="btn">Comenzar mediciones</button></div>
     </div>
   </div>
 
   <!-- ====================== SELFIE / ROSTRO ====================== -->
   <div id="screenFace" class="screen">
-    <h2>Paso 1: Medición Facial</h2>
-    <p class="muted">Detectaremos tu emoción dominante y, si lo deseas, tus signos vitales.</p>
+    <h2>Paso 1: Selfie Emocional</h2>
+    <p class="muted">Detectaremos tu emoción dominante para entender tu punto de partida.</p>
     <div class="card max-900 two-cols">
       <div>
         <video id="faceVideo" playsinline muted class="video"></video>
         <canvas id="faceCanvas" class="video" style="display:none"></canvas>
-        <div class="stack-sm"><button id="btnFaceStart" class="btn">📸 Activar cámara</button><button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie emocional</button><button id="btnVitalsStart" class="btn btn-outline" disabled>🩺 Medir Signos Vitales (20s)</button></div>
+        <div class="stack-sm"><button id="btnFaceStart" class="btn">📸 Activar cámara</button><button id="btnFaceSnap" class="btn btn-outline" disabled>Tomar selfie y analizar</button></div>
         <p id="faceHelp" class="muted small">Si no aparece el video, revisa permisos de cámara o abre en HTTPS / localhost.</p>
       </div>
       <div>
@@ -92,23 +85,6 @@
     </div>
   </div>
 
-  <!-- ====================== PANTALLA DE SIGNOS VITALES ====================== -->
-  <div id="screenVitals" class="screen">
-    <h2>Medición de Signos Vitales</h2>
-    <p class="lead">Por favor, mantén tu rostro quieto y bien iluminado frente a la cámara.</p>
-    <div class="card max-700">
-        <video id="vitalsVideo" playsinline muted class="video"></video>
-        <h3 id="vitalsStatus">Iniciando...</h3>
-        <p id="vitalsCountdown" class="lead" style="font-size: 2rem; font-weight: bold;"></p>
-        <div class="results-grid">
-            <div><h4>Frecuencia Cardíaca</h4><p><span id="hrValue" style="font-size: 1.5rem;">--</span> bpm</p></div>
-            <div><h4>Frecuencia Respiratoria</h4><p><span id="rrValue" style="font-size: 1.5rem;">--</span> rpm</p></div>
-        </div>
-        <p class="muted small">Esta medición es una estimación y no debe usarse para diagnóstico médico.</p>
-        <button id="btnVitalsDone" class="btn" disabled>Volver</button>
-    </div>
-  </div>
-  
   <!-- ====================== INTRO MIC ====================== -->
   <div id="screenMicIntro" class="screen">
     <img src="images/mockup.png" alt="Mockup" class="mockup" />
@@ -161,22 +137,32 @@
   </div>
   <div id="screenIntegration" class="screen">
     <h2>Informe de Bienestar</h2>
-    <p class="muted">Integramos <b>Selfie emocional</b> + <b>Signos Vitales</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
+    <p class="muted">Integramos <b>Selfie emocional</b> + <b>dB(A)</b> + <b>Body Scan</b>.</p>
     <div class="card max-900">
       <div class="two-cols">
-        <div><h3>Selfie</h3><p><b>Emoción:</b> <span id="ix_face_emotion">—</span></p><p><b>Puntaje (0–100):</b> <span id="ix_face_score">—</span></p></div>
-        <div><h3>Signos Vitales</h3><p><b>Ritmo Cardíaco:</b> <span id="ix_hr">—</span> bpm</p><p><b>Ritmo Respiratorio:</b> <span id="ix_rr">—</span> rpm</p></div>
+        <div>
+          <h3>Selfie</h3>
+          <p><b>Emoción:</b> <span id="ix_face_emotion">—</span></p>
+          <p><b>Puntaje (0–100):</b> <span id="ix_face_score">—</span></p>
+        </div>
+        <div>
+          <h3>Ruido</h3>
+          <p><b>Promedio:</b> <span id="ix_db">—</span> dB</p>
+          <p><b>Clasificación:</b> <span id="ix_db_class">—</span></p>
+        </div>
       </div>
       <div class="two-cols">
-        <div><h3>Ruido</h3><p><b>Promedio:</b> <span id="ix_db">—</span> dB</p><p><b>Clasificación:</b> <span id="ix_db_class">—</span></p></div>
-        <div><h3>Escaneo corporal</h3><p><b>Tensión media:</b> <span id="ix_bs_avg">—</span>/10</p><p><b>Total:</b> <span id="ix_bs_total">—</span>/10</p></div>
-      </div>
-      <hr style="border-color: rgba(255,255,255,0.1); margin: 1rem 0;">
-      <div style="text-align: center;">
-        <h3>Resultado</h3>
-        <p><b>Índice combinado (0–100)</b>: <span id="ix_score" style="font-weight: bold; font-size: 1.2em;">—</span></p>
-        <p><b>Estado:</b> <span id="ix_label" style="font-weight: bold;">—</span></p>
-        <img id="ix_mascot" class="mascot" alt=""><p id="ix_reco" class="muted"></p>
+        <div>
+          <h3>Escaneo corporal</h3>
+          <p><b>Tensión media:</b> <span id="ix_bs_avg">—</span>/10</p>
+          <p><b>Total:</b> <span id="ix_bs_total">—</span>/10</p>
+        </div>
+        <div>
+          <h3>Resultado</h3>
+          <p><b>Índice combinado (0–100)</b>: <span id="ix_score" style="font-weight: bold; font-size: 1.2em;">—</span></p>
+          <p><b>Estado:</b> <span id="ix_label" style="font-weight: bold;">—</span></p>
+          <img id="ix_mascot" class="mascot" alt=""><p id="ix_reco" class="muted"></p>
+        </div>
       </div>
     </div>
     <div class="stack-sm"><button id="btnIntegrationBack" class="btn btn-secondary">Volver</button><button id="btnIntegrationHome" class="btn btn-outline">Nueva Medición</button></div>
@@ -186,5 +172,4 @@
 
 </body>
 </html>
-
 

@@ -15,9 +15,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
 
-// ===================== CLAVE DE API DE VITAL LENS =====================
-const VITALLENS_API_KEY = 'P4nIPbtOCBaPOxCL0CieLdNgV9vjgQv5vB0hnbie';
-
 /* ===================== ONBOARDING ===================== */
 (() => {
   const slides = $('#introSlides');
@@ -189,7 +186,6 @@ btnFaceStart.addEventListener('click', async () => {
   btnFaceStart.textContent = 'Cargando IA...';
   btnFaceStart.disabled = true;
   btnFaceSnap.disabled = true;
-  btnVitalsStart.disabled = true;
 
   try {
     await ensureModels();
@@ -201,9 +197,8 @@ btnFaceStart.addEventListener('click', async () => {
     video.onloadedmetadata = async () => {
       await video.play();
       btnFaceSnap.disabled = false;
-      btnVitalsStart.disabled = false; 
       btnFaceStart.textContent = 'Cámara Activa';
-      $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie o medir tus signos vitales.';
+      $('#faceHelp').textContent = '¡Listo! Ahora puedes tomar la selfie.';
     };
   } catch (err) {
     console.error("Error al iniciar la cámara o cargar modelos:", err);
@@ -267,7 +262,7 @@ btnFaceSkip.addEventListener('click', ()=>{
 });
 
 btnFaceNext.addEventListener('click', ()=>{
-  // No detenemos la cámara aquí para que VitalLens pueda usarla si es necesario
+  stopFace();
   show('#screenMicIntro');
 });
 
@@ -280,111 +275,6 @@ function pickMascot(exp){
   };
   return map[exp] || 'images/mascots/neutral.gif';
 }
-
-/* ===================== MEDICIÓN DE SIGNOS VITALES (VITAL LENS) ===================== */
-const btnVitalsStart = $('#btnVitalsStart');
-const vitalsVideo = $('#vitalsVideo');
-const vitalsStatus = $('#vitalsStatus');
-const vitalsCountdown = $('#vitalsCountdown');
-const hrValue = $('#hrValue');
-const rrValue = $('#rrValue');
-const btnVitalsDone = $('#btnVitalsDone');
-
-let lastVitals = null;
-
-async function loadVitalLensScript() {
-    if (typeof window.VitalLens === 'function') {
-        return Promise.resolve();
-    }
-    return new Promise((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = 'https://webrtc.rouast.labs.com/vitallens.js';
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('No se pudo cargar la API de Signos Vitales.'));
-        document.head.appendChild(script);
-    });
-}
-
-btnVitalsStart.addEventListener('click', async () => {
-    btnVitalsStart.textContent = 'Cargando API...';
-    btnVitalsStart.disabled = true;
-    show('#screenVitals');
-    vitalsStatus.textContent = 'Preparando medición...';
-
-    try {
-        await loadVitalLensScript();
-        await startVitalsMeasurement();
-    } catch (error) {
-        vitalsStatus.textContent = `Error: ${error.message}`;
-        btnVitalsDone.disabled = false;
-    } finally {
-        btnVitalsStart.textContent = '🩺 Medir Signos Vitales (20s)';
-        btnVitalsStart.disabled = false;
-    }
-});
-
-async function startVitalsMeasurement() {
-    let vitalsStream = null;
-    try {
-        if(faceStream && faceStream.active) {
-            vitalsStream = faceStream;
-        } else {
-             vitalsStream = await navigator.mediaDevices.getUserMedia({ 
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
-            });
-        }
-
-        vitalsVideo.srcObject = vitalsStream;
-        await vitalsVideo.play();
-
-        const vitallens = new VitalLens(VITALLENS_API_KEY);
-        
-        vitallens.onStateChange = (state) => {
-            vitalsStatus.textContent = `Estado: ${state}`;
-            console.log("VitalLens state:", state);
-        };
-
-        const DURATION = 20;
-        let countdown = DURATION;
-        vitalsCountdown.textContent = `${countdown}s`;
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            vitalsCountdown.textContent = `${countdown}s`;
-            if (countdown <= 0) clearInterval(countdownInterval);
-        }, 1000);
-
-        const results = await vitallens.estimate(vitalsStream, DURATION);
-
-        vitalsStatus.textContent = '¡Medición Completa!';
-        const finalHr = results.hr.toFixed(1);
-        const finalRr = results.rr.toFixed(1);
-
-        hrValue.textContent = finalHr;
-        rrValue.textContent = finalRr;
-        
-        lastVitals = { heartRate: parseFloat(finalHr), respiratoryRate: parseFloat(finalRr) };
-        sessionStorage.setItem('sw_vitals', JSON.stringify(lastVitals));
-
-        btnVitalsDone.disabled = false;
-        
-    } catch (error) {
-        console.error("Error con VitalLens:", error);
-        vitalsStatus.textContent = `Error: ${error.message}`;
-        btnVitalsDone.disabled = false;
-    } finally {
-        // No apagamos el stream aquí para poder volver a la pantalla de selfie
-    }
-}
-
-btnVitalsDone.addEventListener('click', () => {
-    // Reutiliza el stream de la cámara si sigue activo
-    if (vitalsVideo.srcObject) {
-        video.srcObject = vitalsVideo.srcObject;
-        video.play();
-    }
-    show('#screenFace'); 
-});
-
 
 /* ===================== MEDICIÓN DE RUIDO 5s ===================== */
 const gaugeCanvas = $('#gaugeCanvas');
@@ -661,16 +551,12 @@ function noiseScore(db){
 }
 $('#btnToIntegration').addEventListener('click', async () => {
   const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
-  const vitalsData = JSON.parse(sessionStorage.getItem('sw_vitals')||'{}');
   
   const fScore = faceScore(lastFace);
   const nScore = noiseScore(lastNoiseAvg);
   const bScore = bsData.avg ? (100 - bsData.avg*9) : 50;
 
-  const hr = vitalsData.heartRate || 75; 
-  const vitalScore = Math.max(0, 100 - (Math.abs(hr - 70) * 5));
-
-  const score = Math.round(fScore*0.20 + vitalScore*0.20 + nScore*0.30 + bScore*0.30);
+  const score = Math.round(fScore*0.25 + nScore*0.35 + bScore*0.40);
   
   let label = 'Atento/a', reco = 'Buen rumbo: mantén pausas activas y agua cerca.';
   if(score >= 80){ label='Muy bien'; reco='Excelente energía. Prioriza tareas importantes y cuida tu ritmo.'; }
@@ -680,8 +566,6 @@ $('#btnToIntegration').addEventListener('click', async () => {
   
   $('#ix_face_emotion').textContent = lastFace ? (emotionCopy[lastFace.expression] || lastFace.expression) : '—';
   $('#ix_face_score').textContent = fScore.toFixed(0);
-  $('#ix_hr').textContent = vitalsData.heartRate || '—';
-  $('#ix_rr').textContent = vitalsData.respiratoryRate || '—';
   $('#ix_db').textContent = lastNoiseAvg;
   $('#ix_db_class').textContent = labelFor(lastNoiseAvg);
   $('#ix_bs_avg').textContent = bsData.avg ?? '—';
@@ -697,9 +581,7 @@ $('#btnToIntegration').addEventListener('click', async () => {
       face_emotion: lastFace ? lastFace.expression : 'skipped',
       noise_db: lastNoiseAvg,
       body_scan_avg: bsData.avg ?? 0,
-      combined_score: score,
-      heart_rate: vitalsData.heartRate || null,
-      respiratory_rate: vitalsData.respiratoryRate || null
+      combined_score: score
     });
     if (error) console.error('Error al guardar la medición:', error);
     else console.log('¡Medición guardada en Supabase!');
