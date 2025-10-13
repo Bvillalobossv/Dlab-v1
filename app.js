@@ -149,7 +149,7 @@ const faceEmotion  = $('#faceEmotion');
 const faceConfidence = $('#faceConfidence');
 const faceTip = $('#faceTip');
 const faceMascot = $('#faceMascot');
-const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
 
 let faceStream = null;
 let modelsLoaded = false;
@@ -549,6 +549,8 @@ function noiseScore(db){
   const diff = Math.abs(db - 50);
   return Math.max(0, 100 - diff*2.2);
 }
+
+// --> CAMBIO: Se añade la lógica para actualizar el departamento del usuario
 $('#btnToIntegration').addEventListener('click', async () => {
   const bsData = JSON.parse(sessionStorage.getItem('sw_bs')||'{}');
   
@@ -575,16 +577,27 @@ $('#btnToIntegration').addEventListener('click', async () => {
   $('#ix_mascot').src = lastFace ? pickMascot(lastFace.expression) : 'images/mascots/neutral.gif';
   $('#ix_reco').textContent = reco;
 
+  // NUEVO: Se guarda el departamento del usuario en su perfil
+  const selectedDepartment = $('#ws_area').value;
+
   if (currentUser) {
-    const { error } = await db.from('measurements').insert({
+    // Primero, guarda la medición en la tabla `measurements`
+    const { error: measurementError } = await db.from('measurements').insert({
       user_id: currentUser.id,
       face_emotion: lastFace ? lastFace.expression : 'skipped',
       noise_db: lastNoiseAvg,
       body_scan_avg: bsData.avg ?? 0,
       combined_score: score
     });
-    if (error) console.error('Error al guardar la medición:', error);
+    if (measurementError) console.error('Error al guardar la medición:', measurementError);
     else console.log('¡Medición guardada en Supabase!');
+
+    // Segundo, actualiza el departamento en la tabla `profiles`
+    const { error: profileError } = await db.from('profiles')
+      .update({ department: selectedDepartment })
+      .eq('id', currentUser.id);
+    if (profileError) console.error('Error al actualizar el departamento:', profileError);
+    else console.log('¡Departamento del usuario actualizado!');
   }
   show('#screenIntegration');
 });
@@ -610,3 +623,4 @@ $('#btnMicGo').addEventListener('click', ()=> {
   startMotivationCarousel();
   show('#screenMeasure');
 });
+
