@@ -96,6 +96,8 @@ input[type="text"], input[type="password"], input[type="datetime-local"], select
 }
 .form-row.chk { display: flex; align-items: center; gap: 0.5rem; }
 .form-row.chk a { color: var(--green-dark); text-decoration: none; font-weight: 600; }
+.divider { border: none; height: 1px; background-color: var(--border-color); margin: 2rem 0; }
+
 
 /* ===================== PANTALLAS ESPECÍFICAS ===================== */
 /* Onboarding */

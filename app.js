@@ -54,8 +54,8 @@ let currentUser = null;
 async function signOut() {
   await db.auth.signOut();
   currentUser = null;
+  Object.keys(sessionStorage).forEach(key => sessionStorage.removeItem(key));
   show('#screenAuth');
-  sessionStorage.clear();
 }
 
 (() => {
@@ -66,6 +66,8 @@ async function signOut() {
   const authMessage = $('#auth-message');
   const viewTermsLink = $('#view-terms-link');
   const closeTermsButton = $('#close-terms-button');
+  const btnSignOut = $('#btnSignOut');
+  const btnHomeStart = $('#btnHomeStart');
 
   tabLogin.addEventListener('click', () => {
     tabLogin.classList.add('active'); tabSignup.classList.remove('active');
@@ -122,6 +124,10 @@ async function signOut() {
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) authMessage.textContent = 'Usuario o contraseña incorrectos.';
   });
+  
+  btnSignOut.addEventListener('click', signOut);
+  btnHomeStart.addEventListener('click', () => show('#screenFace'));
+
 })();
 
 /* ===================== SELFIE EMOCIONAL ===================== */
@@ -356,30 +362,26 @@ const ixReco = $('#ix_reco');
 const btnIntegrationHome = $('#btnIntegrationHome');
 
 async function renderFinalReport() {
-    // 1. Calcular puntajes individuales (0-100, donde 100 es mejor)
     let faceScore;
     if (lastFace) {
         if (lastFace.expression === 'happy') faceScore = 95;
         else if (lastFace.expression === 'neutral' || lastFace.expression === 'surprised') faceScore = 75;
-        else faceScore = 30; // angry, sad, etc.
+        else faceScore = 30;
     } else {
-        faceScore = 60; // 'skipped' score
+        faceScore = 60;
     }
 
     const noiseScore = Math.max(0, 100 - (Math.abs(lastNoiseAvg - 50) * 2.5));
     const tensionAvg = (bodyScanData.head + bodyScanData.upper + bodyScanData.lower) / 3;
     const tensionScore = Math.round(100 - ((tensionAvg - 1) / 9) * 100);
     
-    // 2. Calcular índice combinado
     const combinedScore = Math.round((faceScore * 0.4) + (noiseScore * 0.2) + (tensionScore * 0.4));
 
-    // 3. Determinar estado y color
     let label, color;
     if (combinedScore >= 75) { label = 'En Equilibrio'; color = 'var(--success)'; }
     else if (combinedScore >= 50) { label = 'Atención Moderada'; color = 'var(--warning)'; }
     else { label = 'Alto Desbalance'; color = 'var(--danger)'; }
 
-    // 4. Generar recomendación
     const scores = { 'Anímico': faceScore, 'Entorno': noiseScore, 'Corporal': tensionScore };
     const worstDimension = Object.keys(scores).reduce((a, b) => scores[a] < scores[b] ? a : b);
     
@@ -392,7 +394,6 @@ async function renderFinalReport() {
         reco += 'Tómate una pausa activa de 2 minutos para estirar las zonas con mayor tensión. Tu cuerpo te lo agradecerá.';
     }
 
-    // 5. Renderizar en la UI
     ixScoreCircle.textContent = combinedScore;
     ixScoreCircle.style.backgroundColor = color;
     ixLabel.textContent = label;
@@ -408,9 +409,9 @@ async function renderFinalReport() {
     
     ixReco.innerHTML = reco;
 
-    // 6. Guardar en Supabase
     if (currentUser) {
-        const { error } = await db.from('measurements').insert({
+        const selectedDepartment = $('#ws_area').value;
+        const { error: measurementError } = await db.from('measurements').insert({
             user_id: currentUser.id,
             face_emotion: lastFace ? lastFace.expression : 'skipped',
             noise_db: lastNoiseAvg,
@@ -418,16 +419,22 @@ async function renderFinalReport() {
             combined_score: combinedScore,
             journal_entry: journalEntry
         });
-        if (error) console.error('Error al guardar medición:', error);
+        if (measurementError) console.error('Error al guardar medición:', measurementError);
+
+        const { error: profileError } = await db.from('profiles')
+          .update({ department: selectedDepartment })
+          .eq('id', currentUser.id);
+        if (profileError) console.error('Error al actualizar departamento:', profileError);
     }
 }
+
 btnIntegrationHome.addEventListener('click', () => {
-    // Reiniciar estados para un nuevo flujo
+    // Resetear variables
     lastFace = null;
     lastNoiseAvg = 0;
     bodyScanData = {};
     journalEntry = "";
-    // Restablecer UI de pantallas
+    // Resetear UI
     $('#face-results-content').classList.add('hidden');
     btnFaceNext.disabled = true;
     toggleBtn.style.display = 'inline-block';
@@ -435,22 +442,25 @@ btnIntegrationHome.addEventListener('click', () => {
     noiseResultsCard.classList.add('hidden');
     btnMeasureNext.disabled = true;
     $('#journal-input').value = '';
-    show('#screenFace');
+    // Reiniciar sliders de body scan
+    $('#bs_head_tension').value = 1;
+    $('#bs_upper_tension').value = 1;
+    $('#bs_lower_tension').value = 1;
+    
+    show('#screenHome');
 });
 
-
 /* ===================== MANEJO DE SESIÓN Y RUTAS ===================== */
-db.auth.onAuthStateChange((event, session) => {
+db.auth.onAuthStateChange(async (event, session) => {
   if (session && session.user) {
     currentUser = session.user;
-    show('#screenFace'); // Inicia directamente en el flujo de medición
+    const { data: profile } = await db.from('profiles').select('username').eq('id', currentUser.id).single();
+    $('#welcome-user').textContent = `¡Hola, ${profile ? profile.username : ''}!`;
+    show('#screenHome');
   } else {
     currentUser = null;
     show('#screenIntro');
   }
 });
 
-$('#btnMicGo').addEventListener('click', ()=> {
-  show('#screenMeasure');
-});
 

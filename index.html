@@ -97,6 +97,18 @@
       </div>
   </div>
 
+  <!-- ====================== PANTALLA DE BIENVENIDA (HOME) ====================== -->
+  <div id="screenHome" class="screen">
+      <div class="card max-700">
+          <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
+          <h2 id="welcome-user">¡Hola!</h2>
+          <p class="lead">¿Listo para hacer tu check-in de bienestar de hoy?</p>
+          <button id="btnHomeStart" class="btn">Comenzar Nuevo Check-in</button>
+          <hr class="divider">
+          <button id="btnSignOut" class="btn btn-secondary">Cerrar Sesión</button>
+      </div>
+  </div>
+
 
   <!-- ====================== SELFIE EMOCIONAL ====================== -->
   <div id="screenFace" class="screen">
@@ -163,6 +175,15 @@
       <p class="lead">¿Cómo se siente tu cuerpo ahora? Conecta con tus sensaciones físicas.</p>
     </div>
     <form id="bodyScanForm">
+      <div class="card max-900">
+        <h3>Área / Puesto de Trabajo</h3>
+        <div class="form-row">
+            <select id="ws_area" required>
+                <option>Ventas</option><option>Administración</option><option>Finanzas</option>
+                <option>TI</option><option>Marketing</option><option>Operaciones</option>
+            </select>
+        </div>
+      </div>
       <div class="card max-900"><h3>Cabeza y Cuello</h3><div class="slider-group"><label>Nivel de tensión (1 = relajado, 10 = máxima tensión)</label><input type="range" id="bs_head_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
       <div class="card max-900"><h3>Hombros y Espalda</h3><div class="slider-group"><label>Nivel de tensión</label><input type="range" id="bs_upper_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
       <div class="card max-900"><h3>Pecho y Abdomen</h3><div class="slider-group"><label>Nivel de tensión</label><input type="range" id="bs_lower_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
