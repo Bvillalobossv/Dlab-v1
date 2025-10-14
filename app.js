@@ -19,6 +19,7 @@ const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
+const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
@@ -34,8 +35,17 @@ const EMOJI_GIF={
   surprised:'./images/mascots/surprised.gif'
 };
 
-/*************** BOOT *****************/
+/*************** BOOT (CORREGIDO) *****************/
 document.addEventListener('DOMContentLoaded', async () => {
+  // CORRECCIÓN: Se inicializa Supabase ANTES que los demás componentes.
+  try {
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    db.auth.onAuthStateChange((_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
+  } catch (err) {
+    console.error('Error inicializando Supabase:', err);
+    return; // Detener si Supabase falla
+  }
+
   const initComponents = [
     { name: 'Intro', func: initIntro },
     { name: 'Tabs & Terms', func: initTabsTerms },
@@ -58,14 +68,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  try {
-    db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    db.auth.onAuthStateChange((_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
-    const { data:{ session } } = await db.auth.getSession();
-    session?.user ? onSignedIn(session.user) : show('screenIntro');
-  } catch (err) {
-    console.error('Error inicializando Supabase:', err);
-  }
+  const { data:{ session } } = await db.auth.getSession();
+  session?.user ? onSignedIn(session.user) : show('screenIntro');
 });
 
 
@@ -132,7 +136,11 @@ function initAuthForms(){
     if(!u||!p) return setAuthMessage('Completa los campos.',true);
     if(!ok) return setAuthMessage('Debes aceptar los términos.',true);
     const {error}=await db.auth.signUp({email:emailFromUser(u),password:p,options:{data:{username:u}}});
-    if(error) return setAuthMessage(error.message,true);
+    if(error) {
+      setAuthMessage(error.message,true);
+      return;
+    }
+    // Si el registro es exitoso, inicia sesión automáticamente
     await db.auth.signInWithPassword({email:emailFromUser(u),password:p});
   });
 }
@@ -484,18 +492,16 @@ function initContextSurvey() {
     }
 }
 
-/*************** REPORTE + PERSISTENCIA (CORREGIDO) *****************/
+/*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
   state.journal = ($('#journal-input')?.value || '').slice(0,1000);
 
-  // --- Cálculos ---
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
   const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
   const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3;
   const bodyScore = 100 - (bodyAvg10 * 10);
   const ix = Math.round(0.25 * faceScore + 0.35 * noiseScore + 0.40 * bodyScore);
 
-  // --- Actualización de la UI ---
   $('#ix_score_circle').textContent = ix;
   $('#ix_score_circle').style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e';
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
@@ -505,12 +511,11 @@ async function finalizeAndReport(){
   $('#ix_reco').textContent = buildReco(faceScore, noiseScore, bodyScore, state);
   $('#ix_meaning').textContent = buildMeaning(ix);
 
-  // --- Guardado en Supabase ---
   try{
     const { data: { user } } = await db.auth.getUser();
     if(user?.id){
       const measurementData = {
-        user_id_uuid: user.id, // Nombre de columna correcto
+        user_id_uuid: user.id,
         face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
@@ -522,10 +527,8 @@ async function finalizeAndReport(){
         stress_level: state.contextSurvey.stress
       };
       
-      console.log("Enviando a Supabase:", measurementData);
-      const { error } = await db.from('measurements').insert([measurementData]); // Importante: enviar como un array
+      const { error } = await db.from('measurements').insert(measurementData);
       if (error) throw error;
-      console.log('Datos guardados en Supabase con éxito.');
     }
   } catch(err) {
     console.error('Error de Supabase al insertar:', err);
