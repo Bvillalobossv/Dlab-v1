@@ -11,7 +11,7 @@ body{font-family:'Montserrat',sans-serif;background:var(--background);color:var(
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .max-600{max-width:600px;margin:0 auto}.max-700{max-width:700px;margin:0 auto}.max-900{max-width:900px;margin:0 auto}
 .text-left{text-align:left}h1,h2,h3,h4{font-weight:700}h1{font-size:2.5rem}h2{font-size:2rem}
-p.lead{font-size:1.1rem;color:var(--text-light);max-width:600px;margin:.5rem auto 2rem auto}
+p.lead{font-size:1.1rem;color:var(--text-light);max-width:600px;margin:.5rem auto 2rem}
 .muted{color:var(--text-light)}.small{font-size:.9rem}.hidden{display:none!important}
 .card{background:var(--card-bg);border:1px solid var(--border-color);border-radius:20px;padding:2rem;box-shadow:0 8px 30px rgba(0,0,0,.05);margin:1.5rem auto}
 .btn{background:var(--green-dark);color:#fff;border:none;border-radius:999px;padding:1rem 2rem;margin:.5rem;cursor:pointer;font-weight:600;font-size:1rem;letter-spacing:.5px;transition:transform .2s,box-shadow .2s}
@@ -22,7 +22,7 @@ p.lead{font-size:1.1rem;color:var(--text-light);max-width:600px;margin:.5rem aut
 .segment{border-radius:999px;padding:.6rem 1.5rem;background:transparent;border:none;color:var(--text-light);font-weight:600;cursor:pointer}
 .segment.active{background:var(--green-dark);color:#fff}
 .form .form-row{margin-bottom:1.2rem;text-align:left}
-input[type="text"],input[type="password"],select{width:100%;padding:1rem;border-radius:12px;border:1px solid var(--border-color);background:var(--background);color:var(--text-dark);outline:none;font-size:1rem}
+input[type="text"],input[type="password"],input[type="number"],input[type="datetime-local"],select{width:100%;padding:1rem;border-radius:12px;border:1px solid var(--border-color);background:var(--background);color:var(--text-dark);outline:none;font-size:1rem}
 .form-row.chk{display:flex;align-items:center;gap:.5rem}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
 .divider{border:none;height:1px;background:var(--border-color);margin:2rem 0}
@@ -39,14 +39,16 @@ input[type="text"],input[type="password"],select{width:100%;padding:1rem;border-
 .two-cols{display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start}
 @media (max-width:768px){.two-cols{grid-template-columns:1fr}}
 .results-container h3{margin-top:0}.mascot{width:150px;height:150px;object-fit:contain;display:block;margin:1rem auto}
-/* Ruido */
+/* Tips */
+ul.tips{list-style:none;padding:0;margin:0 0 1rem 0;color:var(--text-light)}ul.tips li{margin:.25rem 0}
+/* Gauge */
 .gauge-wrapper{position:relative;width:280px;height:280px;margin:1rem auto 1.2rem}
-.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.gauge-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
 .db-value{font-size:4rem;font-weight:700}.db-unit{display:block;font-size:1rem;color:var(--text-light)}
 .db-label{display:inline-block;margin-top:.35rem;padding:.25rem .7rem;border-radius:12px;font-weight:700}
-/* Sliders */
-.slider-group{margin-bottom:1rem}.slider-group label{display:block;margin-bottom:.5rem;font-weight:600}
-input[type="range"]{width:100%}.range-ticks{display:flex;justify-content:space-between;font-size:.9rem;color:var(--text-light)}
+/* Grids */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}@media (max-width:768px){.grid-2{grid-template-columns:1fr}}
+.slider-block{margin:1rem 0}
 /* Journal */
 #journal-input{width:100%;height:150px;padding:1rem;border-radius:12px;border:1px solid var(--border-color);background:var(--background);font-family:'Montserrat',sans-serif;font-size:1rem;resize:vertical}
 #journal-input:focus{outline:2px solid var(--green-dark)}
@@ -57,4 +59,8 @@ input[type="range"]{width:100%}.range-ticks{display:flex;justify-content:space-b
 .report-breakdown{margin-bottom:2rem}.progress-item{margin-bottom:1rem}.progress-label{display:block;font-weight:600;margin-bottom:.5rem}
 .progress-bar{width:100%;height:20px;background:var(--background);border-radius:10px;overflow:hidden}
 .progress-bar-fill{height:100%;border-radius:10px;transition:width .5s ease-in-out}
+/* Carrusel refs */
+.ref-carousel{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem;margin-top:1rem}
+.ref-card{display:flex;gap:1rem;align-items:center;border:1px solid var(--border-color);border-radius:14px;padding:1rem;background:#fff}
+.ref-card img{width:56px;height:56px;object-fit:contain}
 .report-recommendation{background:var(--background);padding:1.5rem;border-radius:15px}

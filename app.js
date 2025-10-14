@@ -5,37 +5,38 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 let db = null;
 let supabaseReady = false;
 
+// ============ STATE ============
+const state = {
+  user: null,
+  face: { emotion: null, confidence: 0 },
+  noise: { samples: [], avg: 0, label: '' },
+  context: { area: 'Ventas', hours: null, load: 5, pace: 5, stress: 5, datetime: null },
+  body: { head: 1, upper: 1, lower: 1 },
+  journal: ''
+};
+
 // ============ HELPERS ============
-const $ = (s) => document.querySelector(s);
-const showScreen = (id) => {
+const $ = s => document.querySelector(s);
+const showScreen = id => {
   document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));
   const el = document.getElementById(id); if (el) el.classList.add('active'); else console.warn('no screen', id);
 };
-const setAuthMessage = (msg, err=false) => {
-  const el = $('#auth-message'); if(!el) return;
-  el.textContent = msg || ''; el.style.color = err ? 'var(--danger)' : 'var(--text-light)';
-};
+const setAuthMessage = (msg, err=false) => { const el=$('#auth-message'); if(!el) return; el.textContent=msg||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s ? s[0].toUpperCase()+s.slice(1) : s;
-const toEmailFromUser = (u) => {
-  const base = (u||'').trim().toLowerCase(); if(!base) return null;
-  return `${base.replace(/[^a-z0-9._-]/g,'')}@example.com`;
-};
+const toEmailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 
-// ============ FACE-API CONFIG ============
-const MODEL_URL = './models'; // coloca aquí tus pesos (tiny_face_detector_model-weights, face_expression_model-weights)
+// ============ FACE-API ============
+const MODEL_URL = './models';
 let faceModelsReady = false;
 let cameraStream = null;
-
-// Mapea emociones → GIF local (usa tus archivos en /images)
 const EMOJI_GIF = {
-  happy: 'images/happy.gif',
-  neutral: 'images/neutral.gif',
-  sad: 'images/sad.gif',
-  angry: 'images/angry.gif',
-  disgusted: 'images/disgust.gif',
-  fearful: 'images/fear.gif',
-  surprised: 'images/surprised.gif'
+  happy: 'images/happy.gif', neutral:'images/neutral.gif', sad:'images/sad.gif',
+  angry:'images/angry.gif', disgusted:'images/disgust.gif', fearful:'images/fear.gif', surprised:'images/surprised.gif'
 };
+
+// ============ GAUGE / CHARTS ============
+let gaugeChart = null;
+let historyChart = null;
 
 // ============ BOOT ============
 document.addEventListener('DOMContentLoaded', async () => {
@@ -43,11 +44,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAuthTabs();
   initTermsLinks();
 
-  // Supabase
   supabaseReady = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
   if (!supabaseReady) {
-    console.error('[supabase] faltan credenciales');
-    setAuthMessage('Configuración de Supabase ausente.', true);
+    console.error('[supabase] faltan credenciales'); setAuthMessage('Configura Supabase.', true);
   } else {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     db.auth.onAuthStateChange(async (_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
@@ -57,18 +56,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initAuthForms();
   initMainNavigation();
-  initFaceFlow();        // cámara + análisis
-  initAudioPrepFlow();   // permiso de micro
-  initNoiseMeasure();    // medición 5s
+  initFaceFlow();
+  initAudioPrepFlow();
+  initNoiseMeasure();
+  initContextForm();
 });
 
 // ============ SESIÓN ============
 async function onSignedIn(user){
+  state.user = user;
   const name = (user?.user_metadata?.username) || (user?.email?.split('@')[0]) || 'Usuario';
   $('#welcome-user').textContent = `¡Hola, ${capitalize(name)}!`;
   showScreen('screenHome'); setAuthMessage('');
 }
-function onSignedOut(){ showScreen('screenIntro'); setAuthMessage(''); }
+function onSignedOut(){ state.user=null; showScreen('screenIntro'); setAuthMessage(''); }
 
 // ============ INTRO ============
 function initIntroCarousel(){
@@ -78,7 +79,7 @@ function initIntroCarousel(){
   const count = slides.children.length; let i=0;
   function render(){
     slides.style.transform = `translateX(${-i*100}%)`;
-    dotsWrap.innerHTML = ''; for(let k=0;k<count;k++){const d=document.createElement('div'); d.className='dot'+(k===i?' active':''); dotsWrap.appendChild(d);}
+    dotsWrap.innerHTML=''; for(let k=0;k<count;k++){const d=document.createElement('div'); d.className='dot'+(k===i?' active':''); dotsWrap.appendChild(d);}
     btnPrev.disabled = i===0; btnNext.style.display = i<count-1?'inline-block':'none'; btnStart.style.display = i===count-1?'inline-block':'none';
   }
   btnPrev.onclick=()=>{ if(i>0){i--;render();} }; btnNext.onclick=()=>{ if(i<count-1){i++;render();} }; btnStart.onclick=()=>showScreen('screenAuth'); render();
@@ -125,8 +126,9 @@ function initMainNavigation(){
   $('#btnFaceSkip')?.addEventListener('click',()=>{ $('#faceEmotion').textContent='—'; $('#faceConfidence').textContent='—'; $('#btnFaceNext').disabled=false; });
   $('#btnFaceNext')?.addEventListener('click',()=>showScreen('screenAudioPrep'));
   $('#btnGoToMeasure')?.addEventListener('click',()=>showScreen('screenMeasure'));
-  $('#btnMeasureNext')?.addEventListener('click',()=>showScreen('screenBodyScan'));
-  $('#btnBodyScanNext')?.addEventListener('click',()=>{ renderFinalReport(); showScreen('screenIntegration'); });
+  $('#btnMeasureNext')?.addEventListener('click',()=>showScreen('screenContext'));
+  $('#btnContextNext')?.addEventListener('click',()=>showScreen('screenJournal'));
+  $('#btnJournalNext')?.addEventListener('click',async()=>{ await renderAndPersistReport(); showScreen('screenIntegration'); });
   $('#btnIntegrationHome')?.addEventListener('click',()=>showScreen('screenHome'));
 }
 
@@ -135,9 +137,7 @@ function initFaceFlow(){
   const video = $('#faceVideo');
   const btnStart = $('#btnFaceStart');
   const btnSnap  = $('#btnFaceSnap');
-
-  // iOS/Safari quirks
-  if (video) { video.setAttribute('playsinline', ''); video.muted = true; video.autoplay = true; }
+  if (video) { video.setAttribute('playsinline',''); video.muted = true; video.autoplay = true; }
 
   btnStart?.addEventListener('click', async () => {
     try{
@@ -163,19 +163,22 @@ function initFaceFlow(){
         $('#faceTip').textContent = 'Asegúrate de que tu rostro esté bien iluminado y centrado.';
         $('#face-results-content').classList.remove('hidden');
         $('#btnFaceNext').disabled = false;
+        state.face = { emotion:null, confidence:0 };
         return;
       }
       const expr = det.expressions.asSortedArray()[0]; // { expression, probability }
       const emotion = expr.expression;
-      const conf = (expr.probability*100).toFixed(1)+'%';
+      const conf = +(expr.probability*100).toFixed(1);
 
       $('#faceEmotion').textContent = emotion;
-      $('#faceConfidence').textContent = conf;
+      $('#faceConfidence').textContent = conf+'%';
       const gif = EMOJI_GIF[emotion] || EMOJI_GIF.neutral;
       const img = $('#faceMascot'); img.src = gif; img.alt = `emoción ${emotion}`;
       $('#faceTip').textContent = tipForEmotion(emotion);
       $('#face-results-content').classList.remove('hidden');
       $('#btnFaceNext').disabled = false;
+
+      state.face = { emotion, confidence: conf };
     }catch(err){
       console.error('[analyze]', err);
       alert('Ocurrió un problema al analizar el rostro.');
@@ -193,16 +196,14 @@ async function ensureFaceModels(){
 }
 
 async function startCamera(videoEl){
-  // Recomendado para móviles: facingMode "user"
   const constraints = {
-    video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+    video: { facingMode: 'user', width:{ideal:640}, height:{ideal:480} },
     audio: false
   };
-  // Solicitar tras gesto del usuario
+  // Safari/iOS requiere gesto de usuario y play() manual
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   cameraStream = stream;
   videoEl.srcObject = stream;
-  // iOS requiere play() explícito y muted/playsinline
   await videoEl.play();
 }
 
@@ -212,7 +213,7 @@ function tipForEmotion(e){
     case 'neutral': return 'Tómate 1 minuto para planear tu primera tarea clave.';
     case 'sad': return 'Una breve caminata o luz natural puede ayudarte a subir el ánimo.';
     case 'angry': return 'Prueba 4 respiraciones lentas (4-4-4-4) antes de continuar.';
-    case 'fearful': return 'Recuerda: una cosa a la vez. Prioriza y avanza paso a paso.';
+    case 'fearful': return 'Una cosa a la vez. Prioriza y avanza paso a paso.';
     case 'disgusted': return 'Muévete un poco y cambia de foco por 2 minutos.';
     case 'surprised': return 'Aprovecha la activación: anota 1 objetivo concreto.';
     default: return 'Respira profundo por 60 segundos y vuelve con foco.';
@@ -230,13 +231,12 @@ function initAudioPrepFlow(){
   btnTest?.addEventListener('click', async ()=>{
     try{
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-      // Detenemos de inmediato: solo probamos permiso
       stream.getTracks().forEach(t=>t.stop());
       micTested = true;
       res.textContent = 'Micrófono OK. Permiso otorgado.';
       res.style.color = 'var(--success)';
       btnNext.disabled = false;
-      msg.textContent = 'Perfecto. Ahora puedes continuar a la medición.';
+      msg.textContent = 'Perfecto. Continúa a la medición.';
     }catch(err){
       console.error('[mic test]', err);
       res.textContent = 'No se pudo acceder al micrófono. Revisa permisos.';
@@ -260,6 +260,25 @@ function initNoiseMeasure(){
 
   let audioCtx, analyser, micStream, raf, values = [], started=false;
 
+  // Gauge Chart.js
+  const gctx = $('#gaugeChart').getContext('2d');
+  gaugeChart = new Chart(gctx, {
+    type: 'doughnut',
+    data: { labels:['valor','resto'], datasets:[{ data:[0,100], borderWidth:0, cutout:'80%'}]},
+    options: {
+      responsive:true, maintainAspectRatio:false, rotation:-90, circumference:180,
+      plugins:{ legend:{display:false}, tooltip:{enabled:false} }
+    }
+  });
+
+  function setGauge(v){
+    const pct = Math.max(0, Math.min(100, v)); // 0-100
+    gaugeChart.data.datasets[0].data = [pct, 100-pct];
+    const color = pct<45? '#8DB596' : pct<65? '#A7AD9A' : pct<80? '#f6ad55' : '#e53e3e';
+    gaugeChart.data.datasets[0].backgroundColor = [color, '#eee'];
+    gaugeChart.update('none');
+  }
+
   function classify(db){
     if (db < 45) return 'muy tranquilo';
     if (db < 60) return 'tranquilo';
@@ -267,11 +286,16 @@ function initNoiseMeasure(){
     return 'alto';
   }
 
+  // History line chart (filled after run)
+  const hctx = $('#noiseHistory').getContext('2d');
+  historyChart = new Chart(hctx, {
+    type: 'line',
+    data: { labels:[], datasets:[{ data:[], tension:.35, pointRadius:0 }]},
+    options: { responsive:true, plugins:{ legend:{display:false} }, scales:{ x:{ display:false }, y:{ beginAtZero:true, suggestedMax:80 } } }
+  });
+
   async function startMeasure(){
-    if (!micTested) {
-      alert('Primero prueba el micrófono en la pantalla anterior.');
-      return;
-    }
+    if (!micTested) { alert('Primero prueba el micrófono en la pantalla anterior.'); return; }
     if (started) return;
     started = true; values = [];
     status.textContent = 'Midiendo...';
@@ -285,24 +309,21 @@ function initNoiseMeasure(){
     analyser.fftSize = 2048;
     src.connect(analyser);
 
-    let remaining = 5.0;
+    let remaining = 5.0, ticks = 0;
     const tick = ()=>{
       const data = new Uint8Array(analyser.frequencyBinCount);
       analyser.getByteTimeDomainData(data);
-      // RMS → dB aprox (calibración simple)
       let sum=0; for (let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum += v*v; }
       const rms = Math.sqrt(sum/data.length);
-      const dB = Math.max(20*Math.log10(rms)+90, 0); // offset simple
+      const dB = Math.max(20*Math.log10(rms)+90, 0); // calibración simple
       values.push(dB);
       dbValueEl.textContent = Math.round(dB);
       dbLabelEl.textContent = classify(dB);
+      setGauge(Math.min(Math.max(dB,0),100));
       remaining = Math.max(0, remaining - 0.05);
       countdownEl.textContent = `${remaining.toFixed(1)} s`;
-      if (remaining>0){
-        raf = requestAnimationFrame(tick);
-      }else{
-        stopMeasure();
-      }
+      ticks++;
+      if (remaining>0){ raf = requestAnimationFrame(tick); } else { stopMeasure(); }
     };
     raf = requestAnimationFrame(tick);
   }
@@ -320,18 +341,45 @@ function initNoiseMeasure(){
     finalLabel.textContent = label;
     resultsCard.classList.remove('hidden');
     status.textContent = 'Medición finalizada.';
+    btnNext.disabled = true; // se habilita cuando haya datos en history
+
+    // actualizar gráfico histórico (esta sesión)
+    const xs = values.map((_,i)=>i);
+    historyChart.data.labels = xs;
+    historyChart.data.datasets[0].data = values.map(v=>Math.round(v));
+    historyChart.update();
+
+    state.noise = { samples: values.slice(), avg: Math.round(avg), label };
     btnNext.disabled = false;
   }
 
   btn?.addEventListener('click', ()=> startMeasure());
 }
 
-// ============ INFORME ============
-function renderFinalReport(){
-  // valores dummy si aún no cableamos almacenamiento
-  const face = 70, dbScore = 65, body = 60;
-  const ix = Math.round(0.33*face + 0.33*dbScore + 0.34*body);
+// ============ CONTEXTO ============
+function initContextForm(){
+  const dt = $('#ctx_datetime');
+  if (dt) {
+    const now = new Date();
+    dt.value = new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  }
+  $('#ctx_area')?.addEventListener('change',e=> state.context.area = e.target.value);
+  $('#ctx_hours')?.addEventListener('input',e=> state.context.hours = +e.target.value||0);
+  $('#ctx_load')?.addEventListener('input',e=> state.context.load = +e.target.value||5);
+  $('#ctx_pace')?.addEventListener('input',e=> state.context.pace = +e.target.value||5);
+  $('#ctx_stress')?.addEventListener('input',e=> state.context.stress = +e.target.value||5);
+  $('#ctx_datetime')?.addEventListener('change',e=> state.context.datetime = e.target.value);
+}
 
+// ============ INFORME + PERSISTENCIA ============
+async function renderAndPersistReport(){
+  // Body scan (si no implementaste sliders específicos, usamos contexto como proxy)
+  const bodyAvg = Math.round((state.context.load + state.context.pace + state.context.stress)/3 * 10); // 10→100 escala
+  const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
+  const noiseScore = 100 - clamp(state.noise.avg, 0, 100); // a menor dB, mayor score (aprox)
+  const ix = Math.round(0.33*faceScore + 0.33*noiseScore + 0.34*bodyAvg);
+
+  // UI
   const circle = $('#ix_score_circle');
   const label = $('#ix_label');
   const pf = $('#ix_face_progress');
@@ -341,10 +389,50 @@ function renderFinalReport(){
 
   if (circle){ circle.textContent = ix; circle.style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e'; }
   if (label){ label.textContent = ix>=67 ? 'En Verde' : ix>=34 ? 'Atento' : 'Revisa tu día'; }
-  if (pf){ pf.style.width = `${face}%`; pf.style.background = '#8DB596'; }
-  if (pd){ pd.style.width = `${dbScore}%`; pd.style.background = '#A7AD9A'; }
-  if (pb){ pb.style.width = `${body}%`; pb.style.background = '#70755D'; }
-  if (reco){ reco.textContent = 'Consejo: tómate 2 minutos para respirar profundo y estirar hombros.'; }
+  if (pf){ pf.style.width = `${faceScore}%`; pf.style.background = '#8DB596'; }
+  if (pd){ pd.style.width = `${noiseScore}%`; pd.style.background = '#A7AD9A'; }
+  if (pb){ pb.style.width = `${bodyAvg}%`; pb.style.background = '#70755D'; }
+  if (reco){ reco.textContent = buildReco(faceScore, noiseScore, bodyAvg); }
+
+  // Persistencia en Supabase
+  try{
+    const user = (await db.auth.getUser())?.data?.user;
+    if (!user) return;
+    // 1) actualizar área en profiles
+    await db.from('profiles').update({ department: state.context.area }).eq('id', user.id);
+
+    // 2) insertar medición
+    const payload = {
+      user_id_uuid: user.id,
+      face_emotion: state.face.emotion || 'neutral',
+      noise_db: state.noise.avg || 0,
+      body_scan_avg: +(bodyAvg/10).toFixed(1), // escala 1-10
+      combined_score: ix,
+      journal_entry: ($('#journal-input')?.value || '').slice(0, 1000)
+    };
+    await db.from('measurements').insert(payload);
+  }catch(err){
+    console.error('[supabase insert]', err);
+  }
 }
 
+function buildReco(face, noise, body){
+  const min = Math.min(face, noise, body);
+  if (min===noise) return 'Busca 10 minutos en un espacio más silencioso o usa audífonos con reducción de ruido.';
+  if (min===body)  return 'Realiza dos pausas breves de estiramiento para cuello y hombros.';
+  return 'Tómate 2 minutos de respiración 4-4-4-4 antes de tu próxima tarea.';
+}
 
+function emotionToScore(e){
+  switch(e){
+    case 'happy': return 85;
+    case 'neutral': return 65;
+    case 'surprised': return 70;
+    case 'sad': return 40;
+    case 'angry': return 35;
+    case 'fearful': return 45;
+    case 'disgusted': return 50;
+    default: return 60;
+  }
+}
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
