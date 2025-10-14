@@ -69,12 +69,11 @@ async function onSignedIn(user){
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
 
-/*************** INTRO + AUTH (CORREGIDO) *****************/
+/*************** INTRO + AUTH *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
-  // CORRECCIÓN DEFINITIVA: Todos los selectores usan '$' correctamente.
   const prev = $('#introPrev'), next = $('#introNext'), start = $('#introStart');
-  if(!slides || !prev || !next || !start) return; // Añadida una comprobación de seguridad extra.
+  if(!slides || !prev || !next || !start) return;
 
   const n=slides.children.length; let i=0;
   const render=()=>{
@@ -161,20 +160,21 @@ function initArea(){
   });
 }
 
-/*************** CÁMARA / FACE *****************/
-async function ensureFaceModels(){
+/*************** CÁMARA / FACE (LÓGICA REFORZADA) *****************/
+async function ensureFaceModels(statusElement){
   if(faceModelsReady) return true;
-  console.log('Loading face-api models...');
   try {
+    statusElement.textContent = 'Cargando modelos de IA...';
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
     ]);
     faceModelsReady = true;
-    console.log('Face-api models loaded successfully.');
+    statusElement.textContent = 'Modelos listos. Puedes activar la cámara.';
     return true;
   } catch (err) {
-    console.error('[face-api models] Failed to load:', err);
+    console.error('ERROR AL CARGAR MODELOS DE IA:', err);
+    statusElement.textContent = 'Error al cargar modelos. Refresca la página.';
     faceModelsReady = false;
     return false;
   }
@@ -184,39 +184,39 @@ function initFace(){
   const video=$('#faceVideo'), canvas=$('#faceCanvas');
   const btnStart=$('#btnFaceStart'), btnSnap=$('#btnFaceSnap'), status=$('#faceStatus');
 
-  if (video) { video.setAttribute('playsinline',''); video.muted=true; video.autoplay=true; }
+  if(video) { video.setAttribute('playsinline', ''); video.muted=true; video.autoplay=true; }
   
-  ensureFaceModels().then(loaded => {
-    if (loaded) {
-      status.textContent = 'Modelos listos. Puedes activar la cámara.';
-      btnStart.disabled = false;
-    } else {
-      status.textContent = 'Error al cargar los modelos de IA. Refresca la página.';
-      btnStart.disabled = true;
-    }
+  ensureFaceModels(status).then(loaded => {
+    if (loaded) btnStart.disabled = false;
   });
 
   btnStart.addEventListener('click', async () => {
     if (!faceModelsReady) {
-      status.textContent = 'Los modelos de IA no están listos.';
-      return;
+        status.textContent = 'Los modelos de IA aún no están listos.';
+        return;
     }
     btnStart.disabled = true;
-    status.textContent = 'Iniciando cámara, por favor acepta el permiso...';
+    status.textContent = 'Solicitando permiso de cámara...';
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false
-      });
-      cameraStream = stream;
-      video.srcObject = stream;
-      await video.play();
-      btnSnap.disabled = false;
-      status.textContent = 'Cámara lista ✅. Centra tu rostro y analiza.';
+        const constraints = { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        cameraStream = stream;
+        video.srcObject = stream;
+        
+        video.onloadedmetadata = () => {
+            video.play();
+            btnSnap.disabled = false;
+            status.textContent = 'Cámara lista ✅. Centra tu rostro y analiza.';
+        };
     } catch (err) {
-      console.error('[camera] Access denied or error:', err);
-      status.textContent = 'No se pudo activar la cámara. Revisa los permisos del navegador.';
-      btnStart.disabled = false;
+        console.error('ERROR AL ACTIVAR CÁMARA:', err);
+        if(err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            status.textContent = 'Permiso de cámara denegado. Revísalo en los ajustes de tu navegador.';
+        } else {
+            status.textContent = 'No se pudo activar la cámara. Inténtalo de nuevo.';
+        }
+        btnStart.disabled = false;
     }
   });
 
@@ -247,7 +247,7 @@ function initFace(){
       status.textContent = 'Análisis completado ✅';
       state.face = { emotion, confidence: conf };
     } catch (err) {
-      console.error('[analyze] Error:', err);
+      console.error('ERROR AL ANALIZAR:', err);
       status.textContent = 'Error al analizar rostro. Intenta nuevamente.';
       btnSnap.disabled = false;
     }
@@ -265,11 +265,11 @@ function stopCamera(){
 function tipForEmotion(e,c){
   const conf=c?` (${c}%)`:'';
   switch(e){
-    case 'happy':return`Se nota buena energía${conf} 😄. 3 respiraciones para mantener claridad.`;
-    case 'neutral':return`Buen punto de partida${conf}. Define 1 tarea clave y arranca 🧭.`;
-    case 'sad':return`Ánimo${conf} 💛. Luz natural y movimiento suave 2 min.`;
-    case 'angry':return`Baja revoluciones${conf}. Respira 4-4-4-4 y afloja mandíbula.`;
-    default:return`Respira profundo por 60 s y vuelve con foco.`;
+    case 'happy':return`Se nota buena energía${conf} 😄. ¡Genial!`;
+    case 'neutral':return`Un estado de calma es un buen punto de partida${conf}.`;
+    case 'sad':return`Ánimo${conf} 💛. Una pausa puede ayudar.`;
+    case 'angry':return`Momento de bajar revoluciones${conf}. Respira profundo.`;
+    default:return`Respira profundo por 60 segundos y vuelve a enfocarte.`;
   }
 }
 
@@ -361,38 +361,43 @@ function initIndicatorsModal(){
   modal?.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/*************** BODY SCAN *****************/
-function getBodyScanTip(head, upper, lower, pains) {
+/*************** BODY SCAN (NUEVOS MENSAJES AMIGABLES) *****************/
+function getBodyScanMessages(head, upper, lower, pains) {
     const avg = (head + upper + lower) / 3;
-    const totalPains = pains.head.length + pains.upper.length + pains.lower.length;
-    let message = '';
+    let feeling = '';
+    let advice = '';
 
-    if (avg <= 2 && totalPains === 0) {
-        message = 'Tu cuerpo se siente relajado y en equilibrio. ¡Excelente estado para un día productivo! 💪';
-    } else if (avg <= 4 && totalPains <= 1) {
-        message = 'Hay una ligera tensión. Una pausa de 2 minutos para estirar el cuello y los hombros puede hacer maravillas.';
-    } else if (avg <= 7) {
-        message = 'Se detecta una tensión moderada. Considera una caminata breve para liberar la carga en tu espalda y piernas.';
+    // 1. Mensaje de sentimiento general
+    if (avg <= 2) {
+        feeling = 'Te sientes genial, tu cuerpo está relajado y listo. 💪';
+    } else if (avg <= 6) {
+        feeling = 'Se nota algo de tensión. Es un buen momento para una pequeña pausa. 🧘';
     } else {
-        message = 'Tu cuerpo indica una tensión alta. Es un buen momento para una pausa consciente, respirar profundo y estirar las zonas más afectadas.';
+        feeling = 'Tu cuerpo te pide un respiro. Escúchalo y tómate un momento para estirar. 🌬️';
     }
 
-    if (head > 7 || pains.head.includes('Bruxismo / mandíbula')) {
-        message += ' Presta especial atención a tu mandíbula y cuello; intenta relajar la zona conscientemente.';
+    // 2. Consejo específico y corto (priorizado)
+    const specificPains = [...pains.head, ...pains.upper, ...pains.lower];
+    if (specificPains.includes('Dolor lumbar')) {
+        advice = '💡 Consejo: Para la espalda, revisa tu postura al sentarte.';
+    } else if (specificPains.includes('Bruxismo / mandíbula')) {
+        advice = '💡 Consejo: Relaja la mandíbula y evita apretar los dientes.';
+    } else if (specificPains.includes('Tensión de hombros')) {
+        advice = '💡 Consejo: Mueve tus hombros en círculos suaves para liberar tensión.';
+    } else if (specificPains.includes('Dolor de pies')) {
+        advice = '💡 Consejo: Si puedes, descálzate un momento y estira los pies.';
+    } else if (specificPains.length > 0) {
+        advice = '💡 Consejo: Una pausa activa de 2 minutos puede aliviar esas molestias.';
     }
-    if (upper > 7 || pains.upper.includes('Dolor lumbar')) {
-        message += ' La espalda baja necesita un respiro. Asegúrate de que tu postura sea la correcta al sentarte.';
-    }
-    if (lower > 7 || pains.lower.includes('Dolor de pies')) {
-        message += ' Si es posible, descálzate un momento y mueve los dedos de los pies para mejorar la circulación.';
-    }
-    return message;
+
+    return { feeling, advice };
 }
 
 function initBodyScan(){
   const sliders = { head: $('#bs_head'), upper: $('#bs_upper'), lower: $('#bs_lower') };
   const values = { head: $('#valHead'), upper: $('#valUpper'), lower: $('#valLower') };
-  const tipEl = $('#bs_tip');
+  const feelingEl = $('#bs_feeling');
+  const adviceEl = $('#bs_advice');
 
   const update = () => {
     state.body.head = +sliders.head.value;
@@ -407,13 +412,16 @@ function initBodyScan(){
     state.body.pains.upper = [...document.querySelectorAll('.pain-upper:checked')].map(x => x.value);
     state.body.pains.lower = [...document.querySelectorAll('.pain-lower:checked')].map(x => x.value);
 
-    tipEl.textContent = getBodyScanTip(state.body.head, state.body.upper, state.body.lower, state.body.pains);
+    const messages = getBodyScanMessages(state.body.head, state.body.upper, state.body.lower, state.body.pains);
+    feelingEl.textContent = messages.feeling;
+    adviceEl.textContent = messages.advice;
   };
 
   Object.values(sliders).forEach(el => el?.addEventListener('input', update));
   document.querySelectorAll('.pain-head,.pain-upper,.pain-lower').forEach(el => el.addEventListener('change', update));
   update();
 }
+
 
 /*************** ENCUESTA DE CONTEXTO *****************/
 function initContextSurvey() {

@@ -79,6 +79,10 @@ ul.tips li{margin:.25rem 0}
 .chk-group{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0;justify-content:flex-start}
 .chk-group label{background:#f2f2f2;padding:.4rem .7rem;border-radius:8px;cursor:pointer;font-size:.9rem}
 
+/* Ajuste para los nuevos mensajes del Body Scan */
+#bs_feeling { margin-top: 1rem; }
+#bs_advice { margin-top: 0.5rem; font-weight: 600; }
+
 /* Indicadores */
 .ref-carousel{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.9rem;margin-top:.9rem}
 .ref-card{display:flex;gap:.9rem;align-items:center;border:1px solid #eee;border-radius:14px;padding:1rem;background:#fff;cursor:pointer;text-align:left}
