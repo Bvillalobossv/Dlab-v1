@@ -19,7 +19,6 @@ const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
-const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
@@ -35,15 +34,14 @@ const EMOJI_GIF={
   surprised:'./images/mascots/surprised.gif'
 };
 
-/*************** BOOT (CORREGIDO) *****************/
+/*************** BOOT *****************/
 document.addEventListener('DOMContentLoaded', async () => {
-  // CORRECCIÓN: Se inicializa Supabase ANTES que los demás componentes.
   try {
     db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     db.auth.onAuthStateChange((_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
   } catch (err) {
     console.error('Error inicializando Supabase:', err);
-    return; // Detener si Supabase falla
+    return;
   }
 
   const initComponents = [
@@ -82,7 +80,7 @@ async function onSignedIn(user){
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
 
-/*************** INTRO + AUTH *****************/
+/*************** INTRO + AUTH (CORREGIDO Y REFORZADO) *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
   const prev = $('#introPrev'), next = $('#introNext'), start = $('#introStart');
@@ -123,26 +121,52 @@ function toggleAuth(which){
 }
 
 function initAuthForms(){
-  $('#formLogin')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const u=$('#login_user').value.trim(), p=$('#login_pass').value;
-    if(!u||!p) return setAuthMessage('Completa los campos.',true);
-    const {error}=await db.auth.signInWithPassword({email:emailFromUser(u),password:p});
-    if(error) setAuthMessage(error.message,true);
-  });
-  $('#formSignup')?.addEventListener('submit', async e=>{
-    e.preventDefault();
-    const u=$('#su_user').value.trim(), p=$('#su_pass').value, ok=$('#su_terms').checked;
-    if(!u||!p) return setAuthMessage('Completa los campos.',true);
-    if(!ok) return setAuthMessage('Debes aceptar los términos.',true);
-    const {error}=await db.auth.signUp({email:emailFromUser(u),password:p,options:{data:{username:u}}});
-    if(error) {
-      setAuthMessage(error.message,true);
-      return;
-    }
-    // Si el registro es exitoso, inicia sesión automáticamente
-    await db.auth.signInWithPassword({email:emailFromUser(u),password:p});
-  });
+  const formLogin = $('#formLogin');
+  const formSignup = $('#formSignup');
+
+  if (formLogin) {
+    formLogin.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        const u = $('#login_user').value.trim();
+        const p = $('#login_pass').value;
+        if (!u || !p) return setAuthMessage('Completa los campos.', true);
+
+        setAuthMessage('Iniciando sesión...');
+        const { error } = await db.auth.signInWithPassword({ email: emailFromUser(u), password: p });
+        if (error) throw error;
+        // onAuthStateChange se encargará de redirigir
+      } catch (error) {
+        console.error("Error en Login:", error);
+        setAuthMessage(error.message, true);
+      }
+    });
+  }
+
+  if (formSignup) {
+    formSignup.addEventListener('submit', async e => {
+      e.preventDefault();
+      try {
+        const u = $('#su_user').value.trim();
+        const p = $('#su_pass').value;
+        const ok = $('#su_terms').checked;
+        if (!u || !p) return setAuthMessage('Completa los campos.', true);
+        if (!ok) return setAuthMessage('Debes aceptar los términos.', true);
+
+        setAuthMessage('Creando cuenta...');
+        const { error } = await db.auth.signUp({ 
+            email: emailFromUser(u), 
+            password: p, 
+            options: { data: { username: u } } 
+        });
+        if (error) throw error;
+        // onAuthStateChange se encargará de redirigir al detectar el nuevo usuario logueado.
+      } catch (error) {
+        console.error("Error en Signup:", error);
+        setAuthMessage(error.message, true);
+      }
+    });
+  }
 }
 
 /*************** NAV *****************/
