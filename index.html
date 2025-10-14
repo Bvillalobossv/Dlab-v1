@@ -98,7 +98,7 @@
   </div>
 
   <div id="screenArea" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 1 de 7</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 1 de 8</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
     <div class="card max-900">
       <div id="areaGrid" class="area-grid">
         <button class="area-pill" data-area="Administración">💼 Administración</button>
@@ -114,7 +114,7 @@
   </div>
 
   <div id="screenFace" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 2 de 7</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 2 de 8</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
     <div class="card max-900">
       <video id="faceVideo" class="video" playsinline muted></video>
       <canvas id="faceCanvas" class="video" style="display:none"></canvas>
@@ -137,7 +137,7 @@
   </div>
 
   <div id="screenAudioPrep" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 3 de 7</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 3 de 8</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
     <div class="card max-700">
       <ul class="tips">
         <li>Mantén el móvil quieto.</li>
@@ -151,7 +151,7 @@
   </div>
 
   <div id="screenMeasure" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 4 de 7</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 4 de 8</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
     <div class="card max-900">
       <div class="gauge-wrapper">
         <canvas id="gaugeChart" width="280" height="180"></canvas>
@@ -168,46 +168,28 @@
     <div id="noise-results-card" class="card max-900 hidden">
       <h3>Resultados</h3>
       <p>Promedio: <b id="final-db-result">-- dB</b> — <b id="final-db-label">--</b></p>
-
       <div class="ref-carousel" id="refCarousel">
-        <button class="ref-card" data-key="saludable">
-          <img src="./images/ind-saludable.png" alt="Ambiente saludable" />
-          <div><h4>Ambiente saludable</h4><p>&lt; 45 dB — Silencio útil para foco profundo.</p></div>
-        </button>
-        <button class="ref-card" data-key="oficina">
-          <img src="./images/ind-conversacion.png" alt="Oficina activa" />
-          <div><h4>Oficina activa</h4><p>45–65 dB — Conversación breve y colaboración sana.</p></div>
-        </button>
-        <button class="ref-card" data-key="ruidoso">
-          <img src="./images/ind-ruido.png" alt="Ruidoso" />
-          <div><h4>Ruidoso</h4><p>65–80 dB — Conversaciones cruzadas, llamadas simultáneas.</p></div>
-        </button>
-        <button class="ref-card" data-key="muyruidoso">
-          <img src="./images/ind-silencio.png" alt="Muy ruidoso" />
-          <div><h4>Muy ruidoso</h4><p>&gt; 80 dB — Estrés auditivo y fatiga cognitiva.</p></div>
-        </button>
+        <button class="ref-card" data-key="saludable"><img src="./images/ind-saludable.png" alt="Ambiente saludable" /><div><h4>Ambiente saludable</h4><p>&lt; 45 dB — Silencio útil para foco profundo.</p></div></button>
+        <button class="ref-card" data-key="oficina"><img src="./images/ind-conversacion.png" alt="Oficina activa" /><div><h4>Oficina activa</h4><p>45–65 dB — Conversación breve y colaboración sana.</p></div></button>
+        <button class="ref-card" data-key="ruidoso"><img src="./images/ind-ruido.png" alt="Ruidoso" /><div><h4>Ruidoso</h4><p>65–80 dB — Conversaciones cruzadas, llamadas simultáneas.</p></div></button>
+        <button class="ref-card" data-key="muyruidoso"><img src="./images/ind-silencio.png" alt="Muy ruidoso" /><div><h4>Muy ruidoso</h4><p>&gt; 80 dB — Estrés auditivo y fatiga cognitiva.</p></div></button>
       </div>
     </div>
-
     <div class="navigation-buttons"><button id="btnMeasureNext" class="btn" disabled>Siguiente</button></div>
   </div>
 
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <button id="modalClose" class="modal-close" aria-label="Cerrar">✕</button>
-      <img id="modalImg" class="modal-img" alt="">
-      <h3 id="modalTitle"></h3>
-      <p id="modalBody" class="text-left"></p>
+      <img id="modalImg" class="modal-img" alt=""><h3 id="modalTitle"></h3><p id="modalBody" class="text-left"></p>
     </div>
   </div>
 
   <div id="screenBodyScan" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 5 de 7</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
-
+    <div class="step-header"><span class="step-counter">Paso 5 de 8</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
     <div class="card max-900 text-left">
       <h3>💆 Cabeza y cuello <span id="valHead" class="val-num">0/10</span></h3>
-      <input id="bs_head" type="range" min="0" max="10" value="0">
-      <div class="range-labels"><span>0</span><span>10</span></div>
+      <input id="bs_head" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
       <div class="chk-group">
         <label><input type="checkbox" class="pain-head" value="Dolor cervical"> Dolor cervical</label>
         <label><input type="checkbox" class="pain-head" value="Dolor de cabeza"> Dolor de cabeza</label>
@@ -215,8 +197,7 @@
       </div>
 
       <h3>💪 Tronco superior <span id="valUpper" class="val-num">0/10</span></h3>
-      <input id="bs_upper" type="range" min="0" max="10" value="0">
-      <div class="range-labels"><span>0</span><span>10</span></div>
+      <input id="bs_upper" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
       <div class="chk-group">
         <label><input type="checkbox" class="pain-upper" value="Dolor lumbar"> Dolor lumbar</label>
         <label><input type="checkbox" class="pain-upper" value="Tensión de hombros"> Tensión de hombros</label>
@@ -224,22 +205,37 @@
       </div>
 
       <h3>🦵 Tren inferior <span id="valLower" class="val-num">0/10</span></h3>
-      <input id="bs_lower" type="range" min="0" max="10" value="0">
-      <div class="range-labels"><span>0</span><span>10</span></div>
+      <input id="bs_lower" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
       <div class="chk-group">
         <label><input type="checkbox" class="pain-lower" value="Dolor de rodillas"> Dolor de rodillas</label>
         <label><input type="checkbox" class="pain-lower" value="Tensión de pantorrillas"> Tensión de pantorrillas</label>
         <label><input type="checkbox" class="pain-lower" value="Dolor de pies"> Dolor de pies</label>
       </div>
-
-      <p id="bs_tip" class="muted small">Tu cuerpo se ve equilibrado y atento 💪</p>
+      <p id="bs_tip" class="muted small">Ajusta los niveles para recibir un consejo.</p>
     </div>
-
     <div class="navigation-buttons"><button id="btnBodyScanNext" class="btn">Siguiente</button></div>
   </div>
 
+  <div id="screenContext" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 6 de 8</span><h2>Encuesta breve de contexto</h2><p class="lead">Carga, ritmo y estrés de hoy.</p></div>
+    <div class="card max-700 text-left">
+      <div class="form-row"><label>Fecha y hora</label><input id="ctx_datetime" type="text" disabled></div>
+      <div class="form-row"><label>Horas trabajadas</label><input id="ctx_hours" type="number" placeholder="Ej: 8" required></div>
+      
+      <h3>Carga de trabajo hoy <span id="valWorkload" class="val-num">5/10</span></h3>
+      <input id="ctx_workload" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+
+      <h3>Ritmo de trabajo <span id="valPace" class="val-num">5/10</span></h3>
+      <input id="ctx_pace" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+
+      <h3>Estrés general <span id="valStress" class="val-num">5/10</span></h3>
+      <input id="ctx_stress" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+    </div>
+    <div class="navigation-buttons"><button id="btnContextNext" class="btn">Siguiente</button></div>
+  </div>
+
   <div id="screenJournal" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 6 de 7</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 7 de 8</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
     <div class="card max-700">
       <textarea id="journal-input" placeholder="Escribe libremente… (opcional)"></textarea>
     </div>

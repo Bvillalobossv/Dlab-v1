@@ -32,6 +32,7 @@ p.lead{font-size:1.05rem;color:var(--text-light);max-width:680px;margin:.5rem au
 input[type="text"],input[type="password"],input[type="number"],select,textarea{
   width:100%;padding:1rem;border-radius:12px;border:1px solid #e6e6e6;background:#fafafa;color:var(--text-dark);outline:none;font-size:1rem
 }
+input:disabled { background-color: #f2f2f2; }
 textarea{min-height:150px;resize:vertical}
 .form-row.chk{display:flex;align-items:center;gap:.5rem}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
@@ -72,7 +73,7 @@ ul.tips li{margin:.25rem 0}
 .area-pill{border:1px solid #e7e7e7;background:#fff;border-radius:999px;padding:.7rem 1rem;cursor:pointer}
 .area-pill.active{background:#eef0ea;border-color:#cfd4c6;font-weight:700}
 
-/* Body scan */
+/* Body scan & Context Survey */
 .val-num{font-weight:600;color:var(--green-dark);margin-left:.5rem}
 .range-labels{display:flex;justify-content:space-between;font-size:.85rem;color:#888;margin-top:-.4rem;margin-bottom:1rem}
 .chk-group{display:flex;flex-wrap:wrap;gap:.5rem;margin:.6rem 0;justify-content:flex-start}

@@ -10,6 +10,8 @@ const state = {
   face: { emotion: null, confidence: 0 },
   noise: { samples: [], avg: 0, label: "" },
   body: { head: 0, upper: 0, lower: 0, pains: { head:[], upper:[], lower:[] } },
+  // NUEVO: Estado para la encuesta de contexto
+  contextSurvey: { hours: null, workload: 5, pace: 5, stress: 5 },
   journal: ''
 };
 
@@ -42,20 +44,21 @@ let gaugeChart=null;
 document.addEventListener('DOMContentLoaded', async () => {
   db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   db.auth.onAuthStateChange((_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
-  const { data:{ session } } = await db.auth.getSession();
-  session?.user ? onSignedIn(session.user) : show('screenIntro');
-
+  
   initIntro();
   initTabsTerms();
   initAuthForms();
   initNav();
-
   initArea();
-  initFace(); // <-- CORRECCIÓN: Se inicia aquí para pre-cargar modelos
+  initFace(); 
   initMicPrep();
   initNoise();
   initIndicatorsModal();
   initBodyScan();
+  initContextSurvey(); // NUEVO: Inicializar la nueva pantalla
+
+  const { data:{ session } } = await db.auth.getSession();
+  session?.user ? onSignedIn(session.user) : show('screenIntro');
 });
 
 /*************** SESSION  *****************/
@@ -70,7 +73,7 @@ function onSignedOut(){ state.user=null; show('screenIntro'); }
 /*************** INTRO + AUTH  *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
-  const prev=$('#introPrev'), next=$('#introNext'), start=$('#introStart');
+  const prev=$('#introPrev'), next=$$('#introNext'), start=$('#introStart');
   if(!slides) return;
   const n=slides.children.length; let i=0;
   const render=()=>{ slides.style.transform=`translateX(${-i*100}%)`; dots.innerHTML=''; for(let k=0;k<n;k++){const d=document.createElement('div'); d.className='dot'+(k===i?' active':''); dots.appendChild(d);} prev.disabled=i===0; next.style.display=i<n-1?'inline-block':'none'; start.style.display=i===n-1?'inline-block':'none'; };
@@ -85,7 +88,7 @@ function initTabsTerms(){
 function toggleAuth(which){
   const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
   if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
-  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
+  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'; tL.classList.remove('active');}
   setAuthMessage('');
 }
 function initAuthForms(){
@@ -107,16 +110,17 @@ function initAuthForms(){
   });
 }
 
-/*************** NAV  *****************/
+/*************** NAV (Actualizado) *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
   $('#btnAreaNext')?.addEventListener('click',()=>show('screenFace'));
-  $('#btnFaceSkip')?.addEventListener('click',()=>{ $('#faceEmotion').textContent='—'; $('#faceTip').textContent=''; $('#btnFaceNext').disabled=false; stopCamera(); show('screenAudioPrep'); });
+  $('#btnFaceSkip')?.addEventListener('click',()=>{ stopCamera(); show('screenAudioPrep'); });
   $('#btnFaceNext')?.addEventListener('click',()=>{ stopCamera(); show('screenAudioPrep'); });
   $('#btnGoToMeasure')?.addEventListener('click',()=>show('screenMeasure'));
   $('#btnMeasureNext')?.addEventListener('click',()=>show('screenBodyScan'));
-  $('#btnBodyScanNext')?.addEventListener('click',()=>show('screenJournal'));
+  $('#btnBodyScanNext')?.addEventListener('click',()=>show('screenContext')); // <-- A la nueva pantalla
+  $('#btnContextNext')?.addEventListener('click',()=>show('screenJournal')); // <-- De la nueva pantalla al Journal
   $('#btnJournalNext')?.addEventListener('click',()=>finalizeAndReport());
   $('#btnIntegrationHome')?.addEventListener('click',()=>show('screenHome'));
 }
@@ -138,22 +142,22 @@ function initArea(){
   });
 }
 
-/*************** CÁMARA / FACE (CORREGIDO) *****************/
+/*************** CÁMARA / FACE (CORREGIDO Y REFORZADO) *****************/
 async function ensureFaceModels(){
-  if(faceModelsReady) return;
-  const status = $('#faceStatus');
+  if(faceModelsReady) return true;
+  console.log('Loading face-api models...');
   try {
-    status.textContent = 'Cargando modelos de IA...';
     await Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
       faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
     ]);
     faceModelsReady = true;
-    status.textContent = 'Modelos listos. Puedes activar la cámara.';
+    console.log('Face-api models loaded successfully.');
+    return true;
   } catch (err) {
-    console.error('[face-api models]', err);
-    status.textContent = 'Error al cargar los modelos de IA. Refresca la página.';
+    console.error('[face-api models] Failed to load:', err);
     faceModelsReady = false;
+    return false;
   }
 }
 
@@ -162,73 +166,54 @@ function initFace(){
   const btnStart=$('#btnFaceStart'), btnSnap=$('#btnFaceSnap'), status=$('#faceStatus');
 
   if (video) { video.setAttribute('playsinline',''); video.muted=true; video.autoplay=true; }
-
-  // CORRECCIÓN: Pre-cargar modelos y actualizar UI
-  ensureFaceModels().then(() => {
-    if (faceModelsReady) {
+  
+  ensureFaceModels().then(loaded => {
+    if (loaded) {
+      status.textContent = 'Modelos listos. Puedes activar la cámara.';
       btnStart.disabled = false;
     } else {
+      status.textContent = 'Error al cargar los modelos de IA. Refresca la página.';
       btnStart.disabled = true;
     }
   });
 
-  btnStart?.addEventListener('click', async ()=>{
+  btnStart.addEventListener('click', async () => {
     if (!faceModelsReady) {
-      status.textContent = 'Los modelos de IA aún no están listos. Espera un momento.';
+      status.textContent = 'Los modelos de IA no están listos.';
       return;
     }
-    btnStart.disabled = true; // Evitar doble click
-    status.textContent = 'Iniciando cámara...';
-    try{
+    btnStart.disabled = true;
+    status.textContent = 'Iniciando cámara, por favor acepta el permiso...';
+    try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
+        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false
       });
       cameraStream = stream;
       video.srcObject = stream;
       await video.play();
-      await delay(200); // Dar tiempo al video para estabilizarse
       btnSnap.disabled = false;
       status.textContent = 'Cámara lista ✅. Centra tu rostro y analiza.';
-    } catch(err){
-      console.error('[camera]', err);
-      status.textContent = 'No se pudo activar la cámara. Verifica permisos y HTTPS.';
-      btnStart.disabled = false; // Permitir reintentar
+    } catch (err) {
+      console.error('[camera] Access denied or error:', err);
+      status.textContent = 'No se pudo activar la cámara. Revisa los permisos del navegador.';
+      btnStart.disabled = false;
     }
   });
 
-  btnSnap?.addEventListener('click', async ()=>{
-    if(!video?.srcObject){ status.textContent='Activa primero la cámara.'; return; }
+  btnSnap.addEventListener('click', async () => {
+    if(!video?.srcObject || !cameraStream) { status.textContent='Activa primero la cámara.'; return; }
     btnSnap.disabled = true;
     status.textContent = 'Analizando rostro…';
-    try{
-      // Intento directo sobre <video>
-      let detections = await faceapi
-        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
-        .withFaceExpressions();
-
-      // Fallback a <canvas> si falla el video
-      if(!detections?.length){
-        await delay(100); // Pequeña pausa
-        const ctx = canvas.getContext('2d');
-        canvas.width = video.videoWidth || 640;
-        canvas.height = video.videoHeight || 480;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        detections = await faceapi
-          .detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
-          .withFaceExpressions();
-      }
-
-      if(!detections?.length){
-        status.textContent = 'No se detectó rostro. Busca mejor luz y centra tu cara 🙂';
-        $('#faceEmotion').textContent = 'No detectada';
-        $('#face-results-content').classList.remove('hidden');
+    try {
+      const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+      if (!detections.length) {
+        status.textContent = 'No se detectó rostro. Busca mejor luz y céntrate 🙂';
         $('#btnFaceNext').disabled = false;
         state.face = { emotion: null, confidence: 0 };
-        btnSnap.disabled = false; // Permitir reintento
+        btnSnap.disabled = false;
         return;
       }
-
       const expr = detections[0].expressions.asSortedArray()[0];
       const emotion = expr.expression;
       const conf = +(expr.probability * 100).toFixed(1);
@@ -242,26 +227,22 @@ function initFace(){
       $('#btnFaceNext').disabled = false;
       status.textContent = 'Análisis completado ✅';
       state.face = { emotion, confidence: conf };
-
-    } catch(err){
-      console.error('[analyze]', err);
+    } catch (err) {
+      console.error('[analyze] Error:', err);
       status.textContent = 'Error al analizar rostro. Intenta nuevamente.';
-      btnSnap.disabled = false; // Permitir reintento
+      btnSnap.disabled = false;
     }
   });
 }
 
 function stopCamera(){
-  try{
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      cameraStream = null;
-      $('#faceVideo').srcObject = null;
-    }
-  } catch(err) {
-    console.warn('Error al detener la cámara:', err);
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+    $('#faceVideo').srcObject = null;
   }
 }
+
 function tipForEmotion(e,c){
   const conf=c?` (${c}%)`:'';
   switch(e){
@@ -269,12 +250,10 @@ function tipForEmotion(e,c){
     case 'neutral':return`Buen punto de partida${conf}. Define 1 tarea clave y arranca 🧭.`;
     case 'sad':return`Ánimo${conf} 💛. Luz natural y movimiento suave 2 min.`;
     case 'angry':return`Baja revoluciones${conf}. Respira 4-4-4-4 y afloja mandíbula.`;
-    case 'fearful':return`Una cosa a la vez${conf} 🧘. Prioriza y avanza.`;
-    case 'disgusted':return`Cambia de foco 2 min${conf} y vuelve con intención.`;
-    case 'surprised':return`Canaliza esa chispa${conf}: objetivo rápido ✍️.`;
     default:return`Respira profundo por 60 s y vuelve con foco.`;
   }
 }
+
 
 /*************** MIC PREP  *****************/
 let micTested=false;
@@ -348,10 +327,10 @@ function initNoise(){
 /*************** MODAL INDICADORES  *****************/
 function initIndicatorsModal(){
   const tips={
-    saludable:{title:'Ambiente saludable',img:'./images/ind-saludable.png',body:'<45 dB. Ideal para foco profundo. Mantén “franjas de silencio” y avisa al equipo cuando necesites concentración.'},
-    oficina:{title:'Oficina activa',img:'./images/ind-conversacion.png',body:'45–65 dB. Conversación breve y coordinación. Si necesitas foco, usa música suave o auriculares.'},
-    ruidoso:{title:'Ruidoso',img:'./images/ind-ruido.png',body:'65–80 dB. Conversaciones cruzadas o llamadas simultáneas. Usa cabinas o zonas de silencio para tareas de precisión.'},
-    muyruidoso:{title:'Muy ruidoso',img:'./images/ind-silencio.png',body:'>80 dB. Riesgo de fatiga. Muévete a un lugar más silencioso; pausa breve para relajar cuello/hombros.'}
+    saludable:{title:'Ambiente saludable',img:'./images/ind-saludable.png',body:'<45 dB. Ideal para foco profundo.'},
+    oficina:{title:'Oficina activa',img:'./images/ind-conversacion.png',body:'45–65 dB. Conversación breve y coordinación.'},
+    ruidoso:{title:'Ruidoso',img:'./images/ind-ruido.png',body:'65–80 dB. Conversaciones cruzadas o llamadas simultáneas.'},
+    muyruidoso:{title:'Muy ruidoso',img:'./images/ind-silencio.png',body:'>80 dB. Riesgo de fatiga.'}
   };
   const modal=$('#modal'), mImg=$('#modalImg'), mTitle=$('#modalTitle'), mBody=$('#modalBody'), mClose=$('#modalClose');
   $('#refCarousel')?.addEventListener('click',e=>{
@@ -364,41 +343,93 @@ function initIndicatorsModal(){
   modal?.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/*************** BODY SCAN  *****************/
+/*************** BODY SCAN (MENSAJES DINÁMICOS) *****************/
+function getBodyScanTip(head, upper, lower, pains) {
+    const avg = (head + upper + lower) / 3;
+    const totalPains = pains.head.length + pains.upper.length + pains.lower.length;
+    let message = '';
+
+    if (avg <= 2 && totalPains === 0) {
+        message = 'Tu cuerpo se siente relajado y en equilibrio. ¡Excelente estado para un día productivo! 💪';
+    } else if (avg <= 4 && totalPains <= 1) {
+        message = 'Hay una ligera tensión. Una pausa de 2 minutos para estirar el cuello y los hombros puede hacer maravillas.';
+    } else if (avg <= 7) {
+        message = 'Se detecta una tensión moderada. Considera una caminata breve para liberar la carga en tu espalda y piernas.';
+    } else {
+        message = 'Tu cuerpo indica una tensión alta. Es un buen momento para una pausa consciente, respirar profundo y estirar las zonas más afectadas.';
+    }
+
+    if (head > 7 || pains.head.includes('Bruxismo / mandíbula')) {
+        message += ' Presta especial atención a tu mandíbula y cuello; intenta relajar la zona conscientemente.';
+    }
+    if (upper > 7 || pains.upper.includes('Dolor lumbar')) {
+        message += ' La espalda baja necesita un respiro. Asegúrate de que tu postura sea la correcta al sentarte.';
+    }
+    if (lower > 7 || pains.lower.includes('Dolor de pies')) {
+        message += ' Si es posible, descálzate un momento y mueve los dedos de los pies para mejorar la circulación.';
+    }
+    return message;
+}
+
 function initBodyScan(){
-  const head=$('#bs_head'), upper=$('#bs_upper'), lower=$('#bs_lower'), tip=$('#bs_tip');
-  const vH=$('#valHead'), vU=$('#valUpper'), vL=$('#valLower');
+  const sliders = { head: $('#bs_head'), upper: $('#bs_upper'), lower: $('#bs_lower') };
+  const values = { head: $('#valHead'), upper: $('#valUpper'), lower: $('#valLower') };
+  const tipEl = $('#bs_tip');
 
-  const painsHead = ()=>[...document.querySelectorAll('.pain-head:checked')].map(x=>x.value);
-  const painsUpper= ()=>[...document.querySelectorAll('.pain-upper:checked')].map(x=>x.value);
-  const painsLower= ()=>[...document.querySelectorAll('.pain-lower:checked')].map(x=>x.value);
+  const update = () => {
+    state.body.head = +sliders.head.value;
+    state.body.upper = +sliders.upper.value;
+    state.body.lower = +sliders.lower.value;
+    
+    values.head.textContent = `${state.body.head}/10`;
+    values.upper.textContent = `${state.body.upper}/10`;
+    values.lower.textContent = `${state.body.lower}/10`;
 
-  const update=()=>{
-    vH.textContent=`${head.value}/10`; vU.textContent=`${upper.value}/10`; vL.textContent=`${lower.value}/10`;
-    state.body.head=+head.value; state.body.upper=+upper.value; state.body.lower=+lower.value;
-    state.body.pains.head=painsHead(); state.body.pains.upper=painsUpper(); state.body.pains.lower=painsLower();
-    const avg=(state.body.head+state.body.upper+state.body.lower)/3;
-    const painsCount=state.body.pains.head.length+state.body.pains.upper.length+state.body.pains.lower.length;
-    if(avg<=3 && painsCount===0) tip.textContent='¡Vas muy bien hoy! Tu cuerpo está equilibrado y atento 💪';
-    else if(avg<=6 && painsCount<=1) tip.textContent='Tu cuerpo te pide una pausa suave 🧘. Estira cuello/espalda 2 min.';
-    else tip.textContent='Tu cuerpo está tenso 😣. Date un respiro, estira hombros y camina 1 minuto.';
+    state.body.pains.head = [...document.querySelectorAll('.pain-head:checked')].map(x => x.value);
+    state.body.pains.upper = [...document.querySelectorAll('.pain-upper:checked')].map(x => x.value);
+    state.body.pains.lower = [...document.querySelectorAll('.pain-lower:checked')].map(x => x.value);
+
+    tipEl.textContent = getBodyScanTip(state.body.head, state.body.upper, state.body.lower, state.body.pains);
   };
 
-  [head,upper,lower].forEach(el=>el?.addEventListener('input',update));
-  document.querySelectorAll('.pain-head,.pain-upper,.pain-lower').forEach(el=>el.addEventListener('change',update));
+  Object.values(sliders).forEach(el => el?.addEventListener('input', update));
+  document.querySelectorAll('.pain-head,.pain-upper,.pain-lower').forEach(el => el.addEventListener('change', update));
   update();
 }
 
-/*************** REPORTE + PERSISTENCIA  *****************/
+/*************** NUEVO: ENCUESTA DE CONTEXTO *****************/
+function initContextSurvey() {
+    const dtInput = $('#ctx_datetime');
+    const hoursInput = $('#ctx_hours');
+    const sliders = { workload: $('#ctx_workload'), pace: $('#ctx_pace'), stress: $('#ctx_stress') };
+    const values = { workload: $('#valWorkload'), pace: $('#valPace'), stress: $('#valStress') };
+
+    // Set current date and time
+    const now = new Date();
+    dtInput.value = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+
+    hoursInput?.addEventListener('input', () => {
+        state.contextSurvey.hours = +hoursInput.value || null;
+    });
+
+    for (const key in sliders) {
+        sliders[key]?.addEventListener('input', () => {
+            const value = +sliders[key].value;
+            state.contextSurvey[key] = value;
+            values[key].textContent = `${value}/10`;
+        });
+    }
+}
+
+
+/*************** REPORTE + PERSISTENCIA (Actualizado) *****************/
 async function finalizeAndReport(){
   state.journal = ($('#journal-input')?.value || '').slice(0,1000);
 
-  // CORRECCIÓN: Ponderación ajustada a README (Selfie 25%, Ruido 35%, Cuerpo 40%)
-  const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60; // Puntuación de 0 a 100
-  const noiseScore = 100 - clamp(state.noise.avg, 0, 100); // Puntuación de 0 a 100 (mayor ruido, menor puntaje)
-  const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3; // Promedio de 0 a 10
-  const bodyScore = 100 - (bodyAvg10 * 10); // Puntuación de 0 a 100 (mayor tensión, menor puntaje)
-
+  const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
+  const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
+  const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3;
+  const bodyScore = 100 - (bodyAvg10 * 10);
   const ix = Math.round(0.25 * faceScore + 0.35 * noiseScore + 0.40 * bodyScore);
 
   const circle=$('#ix_score_circle'), label=$('#ix_label'), pf=$('#ix_face_progress'), pd=$('#ix_db_progress'), pb=$('#ix_bs_progress');
@@ -420,7 +451,12 @@ async function finalizeAndReport(){
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
         combined_score: ix,
-        journal_entry: state.journal || null
+        journal_entry: state.journal || null,
+        // NUEVO: Guardar datos de la encuesta de contexto
+        work_hours: state.contextSurvey.hours,
+        workload_level: state.contextSurvey.workload,
+        work_pace_level: state.contextSurvey.pace,
+        stress_level: state.contextSurvey.stress
       });
     }
   }catch(err){ console.error('[supabase insert]', err); }
