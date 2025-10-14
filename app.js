@@ -338,6 +338,7 @@ function initMicPrep(){
     });
 }
 
+/*************** NOISE 5s PROMEDIO (CORREGIDO Y MEJORADO) *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
   const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
@@ -350,10 +351,10 @@ function initNoise(){
   const classify=db=> db<45?'muy tranquilo': db<60?'tranquilo': db<75?'ruido moderado':'alto';
   
   let audioCtx, analyser, micStream, raf;
-  let values=[], started=false;
-  let smoothedDb = 0.0;
+  let smoothedDb = 0.0; 
+  let started = false;
 
-  const stopMeasure = () => {
+  const stopMeasure = (values = []) => {
     cancelAnimationFrame(raf);
     micStream?.getTracks().forEach(t => t.stop());
     if (audioCtx?.state !== 'closed') audioCtx?.close();
@@ -363,11 +364,11 @@ function initNoise(){
 
     const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
     const label = classify(avg);
-    finalDb.textContent=`${Math.round(avg)} dB`; 
-    finalLabel.textContent=label;
-    resultsCard.classList.remove('hidden'); 
-    status.textContent='Medición finalizada.'; 
-    next.disabled=false;
+    if(finalDb) finalDb.textContent=`${Math.round(avg)} dB`; 
+    if(finalLabel) finalLabel.textContent=label;
+    resultsCard?.classList.remove('hidden'); 
+    if(status) status.textContent='Medición finalizada.'; 
+    if(next) next.disabled=false;
     state.noise={samples:values.slice(),avg:Math.round(avg),label};
   };
 
@@ -384,60 +385,62 @@ function initNoise(){
     if(started) return;
 
     started=true; 
-    values=[]; 
+    const values = []; // Array local para la medición actual
     smoothedDb = 0.0;
     status.textContent='Midiendo…'; 
     btn.textContent='⏹️ Detener'; 
     btn.disabled=true;
 
-    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-    const src=audioCtx.createMediaStreamSource(micStream);
-    analyser=audioCtx.createAnalyser(); 
-    analyser.fftSize=2048; 
-    src.connect(analyser);
+    try {
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+      const src=audioCtx.createMediaStreamSource(micStream);
+      analyser=audioCtx.createAnalyser(); 
+      analyser.fftSize=2048; 
+      src.connect(analyser);
 
-    let startTime = null;
-    const tick=(timestamp)=>{
-      if (!startTime) startTime = timestamp;
-      const elapsedTime = timestamp - startTime;
-      let remaining = 5 - (elapsedTime / 1000);
-      remaining = Math.max(0, remaining);
-      countdown.textContent=`${remaining.toFixed(1)} s`;
+      let startTime = null;
+      const tick=(timestamp)=>{
+        if (!startTime) startTime = timestamp;
+        const elapsedTime = timestamp - startTime;
+        let remaining = 5 - (elapsedTime / 1000);
+        remaining = Math.max(0, remaining);
+        countdown.textContent=`${remaining.toFixed(1)} s`;
 
-      const data=new Uint8Array(analyser.frequencyBinCount);
-      analyser.getByteTimeDomainData(data);
-      let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
-      const rms=Math.sqrt(sum/data.length);
-      const instantDb=Math.max(20*Math.log10(rms)+90,0);
+        const data=new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteTimeDomainData(data);
+        let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+        const rms=Math.sqrt(sum/data.length);
+        const instantDb=Math.max(20*Math.log10(rms)+90,0);
 
-      values.push(instantDb);
+        values.push(instantDb);
 
-      smoothedDb = 0.1 * instantDb + 0.9 * smoothedDb;
+        smoothedDb = 0.1 * instantDb + 0.9 * smoothedDb;
 
-      dbValue.textContent=Math.round(smoothedDb);
-      dbLabel.textContent=classify(smoothedDb);
-      setGauge(smoothedDb);
-      
-      if(remaining > 0){ 
-          raf=requestAnimationFrame(tick);
-      } else { 
-          stopMeasure(); 
-      }
-    };
-    raf=requestAnimationFrame(tick);
+        dbValue.textContent=Math.round(smoothedDb);
+        dbLabel.textContent=classify(smoothedDb);
+        setGauge(smoothedDb);
+        
+        if(remaining > 0){ 
+            raf=requestAnimationFrame(tick);
+        } else { 
+            stopMeasure(values); // Pasar los valores recolectados
+        }
+      };
+      raf=requestAnimationFrame(tick);
+    } catch (err) {
+      status.textContent = 'Error al acceder al micrófono.';
+      stopMeasure();
+    }
   }
   
   btn?.addEventListener('click',()=>startMeasure());
 }
 
+
 function initIndicatorsModal(){
   const carousel = $('#refCarousel');
   if(!carousel) return;
-  // This function is now superseded by the new initModals, but we keep the listener for the noise cards
-  carousel.addEventListener('click', e => {
-      // Logic to open a modal specific to noise indicators can be added here if needed
-  });
 }
 
 function getBodyScanMessages(head, upper, lower, pains) {
