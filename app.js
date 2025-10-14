@@ -339,100 +339,105 @@ function initMicPrep(){
 }
 
 function initNoise(){
-  const btn=$('#toggleBtn'), dbValue=$('#dbValue'), status=$('#status');
+  const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
+  const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
   const canvas = $('#gaugeChart');
   if(!btn || !canvas) return;
 
   const gctx=canvas.getContext('2d');
   let gaugeChart=new Chart(gctx,{ type:'doughnut', data:{labels:['valor','resto'],datasets:[{data:[0,100],borderWidth:0,cutout:'80%',backgroundColor:['#A7AD9A','#eee']}]}, options:{responsive:true,maintainAspectRatio:false,rotation:-90,circumference:180,plugins:{legend:{display:false},tooltip:{enabled:false}}}});
-  const setGauge=v=>{ const pct=Math.max(0,Math.min(100,v)); const color=pct<45?'#8DB596':pct<65?'#A7AD9A':pct<80?'#f6ad55':'#e53e3e'; gaugeChart.data.datasets[0].data=[pct,100-pct]; gaugeChart.data.datasets[0].backgroundColor=[color,'#eee']; gaugeChart.update('none'); };
+  const setGauge=v=>{ const pct=clamp(v,0,100); const color=pct<45?'#8DB596':pct<65?'#A7AD9A':pct<80?'#f6ad55':'#e53e3e'; gaugeChart.data.datasets[0].data=[pct,100-pct]; gaugeChart.data.datasets[0].backgroundColor=[color,'#eee']; gaugeChart.update('none'); };
+  const classify=db=> db<45?'muy tranquilo': db<60?'tranquilo': db<75?'ruido moderado':'alto';
   
   let audioCtx, analyser, micStream, raf;
-  
-  const stopMeasure = (values = []) => {
+  let values=[], started=false;
+  let smoothedDb = 0.0;
+
+  const stopMeasure = () => {
     cancelAnimationFrame(raf);
     micStream?.getTracks().forEach(t => t.stop());
     if (audioCtx?.state !== 'closed') audioCtx?.close();
     btn.textContent = '🎙️ Iniciar 5s';
     btn.disabled = false;
+    started = false;
 
     const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-    const avgDb = Math.round(avg);
-    state.noise = { samples: values.slice(), avg: avgDb };
-
-    $('#final-db-result').textContent = `${avgDb} dB`;
-    $('#noise-results-card').classList.remove('hidden');
-    status.textContent = 'Medición finalizada.';
-    $('#btnMeasureNext').disabled = false;
-
-    document.querySelectorAll('.ref-card').forEach(card => card.classList.remove('active'));
-    if (avgDb < 45) $('#ref-saludable').classList.add('active');
-    else if (avgDb < 65) $('#ref-oficina').classList.add('active');
-    else if (avgDb < 80) $('#ref-ruidoso').classList.add('active');
-    else $('#ref-muyruidoso').classList.add('active');
+    const label = classify(avg);
+    finalDb.textContent=`${Math.round(avg)} dB`; 
+    finalLabel.textContent=label;
+    resultsCard.classList.remove('hidden'); 
+    status.textContent='Medición finalizada.'; 
+    next.disabled=false;
+    state.noise={samples:values.slice(),avg:Math.round(avg),label};
   };
 
-  btn.addEventListener('click', async () => {
-    let values = [];
+  async function startMeasure(){
+    let micTested = true;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+        stream.getTracks().forEach(t=>t.stop());
+    } catch(e) {
+        micTested = false;
+    }
+
+    if(!micTested){ alert('Primero debes permitir el acceso al micrófono en la pantalla anterior.'); return; }
+    if(started) return;
+
+    started=true; 
+    values=[]; 
+    smoothedDb = 0.0;
     status.textContent='Midiendo…'; 
     btn.textContent='⏹️ Detener'; 
     btn.disabled=true;
 
-    try {
-        audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-        micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-        const src=audioCtx.createMediaStreamSource(micStream);
-        analyser=audioCtx.createAnalyser(); 
-        analyser.fftSize=2048; 
-        src.connect(analyser);
+    audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    micStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+    const src=audioCtx.createMediaStreamSource(micStream);
+    analyser=audioCtx.createAnalyser(); 
+    analyser.fftSize=2048; 
+    src.connect(analyser);
 
-        let remaining=5.0;
-        const tick=()=>{
-          const data=new Uint8Array(analyser.frequencyBinCount);
-          analyser.getByteTimeDomainData(data);
-          let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
-          const rms=Math.sqrt(sum/data.length);
-          const dB=Math.max(20*Math.log10(rms)+90,0);
+    let startTime = null;
+    const tick=(timestamp)=>{
+      if (!startTime) startTime = timestamp;
+      const elapsedTime = timestamp - startTime;
+      let remaining = 5 - (elapsedTime / 1000);
+      remaining = Math.max(0, remaining);
+      countdown.textContent=`${remaining.toFixed(1)} s`;
 
-          values.push(dB);
-          dbValue.textContent=Math.round(dB);
-          setGauge(dB);
+      const data=new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteTimeDomainData(data);
+      let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+      const rms=Math.sqrt(sum/data.length);
+      const instantDb=Math.max(20*Math.log10(rms)+90,0);
 
-          remaining=Math.max(0,remaining-0.05);
-          $('#countdown').textContent = `${remaining.toFixed(1)} s`;
-          if(remaining > 0) {
-              raf = requestAnimationFrame(tick);
-          } else {
-              stopMeasure(values);
-          }
-        };
-        raf = requestAnimationFrame(tick);
-    } catch (err) {
-        status.textContent = "Error al acceder al micrófono.";
-        stopMeasure();
-    }
-  });
+      values.push(instantDb);
+
+      smoothedDb = 0.1 * instantDb + 0.9 * smoothedDb;
+
+      dbValue.textContent=Math.round(smoothedDb);
+      dbLabel.textContent=classify(smoothedDb);
+      setGauge(smoothedDb);
+      
+      if(remaining > 0){ 
+          raf=requestAnimationFrame(tick);
+      } else { 
+          stopMeasure(); 
+      }
+    };
+    raf=requestAnimationFrame(tick);
+  }
+  
+  btn?.addEventListener('click',()=>startMeasure());
 }
 
 function initIndicatorsModal(){
-  const tips={
-    saludable:{title:'Ambiente Saludable (< 45 dB)',img:'./images/ind-saludable.png',body:'Tu ambiente es silencioso, similar a una biblioteca. Esto es ideal para tareas que requieren alta concentración y pensamiento profundo. Aprovéchalo para avanzar en tus proyectos más complejos.'},
-    oficina:{title:'Oficina Activa (45-65 dB)',img:'./images/ind-conversacion.png',body:'Este es el nivel de una conversación normal. Es un ambiente sano para la colaboración y el trabajo en equipo. Si necesitas concentrarte, unos auriculares con música suave pueden ser suficientes.'},
-    ruidoso:{title:'Ambiente Ruidoso (65-80 dB)',img:'./images/ind-ruido.png',body:'El ruido equivale a conversaciones fuertes o varias llamadas a la vez. Puede interrumpir la concentración y generar estrés. Considera usar zonas de silencio o cabinas para tareas importantes.'},
-    muyruidoso:{title:'Ambiente Muy Ruidoso (> 80 dB)',img:'./images/ind-silencio.png',body:'Este nivel de ruido es agotador y puede causar fatiga cognitiva. Es importante tomar pausas en lugares más tranquilos para recuperarte y proteger tu bienestar auditivo y mental.'}
-  };
-  const modal=$('#modal'), mImg=$('#modalImg'), mTitle=$('#modalTitle'), mBody=$('#modalBody'), mClose=$('#modalClose');
   const carousel = $('#refCarousel');
-  if(!modal || !carousel) return;
-
-  carousel.addEventListener('click',e=>{
-    const card=e.target.closest('.ref-card'); if(!card) return;
-    const k=card.dataset.key, t=tips[k]; if(!t) return;
-    mImg.src=t.img; mImg.alt=t.title; mTitle.textContent=t.title; mBody.textContent=t.body;
-    modal.classList.remove('hidden');
+  if(!carousel) return;
+  // This function is now superseded by the new initModals, but we keep the listener for the noise cards
+  carousel.addEventListener('click', e => {
+      // Logic to open a modal specific to noise indicators can be added here if needed
   });
-  mClose?.addEventListener('click',()=>modal.classList.add('hidden'));
-  modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
 function getBodyScanMessages(head, upper, lower, pains) {
