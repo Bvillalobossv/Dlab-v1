@@ -67,6 +67,10 @@ ul.tips{list-style:none;padding:0;margin:0 0 1rem 0;color:var(--text-light)}ul.t
 /* Modal */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:1rem}
 .modal.hidden{display:none}
-.modal-card{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:1.2rem;border:1px solid var(--border-color);text-align:center}
+.modal-card{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:1.2rem;border:1px solid var(--border-color);text-align:center;position:relative}
 .modal-img{width:80px;height:80px;object-fit:contain;margin:.5rem auto}
 .modal-close{position:absolute;top:14px;right:14px;border:none;background:#fff;border-radius:999px;padding:.3rem .6rem;cursor:pointer}
+/* Área de trabajo */
+.area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.8rem}
+.area-pill{border:1px solid var(--border-color);background:#fff;border-radius:999px;padding:.9rem 1rem;cursor:pointer;font-weight:600}
+.area-pill.active{border-color:var(--green-dark);box-shadow:0 0 0 3px rgba(112,117,93,.15)}

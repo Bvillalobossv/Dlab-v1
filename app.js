@@ -1,7 +1,6 @@
-// ========= SUPABASE (usa tus claves) =========
+// ========= SUPABASE =========
 const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
-
 let db = null;
 
 // ========= STATE =========
@@ -10,7 +9,7 @@ const state = {
   face: { emotion: null, confidence: 0 },
   noise: { samples: [], avg: 0, label: '' },
   body: { head: 1, upper: 1, lower: 1 },
-  context: { area: 'Ventas', hours: 0, load: 5, pace: 5, stress: 5, datetime: null },
+  context: { area: null, hours: 0, load: 5, pace: 5, stress: 5, datetime: null },
   journal: ''
 };
 
@@ -26,8 +25,13 @@ const MODEL_URL = './models';
 let faceModelsReady = false;
 let cameraStream = null;
 const EMOJI_GIF = {
-  happy: './images/happy.gif', neutral:'./images/neutral.gif', sad:'./images/sad.gif',
-  angry:'./images/angry.gif', disgusted:'./images/disgust.gif', fearful:'./images/fear.gif', surprised:'./images/surprised.gif'
+  happy: './images/mascots/happy.gif',
+  neutral:'./images/mascots/neutral.gif',
+  sad:'./images/mascots/sad.gif',
+  angry:'./images/mascots/angry.gif',
+  disgusted:'./images/mascots/disgust.gif',
+  fearful:'./images/mascots/fear.gif',
+  surprised:'./images/mascots/surprised.gif'
 };
 
 // ========= CHARTS =========
@@ -47,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTabsTerms();
   initAuthForms();
   initNav();
+  initArea();
   initFace();
   initMicPrep();
   initNoise();
@@ -112,10 +117,14 @@ function initAuthForms(){
   });
 }
 function initNav(){
-  $('#btnHomeStart')?.addEventListener('click',()=>showScreen('screenFace'));
+  $('#btnHomeStart')?.addEventListener('click',()=>showScreen('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
+
+  $('#btnAreaNext')?.addEventListener('click',()=>showScreen('screenFace'));
+
   $('#btnFaceSkip')?.addEventListener('click',()=>{ $('#faceEmotion').textContent='—'; $('#faceConfidence').textContent='—'; $('#btnFaceNext').disabled=false; });
-  $('#btnFaceNext')?.addEventListener('click',()=>showScreen('screenAudioPrep'));
+  $('#btnFaceNext')?.addEventListener('click',()=>{ stopCamera(); showScreen('screenAudioPrep'); });
+
   $('#btnGoToMeasure')?.addEventListener('click',()=>showScreen('screenMeasure'));
   $('#btnMeasureNext')?.addEventListener('click',()=>showScreen('screenBodyScan'));
   $('#btnBodyScanNext')?.addEventListener('click',()=>showScreen('screenContext'));
@@ -124,16 +133,37 @@ function initNav(){
   $('#btnIntegrationHome')?.addEventListener('click',()=>showScreen('screenHome'));
 }
 
+// ========= ÁREA =========
+function initArea(){
+  const grid = $('#areaGrid'), out = $('#areaSelected'), next = $('#btnAreaNext');
+  grid?.addEventListener('click', async (e)=>{
+    const btn = e.target.closest('.area-pill'); if(!btn) return;
+    grid.querySelectorAll('.area-pill').forEach(x=>x.classList.remove('active'));
+    btn.classList.add('active');
+    state.context.area = btn.dataset.area;
+    out.textContent = `Área seleccionada: ${state.context.area}`;
+    next.disabled = false;
+
+    // si hay usuario, actualizamos de inmediato su perfil
+    try{
+      const u = (await db.auth.getUser())?.data?.user;
+      if (u?.id && state.context.area) {
+        await db.from('profiles').update({ department: state.context.area }).eq('id', u.id);
+      }
+    }catch(err){ console.warn('[profiles update pre]', err); }
+  });
+}
+
 // ========= CÁMARA / FACE =========
 function initFace(){
   const video = $('#faceVideo');
   const btnStart = $('#btnFaceStart');
   const btnSnap  = $('#btnFaceSnap');
+  const canvas   = $('#faceCanvas');
   if (video) { video.setAttribute('playsinline',''); video.muted = true; video.autoplay = true; }
 
   btnStart?.addEventListener('click', async () => {
     try{
-      // HTTPS check (except localhost)
       if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
         alert('Debes abrir por HTTPS para usar la cámara.'); return;
       }
@@ -143,12 +173,11 @@ function initFace(){
       $('#faceHelp').textContent = 'Cámara activa. Ahora “Analizar mi expresión”.';
     }catch(err){
       console.error('[camera]', err);
-      // Reintento con constraints genéricos (fallback Safari)
       try{
         await startCamera(video, true);
         btnSnap.disabled = false;
       }catch(e){
-        alert('No se pudo activar la cámara. Ve a Ajustes del navegador y permite la cámara para este sitio.');
+        alert('No se pudo activar la cámara. Permite la cámara para este sitio.');
       }
     }
   });
@@ -156,18 +185,34 @@ function initFace(){
   btnSnap?.addEventListener('click', async ()=>{
     if (!video?.srcObject) return alert('Activa primero la cámara.');
     try{
-      const det = await faceapi
+      await ensureFaceModels();
+
+      // 1) intentar directo desde el <video>
+      let det = await faceapi
         .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: .5 }))
         .withFaceExpressions();
+
+      // 2) si no detecta, tomar un frame a <canvas> y analizar el bitmap
+      if (!det) {
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        det = await faceapi
+          .detectSingleFace(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: .5 }))
+          .withFaceExpressions();
+      }
+
       if (!det) {
         $('#faceEmotion').textContent = 'No detectada';
         $('#faceConfidence').textContent = '—';
-        $('#faceTip').textContent = 'Asegúrate de buena luz y rostro centrado.';
+        $('#faceTip').textContent = 'Asegúrate de buena luz, rostro centrado y sin lentes oscuros.';
         $('#face-results-content').classList.remove('hidden');
         $('#btnFaceNext').disabled = false;
         state.face = { emotion:null, confidence:0 };
         return;
       }
+
       const expr = det.expressions.asSortedArray()[0];
       const emotion = expr.expression;
       const conf = +(expr.probability*100).toFixed(1);
@@ -203,15 +248,16 @@ async function startCamera(videoEl, fallback=false){
   videoEl.srcObject = stream;
   await videoEl.play();
 }
+function stopCamera(){ try{ cameraStream?.getTracks().forEach(t=>t.stop()); }catch{} }
 function tipForEmotion(e){
   switch(e){
-    case 'happy': return 'Sigue así. 3 respiraciones profundas para mantener ese estado.';
-    case 'neutral': return 'Planifica 1 tarea clave y arranca.';
-    case 'sad': return 'Camina 2 minutos o busca luz natural.';
-    case 'angry': return 'Respira 4-4-4-4 y suelta mandíbula.';
-    case 'fearful': return 'Una cosa a la vez. Prioriza.';
-    case 'disgusted': return 'Cambia de foco 2 minutos y vuelve.';
-    case 'surprised': return 'Canaliza esa energía: escribe un objetivo.';
+    case 'happy': return 'Se nota ánimo positivo. 3 respiraciones para mantener claridad.';
+    case 'neutral': return 'Buen punto de partida. Define 1 tarea clave y arranca.';
+    case 'sad': return 'Haz una micro-pausa con luz natural y movimiento suave.';
+    case 'angry': return 'Respira 4-4-4-4 y afloja mandíbula y hombros.';
+    case 'fearful': return 'Una cosa a la vez. Priorización rápida y avanza.';
+    case 'disgusted': return 'Cambia de foco 2 minutos y vuelve con intención.';
+    case 'surprised': return 'Canaliza esa energía: anota un objetivo rápido.';
     default: return 'Respira profundo por 60s y vuelve con foco.';
   }
 }
@@ -257,7 +303,12 @@ function initNoise(){
 
   let audioCtx, analyser, micStream, raf, values=[], started=false;
 
-  const classify = db => db<45?'muy tranquilo':db<60?'tranquilo':db<75?'moderado':'alto';
+  const classify = db => {
+    if (db < 45) return 'muy tranquilo';
+    if (db < 60) return 'tranquilo';
+    if (db < 75) return 'ruido moderado';
+    return 'alto';
+  };
 
   async function startMeasure(){
     if (!micTested) { alert('Primero prueba el micrófono.'); return; }
@@ -320,22 +371,22 @@ function initIndicatorsModal(){
     saludable: {
       title: 'Ambiente saludable',
       img: './images/ind-saludable.png',
-      body: 'Menos de 45 dB. Bueno para foco profundo. Mantén ventanas semi-cerradas, usa tapones si aparecen ruidos intermitentes. Hidratación y pausas breves ayudan a sostener el rendimiento.'
+      body: 'Menos de 45 dB. Excelente para foco profundo y tareas analíticas. Mantén “franjas de silencio” y avisa al equipo cuando necesites concentración.'
     },
     oficina: {
       title: 'Oficina activa',
       img: './images/ind-conversacion.png',
-      body: 'Entre 45–65 dB. Conversación normal, tecleteo. Útil para trabajo colaborativo. Para foco, usa música suave o auriculares. Establece “horas de silencio” en equipo.'
+      body: 'Entre 45–65 dB. Conversación breve y coordinación. Adecúa zonas: colaboración vs. foco. Usa música suave o auriculares si debes concentrarte.'
     },
     ruidoso: {
       title: 'Ruidoso',
       img: './images/ind-ruido.png',
-      body: 'Entre 65–80 dB. Tránsito, cafetería concurrida. Limita la exposición; usa cancelación de ruido. Tareas que requieran menos precisión funcionan mejor aquí.'
+      body: 'Entre 65–80 dB. Conversaciones cruzadas, llamadas simultáneas. Sugiere cabinas o espacios silenciosos; limita tiempo de exposición y usa cancelación de ruido.'
     },
     muyruidoso: {
       title: 'Muy ruidoso',
       img: './images/ind-silencio.png',
-      body: 'Más de 80 dB. Riesgo de fatiga y estrés. Muévete a un lugar más silencioso, reduce el tiempo de exposición y realiza pausas para relajar cuello y hombros.'
+      body: 'Más de 80 dB. Riesgo de fatiga y errores. Muévete a un lugar más silencioso; agenda tareas de foco lejos de estos picos; pausa breve para relajar cuello/hombros.'
     }
   };
   const modal=$('#modal'), mImg=$('#modalImg'), mTitle=$('#modalTitle'), mBody=$('#modalBody'), mClose=$('#modalClose');
@@ -398,9 +449,7 @@ async function finalizeAndReport(){
   // Persistencia
   try{
     const u=(await db.auth.getUser())?.data?.user; if(!u) { showScreen('screenIntegration'); return; }
-    // 1) actualizar perfil (área)
-    await db.from('profiles').update({ department: state.context.area }).eq('id', u.id);
-    // 2) insertar medición
+    if (state.context.area) { await db.from('profiles').update({ department: state.context.area }).eq('id', u.id); }
     await db.from('measurements').insert({
       user_id_uuid: u.id,
       face_emotion: state.face.emotion || 'neutral',
@@ -415,8 +464,8 @@ async function finalizeAndReport(){
 }
 function buildReco(face, noise, body){
   const min = Math.min(face, noise, body);
-  if (min===noise) return 'Busca 10 minutos en un espacio más silencioso o usa cancelación de ruido.';
-  if (min===body)  return 'Realiza 2 pausas de estiramiento para cuello y espalda.';
+  if (min===noise) return 'Reserva 10 minutos en un espacio más silencioso o usa cancelación de ruido.';
+  if (min===body)  return 'Realiza 2 pausas de estiramiento (cuello y espalda) durante la mañana.';
   return 'Antes de tu próxima tarea, respira 4-4-4-4 durante 60 segundos.';
 }
 function emotionToScore(e){
