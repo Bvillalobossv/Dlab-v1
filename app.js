@@ -19,8 +19,6 @@ const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
-// CORRECCIÓN: Se restaura la función que faltaba para convertir username a email.
-const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
@@ -135,7 +133,7 @@ function initAuthForms(){
         if (!u || !p) return setAuthMessage('Completa los campos.', true);
 
         setAuthMessage('Iniciando sesión...');
-        const { error } = await db.auth.signInWithPassword({ email: emailFromUser(u), password: p });
+        const { error } = await db.auth.signInWithPassword({ email: `${u.toLowerCase()}@example.com`, password: p });
         if (error) throw error;
       } catch (error) {
         console.error("Error en Login:", error);
@@ -156,7 +154,7 @@ function initAuthForms(){
 
         setAuthMessage('Creando cuenta...');
         const { error } = await db.auth.signUp({ 
-            email: emailFromUser(u), 
+            email: `${u.toLowerCase()}@example.com`, 
             password: p, 
             options: { data: { username: u } } 
         });
@@ -518,7 +516,9 @@ function initContextSurvey() {
 
 /*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
-  state.journal = ($('#journal-input')?.value || '').slice(0,1000);
+  // CORRECCIÓN: Capturar el valor del diario justo al llamar la función.
+  const journalText = ($('#journal-input')?.value || '').slice(0, 1000);
+  state.journal = journalText; // Actualizar el estado por si acaso, pero usar la variable local.
 
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
   const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
@@ -544,7 +544,7 @@ async function finalizeAndReport(){
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
         combined_score: ix,
-        journal_entry: state.journal || null,
+        journal_entry: journalText || null, // Usar la variable local
         work_hours: state.contextSurvey.hours,
         workload_level: state.contextSurvey.workload,
         work_pace_level: state.contextSurvey.pace,
