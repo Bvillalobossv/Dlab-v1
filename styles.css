@@ -84,7 +84,12 @@ ul.tips li{margin:.25rem 0}
 
 /* Indicadores */
 .ref-carousel{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:.9rem;margin-top:.9rem}
-.ref-card{display:flex;gap:.9rem;align-items:center;border:1px solid #eee;border-radius:14px;padding:1rem;background:#fff;cursor:pointer;text-align:left}
+.ref-card{display:flex;gap:.9rem;align-items:center;border:1px solid #eee;border-radius:14px;padding:1rem;background:#fff;cursor:pointer;text-align:left; transition: transform 0.2s, box-shadow 0.2s;}
+.ref-card.active {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-color: var(--green-dark);
+}
 .ref-card img{width:56px;height:56px;object-fit:contain}
 
 /* Modal */

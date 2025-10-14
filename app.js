@@ -1,6 +1,6 @@
 /*************** SUPABASE  *****************/
 const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzIJNiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
 let db = null;
 
 /*************** STATE  *****************/
@@ -299,7 +299,7 @@ function initMicPrep(){
     });
 }
 
-/*************** NOISE 5s PROMEDIO  *****************/
+/*************** NOISE 5s PROMEDIO (INDICADORES MEJORADOS) *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), status=$('#status');
   const canvas = $('#gaugeChart');
@@ -308,22 +308,30 @@ function initNoise(){
   const gctx=canvas.getContext('2d');
   let gaugeChart=new Chart(gctx,{ type:'doughnut', data:{labels:['valor','resto'],datasets:[{data:[0,100],borderWidth:0,cutout:'80%',backgroundColor:['#A7AD9A','#eee']}]}, options:{responsive:true,maintainAspectRatio:false,rotation:-90,circumference:180,plugins:{legend:{display:false},tooltip:{enabled:false}}}});
   const setGauge=v=>{ const pct=Math.max(0,Math.min(100,v)); const color=pct<45?'#8DB596':pct<65?'#A7AD9A':pct<80?'#f6ad55':'#e53e3e'; gaugeChart.data.datasets[0].data=[pct,100-pct]; gaugeChart.data.datasets[0].backgroundColor=[color,'#eee']; gaugeChart.update('none'); };
-
+  
   let audioCtx, analyser, micStream, raf;
   
   const stopMeasure = (values = []) => {
     cancelAnimationFrame(raf);
     micStream?.getTracks().forEach(t => t.stop());
-    audioCtx?.close();
+    if (audioCtx?.state !== 'closed') audioCtx?.close();
     btn.textContent = '🎙️ Iniciar 5s';
     btn.disabled = false;
 
     const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-    $('#final-db-result').textContent = `${Math.round(avg)} dB`;
+    const avgDb = Math.round(avg);
+    state.noise = { samples: values.slice(), avg: avgDb };
+
+    $('#final-db-result').textContent = `${avgDb} dB`;
     $('#noise-results-card').classList.remove('hidden');
     status.textContent = 'Medición finalizada.';
     $('#btnMeasureNext').disabled = false;
-    state.noise = { samples: values.slice(), avg: Math.round(avg) };
+
+    document.querySelectorAll('.ref-card').forEach(card => card.classList.remove('active'));
+    if (avgDb < 45) $('#ref-saludable').classList.add('active');
+    else if (avgDb < 65) $('#ref-oficina').classList.add('active');
+    else if (avgDb < 80) $('#ref-ruidoso').classList.add('active');
+    else $('#ref-muyruidoso').classList.add('active');
   };
 
   btn.addEventListener('click', async () => {
@@ -368,13 +376,13 @@ function initNoise(){
   });
 }
 
-/*************** MODAL INDICADORES  *****************/
+/*************** MODAL INDICADORES *****************/
 function initIndicatorsModal(){
   const tips={
-    saludable:{title:'Ambiente saludable',img:'./images/ind-saludable.png',body:'<45 dB. Ideal para foco profundo.'},
-    oficina:{title:'Oficina activa',img:'./images/ind-conversacion.png',body:'45–65 dB. Conversación breve y coordinación.'},
-    ruidoso:{title:'Ruidoso',img:'./images/ind-ruido.png',body:'65–80 dB. Conversaciones cruzadas o llamadas simultáneas.'},
-    muyruidoso:{title:'Muy ruidoso',img:'./images/ind-silencio.png',body:'>80 dB. Riesgo de fatiga.'}
+    saludable:{title:'Ambiente Saludable (< 45 dB)',img:'./images/ind-saludable.png',body:'Tu ambiente es silencioso, similar a una biblioteca. Esto es ideal para tareas que requieren alta concentración y pensamiento profundo. Aprovéchalo para avanzar en tus proyectos más complejos.'},
+    oficina:{title:'Oficina Activa (45-65 dB)',img:'./images/ind-conversacion.png',body:'Este es el nivel de una conversación normal. Es un ambiente sano para la colaboración y el trabajo en equipo. Si necesitas concentrarte, unos auriculares con música suave pueden ser suficientes.'},
+    ruidoso:{title:'Ambiente Ruidoso (65-80 dB)',img:'./images/ind-ruido.png',body:'El ruido equivale a conversaciones fuertes o varias llamadas a la vez. Puede interrumpir la concentración y generar estrés. Considera usar zonas de silencio o cabinas para tareas importantes.'},
+    muyruidoso:{title:'Ambiente Muy Ruidoso (> 80 dB)',img:'./images/ind-silencio.png',body:'Este nivel de ruido es agotador y puede causar fatiga cognitiva. Es importante tomar pausas en lugares más tranquilos para recuperarte y proteger tu bienestar auditivo y mental.'}
   };
   const modal=$('#modal'), mImg=$('#modalImg'), mTitle=$('#modalTitle'), mBody=$('#modalBody'), mClose=$('#modalClose');
   const carousel = $('#refCarousel');
@@ -493,7 +501,7 @@ async function finalizeAndReport(){
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
   $('#ix_face_progress').style.width=`${faceScore}%`; 
   $('#ix_face_progress').style.background='#8DB596';
-  $('#ix_db_progress').style.width=`${noiseScore}%`;
+  $('#ix_db_progress').style.width=`${noiseScore}%`; // CORRECCIÓN: Asegurar que esta barra se actualice
   $('#ix_db_progress').style.background='#A7AD9A';
   $('#ix_bs_progress').style.width=`${bodyScore}%`;
   $('#ix_bs_progress').style.background='#70755D';
@@ -505,7 +513,7 @@ async function finalizeAndReport(){
     const { data: { user } } = await db.auth.getUser();
     if(user?.id){
       const measurementData = {
-        user_id: user.id, // Columna para vincular al usuario
+        user_id_uuid: user.id, // CORRECCIÓN: Usar el nombre de columna correcto de tu tabla
         face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
@@ -518,17 +526,12 @@ async function finalizeAndReport(){
       };
       
       console.log("Enviando a Supabase:", measurementData);
-
       const { error } = await db.from('measurements').insert(measurementData);
-
-      if (error) {
-        console.error('Error de Supabase al insertar:', error);
-      } else {
-        console.log('Datos guardados en Supabase con éxito.');
-      }
+      if (error) throw error;
+      console.log('Datos guardados en Supabase con éxito.');
     }
   } catch(err) {
-    console.error('Error al intentar guardar en Supabase:', err);
+    console.error('Error de Supabase al insertar:', err);
   }
 
   show('screenIntegration');
