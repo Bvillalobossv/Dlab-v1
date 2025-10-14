@@ -10,7 +10,6 @@ const state = {
   face: { emotion: null, confidence: 0 },
   noise: { samples: [], avg: 0, label: "" },
   body: { head: 0, upper: 0, lower: 0, pains: { head:[], upper:[], lower:[] } },
-  // NUEVO: Estado para la encuesta de contexto
   contextSurvey: { hours: null, workload: 5, pace: 5, stress: 5 },
   journal: ''
 };
@@ -55,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNoise();
   initIndicatorsModal();
   initBodyScan();
-  initContextSurvey(); // NUEVO: Inicializar la nueva pantalla
+  initContextSurvey();
 
   const { data:{ session } } = await db.auth.getSession();
   session?.user ? onSignedIn(session.user) : show('screenIntro');
@@ -70,27 +69,31 @@ async function onSignedIn(user){
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
 
-/*************** INTRO + AUTH  *****************/
+/*************** INTRO + AUTH (CORREGIDO) *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
-  const prev=$('#introPrev'), next=$$('#introNext'), start=$('#introStart');
+  // CORRECCIÓN: Se cambió $$ por $ para seleccionar los botones correctamente.
+  const prev=$('#introPrev'), next=$('#introNext'), start=$('#introStart');
   if(!slides) return;
   const n=slides.children.length; let i=0;
   const render=()=>{ slides.style.transform=`translateX(${-i*100}%)`; dots.innerHTML=''; for(let k=0;k<n;k++){const d=document.createElement('div'); d.className='dot'+(k===i?' active':''); dots.appendChild(d);} prev.disabled=i===0; next.style.display=i<n-1?'inline-block':'none'; start.style.display=i===n-1?'inline-block':'none'; };
   prev.onclick=()=>{ if(i>0){i--;render();} }; next.onclick=()=>{ if(i<n-1){i++;render();} }; start.onclick=()=>show('screenAuth'); render();
 }
+
 function initTabsTerms(){
   $('#authTabLogin')?.addEventListener('click',()=>toggleAuth('login'));
   $('#authTabSignup')?.addEventListener('click',()=>toggleAuth('signup'));
   $('#view-terms-link')?.addEventListener('click',e=>{e.preventDefault();show('screenTerms');});
   $('#close-terms-button')?.addEventListener('click',()=>show('screenAuth'));
 }
+
 function toggleAuth(which){
   const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
   if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
-  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'; tL.classList.remove('active');}
+  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');} // CORRECCIÓN: Se arregló un error de sintaxis aquí.
   setAuthMessage('');
 }
+
 function initAuthForms(){
   $('#formLogin')?.addEventListener('submit', async e=>{
     e.preventDefault();
@@ -110,7 +113,7 @@ function initAuthForms(){
   });
 }
 
-/*************** NAV (Actualizado) *****************/
+/*************** NAV *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
@@ -119,8 +122,8 @@ function initNav(){
   $('#btnFaceNext')?.addEventListener('click',()=>{ stopCamera(); show('screenAudioPrep'); });
   $('#btnGoToMeasure')?.addEventListener('click',()=>show('screenMeasure'));
   $('#btnMeasureNext')?.addEventListener('click',()=>show('screenBodyScan'));
-  $('#btnBodyScanNext')?.addEventListener('click',()=>show('screenContext')); // <-- A la nueva pantalla
-  $('#btnContextNext')?.addEventListener('click',()=>show('screenJournal')); // <-- De la nueva pantalla al Journal
+  $('#btnBodyScanNext')?.addEventListener('click',()=>show('screenContext'));
+  $('#btnContextNext')?.addEventListener('click',()=>show('screenJournal'));
   $('#btnJournalNext')?.addEventListener('click',()=>finalizeAndReport());
   $('#btnIntegrationHome')?.addEventListener('click',()=>show('screenHome'));
 }
@@ -142,7 +145,7 @@ function initArea(){
   });
 }
 
-/*************** CÁMARA / FACE (CORREGIDO Y REFORZADO) *****************/
+/*************** CÁMARA / FACE *****************/
 async function ensureFaceModels(){
   if(faceModelsReady) return true;
   console.log('Loading face-api models...');
@@ -254,7 +257,6 @@ function tipForEmotion(e,c){
   }
 }
 
-
 /*************** MIC PREP  *****************/
 let micTested=false;
 function initMicPrep(){
@@ -343,7 +345,7 @@ function initIndicatorsModal(){
   modal?.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/*************** BODY SCAN (MENSAJES DINÁMICOS) *****************/
+/*************** BODY SCAN *****************/
 function getBodyScanTip(head, upper, lower, pains) {
     const avg = (head + upper + lower) / 3;
     const totalPains = pains.head.length + pains.upper.length + pains.lower.length;
@@ -397,16 +399,15 @@ function initBodyScan(){
   update();
 }
 
-/*************** NUEVO: ENCUESTA DE CONTEXTO *****************/
+/*************** ENCUESTA DE CONTEXTO *****************/
 function initContextSurvey() {
     const dtInput = $('#ctx_datetime');
     const hoursInput = $('#ctx_hours');
     const sliders = { workload: $('#ctx_workload'), pace: $('#ctx_pace'), stress: $('#ctx_stress') };
     const values = { workload: $('#valWorkload'), pace: $('#valPace'), stress: $('#valStress') };
 
-    // Set current date and time
     const now = new Date();
-    dtInput.value = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    dtInput.value = `${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
     hoursInput?.addEventListener('input', () => {
         state.contextSurvey.hours = +hoursInput.value || null;
@@ -421,8 +422,7 @@ function initContextSurvey() {
     }
 }
 
-
-/*************** REPORTE + PERSISTENCIA (Actualizado) *****************/
+/*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
   state.journal = ($('#journal-input')?.value || '').slice(0,1000);
 
@@ -452,7 +452,6 @@ async function finalizeAndReport(){
         body_scan_avg: +(bodyAvg10.toFixed(1)),
         combined_score: ix,
         journal_entry: state.journal || null,
-        // NUEVO: Guardar datos de la encuesta de contexto
         work_hours: state.contextSurvey.hours,
         workload_level: state.contextSurvey.workload,
         work_pace_level: state.contextSurvey.pace,
