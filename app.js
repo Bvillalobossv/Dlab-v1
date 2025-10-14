@@ -19,6 +19,8 @@ const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
+// CORRECCIÓN: Se restaura la función que faltaba para convertir username a email.
+const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
@@ -80,7 +82,7 @@ async function onSignedIn(user){
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
 
-/*************** INTRO + AUTH (CORREGIDO Y REFORZADO) *****************/
+/*************** INTRO + AUTH *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
   const prev = $('#introPrev'), next = $('#introNext'), start = $('#introStart');
@@ -135,7 +137,6 @@ function initAuthForms(){
         setAuthMessage('Iniciando sesión...');
         const { error } = await db.auth.signInWithPassword({ email: emailFromUser(u), password: p });
         if (error) throw error;
-        // onAuthStateChange se encargará de redirigir
       } catch (error) {
         console.error("Error en Login:", error);
         setAuthMessage(error.message, true);
@@ -160,7 +161,6 @@ function initAuthForms(){
             options: { data: { username: u } } 
         });
         if (error) throw error;
-        // onAuthStateChange se encargará de redirigir al detectar el nuevo usuario logueado.
       } catch (error) {
         console.error("Error en Signup:", error);
         setAuthMessage(error.message, true);
