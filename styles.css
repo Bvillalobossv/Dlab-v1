@@ -11,7 +11,6 @@ body{font-family:'Montserrat',sans-serif;background:var(--background);color:var(
 .screen.active{display:block;animation:fadeIn .35s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-/* CORRECCIÓN: Aplicar display:flex solo cuando la pantalla de intro esté activa */
 #screenIntro.active {
   display: flex;
   flex-direction: column;
@@ -45,31 +44,39 @@ textarea{min-height:150px;resize:vertical}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
 .divider{border:none;height:1px;background:#eee;margin:1.5rem 0}
 
-/* Onboarding (Versión Final Súper Simplificada) */
+/* Onboarding (Versión Final Simplificada) */
 .carousel-shell {
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 .slides {
   display: flex;
   overflow: hidden;
+  flex-grow: 1;
 }
 .slide {
   min-width: 100%;
   transition: transform 0.5s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
   padding: 1rem;
-  opacity: 1;
 }
 .slide-image {
   display: block;
   max-width: 100%;
-  height: 300px;
+  max-height: 40vh;
   object-fit: contain;
-  margin: 0 auto 1.5rem auto;
+  margin-bottom: 2rem;
 }
-.slide-text {
-  text-align: center;
+.intro-footer {
+  padding-top: 1rem;
 }
 .dots {
   display: flex;
@@ -87,8 +94,22 @@ textarea{min-height:150px;resize:vertical}
   background: var(--green-dark);
 }
 .intro-nav-buttons {
-  padding-top: 1rem;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 1rem;
+}
+
+/* Estilos para la lista en la tarjeta de bienvenida */
+.features-list-card {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 1.5rem 0;
+}
+.features-list-card li {
+    margin-bottom: 0.8rem;
+}
+.home-buttons-card {
+    text-align: center;
 }
 
 
@@ -138,12 +159,14 @@ ul.tips li{margin:.25rem 0}
 }
 .ref-card img{width:56px;height:56px;object-fit:contain}
 
-/* Modal */
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.4);padding:1rem}
+/* Estilos para los enlaces de los modales */
+.open-modal-link { display: block; margin-top: 1rem; color: var(--green-dark); text-decoration: none; font-weight: 600; font-size: 0.9rem; text-align: center; }
+
+/* Modal (Revisado) */
+.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);padding:1rem; z-index: 100;}
 .modal.hidden{display:none}
-.modal-card{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:1.2rem;border:1px solid #eee;text-align:center;position:relative}
-.modal-img{width:80px;height:80px;object-fit:contain;margin:.5rem auto}
-.modal-close{position:absolute;top:14px;right:14px;border:none;background:#fff;border-radius:999px;padding:.3rem .6rem;cursor:pointer}
+.modal-card{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:2rem;border:1px solid #eee;text-align:center;position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
+.modal-close{position:absolute;top:10px;right:10px;border:none;background:transparent;font-size: 1.5rem; color: #aaa; cursor:pointer;}
 
 /* Informe */
 .report-card{text-align:left}

@@ -47,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const initComponents = [
     { name: 'Intro', func: initIntro },
-    { name: 'Tabs & Terms', func: initTabsTerms },
     { name: 'Auth Forms', func: initAuthForms },
     { name: 'Navigation', func: initNav },
     { name: 'Area', func: initArea },
@@ -56,7 +55,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     { name: 'Noise', func: initNoise },
     { name: 'Indicators Modal', func: initIndicatorsModal },
     { name: 'Body Scan', func: initBodyScan },
-    { name: 'Context Survey', func: initContextSurvey }
+    { name: 'Context Survey', func: initContextSurvey },
+    { name: 'General Modals', func: initModals }
   ];
 
   initComponents.forEach(component => {
@@ -107,20 +107,6 @@ function initIntro(){
   render();
 }
 
-function initTabsTerms(){
-  $('#authTabLogin')?.addEventListener('click',()=>toggleAuth('login'));
-  $('#authTabSignup')?.addEventListener('click',()=>toggleAuth('signup'));
-  $('#view-terms-link')?.addEventListener('click',e=>{e.preventDefault();show('screenTerms');});
-  $('#close-terms-button')?.addEventListener('click',()=>show('screenAuth'));
-}
-
-function toggleAuth(which){
-  const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
-  if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
-  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
-  setAuthMessage('');
-}
-
 function initAuthForms(){
   const formLogin = $('#formLogin');
   const formSignup = $('#formSignup');
@@ -168,6 +154,30 @@ function initAuthForms(){
   }
 }
 
+/*************** MODALES *****************/
+function initModals() {
+    const modalContainer = document.getElementById('modal-container');
+    if (!modalContainer) return;
+
+    document.body.addEventListener('click', (e) => {
+        if (e.target.classList.contains('open-modal-link')) {
+            e.preventDefault();
+            const modalId = e.target.dataset.modalId;
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+    });
+
+    modalContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-close') || e.target.classList.contains('modal')) {
+            e.target.closest('.modal').classList.add('hidden');
+        }
+    });
+}
+
+/*************** NAV *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
@@ -182,6 +192,7 @@ function initNav(){
   $('#btnIntegrationHome')?.addEventListener('click',()=>show('screenHome'));
 }
 
+/*************** ÁREA  *****************/
 function initArea(){
   const grid = $('#areaGrid'), out = $('#areaSelected'), next = $('#btnAreaNext');
   if(!grid) return;
@@ -193,12 +204,13 @@ function initArea(){
     out.textContent = `Área seleccionada: ${state.context.area}`;
     next.disabled = false;
     try{
-      const u = (await db.auth.getUser())?.data?.user;
-      if (u?.id && state.context.area) await db.from('profiles').update({ department: state.context.area }).eq('id', u.id);
+      const { data: { user } } = await db.auth.getUser();
+      if (user?.id && state.context.area) await db.from('profiles').update({ department: state.context.area }).eq('id', user.id);
     }catch(err){ console.warn('[profiles update]', err); }
   });
 }
 
+/*************** CÁMARA / FACE *****************/
 async function ensureFaceModels(statusElement){
   if(faceModelsReady) return true;
   try {
