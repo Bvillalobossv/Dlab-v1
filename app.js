@@ -357,10 +357,18 @@ const btnIntegrationHome = $('#btnIntegrationHome');
 
 async function renderFinalReport() {
     // 1. Calcular puntajes individuales (0-100, donde 100 es mejor)
-    const faceScore = lastFace ? (lastFace.expression === 'happy' ? 95 : (lastFace.expression === 'neutral' ? 75 : 30)) : 50;
-    const noiseScore = Math.max(0, 100 - (lastNoiseAvg - 45) * 2.5);
+    let faceScore;
+    if (lastFace) {
+        if (lastFace.expression === 'happy') faceScore = 95;
+        else if (lastFace.expression === 'neutral' || lastFace.expression === 'surprised') faceScore = 75;
+        else faceScore = 30; // angry, sad, etc.
+    } else {
+        faceScore = 60; // 'skipped' score
+    }
+
+    const noiseScore = Math.max(0, 100 - (Math.abs(lastNoiseAvg - 50) * 2.5));
     const tensionAvg = (bodyScanData.head + bodyScanData.upper + bodyScanData.lower) / 3;
-    const tensionScore = 100 - ((tensionAvg - 1) / 9) * 100;
+    const tensionScore = Math.round(100 - ((tensionAvg - 1) / 9) * 100);
     
     // 2. Calcular índice combinado
     const combinedScore = Math.round((faceScore * 0.4) + (noiseScore * 0.2) + (tensionScore * 0.4));
@@ -419,6 +427,14 @@ btnIntegrationHome.addEventListener('click', () => {
     lastNoiseAvg = 0;
     bodyScanData = {};
     journalEntry = "";
+    // Restablecer UI de pantallas
+    $('#face-results-content').classList.add('hidden');
+    btnFaceNext.disabled = true;
+    toggleBtn.style.display = 'inline-block';
+    toggleBtn.disabled = false;
+    noiseResultsCard.classList.add('hidden');
+    btnMeasureNext.disabled = true;
+    $('#journal-input').value = '';
     show('#screenFace');
 });
 
@@ -433,3 +449,8 @@ db.auth.onAuthStateChange((event, session) => {
     show('#screenIntro');
   }
 });
+
+$('#btnMicGo').addEventListener('click', ()=> {
+  show('#screenMeasure');
+});
+
