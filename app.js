@@ -20,6 +20,7 @@ const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 
 /*************** FACE-API  *****************/
 const MODEL_URL='./models';
@@ -133,7 +134,7 @@ function initAuthForms(){
         if (!u || !p) return setAuthMessage('Completa los campos.', true);
 
         setAuthMessage('Iniciando sesión...');
-        const { error } = await db.auth.signInWithPassword({ email: `${u.toLowerCase()}@example.com`, password: p });
+        const { error } = await db.auth.signInWithPassword({ email: emailFromUser(u), password: p });
         if (error) throw error;
       } catch (error) {
         console.error("Error en Login:", error);
@@ -154,7 +155,7 @@ function initAuthForms(){
 
         setAuthMessage('Creando cuenta...');
         const { error } = await db.auth.signUp({ 
-            email: `${u.toLowerCase()}@example.com`, 
+            email: emailFromUser(u), 
             password: p, 
             options: { data: { username: u } } 
         });
@@ -516,9 +517,7 @@ function initContextSurvey() {
 
 /*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
-  // CORRECCIÓN: Capturar el valor del diario justo al llamar la función.
   const journalText = ($('#journal-input')?.value || '').slice(0, 1000);
-  state.journal = journalText; // Actualizar el estado por si acaso, pero usar la variable local.
 
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
   const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
@@ -529,9 +528,15 @@ async function finalizeAndReport(){
   $('#ix_score_circle').textContent = ix;
   $('#ix_score_circle').style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e';
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
+  
+  // CORRECCIÓN: Restaurar el color de fondo de las barras de progreso
   $('#ix_face_progress').style.width=`${faceScore}%`;
+  $('#ix_face_progress').style.background='#8DB596';
   $('#ix_db_progress').style.width=`${noiseScore}%`;
+  $('#ix_db_progress').style.background='#A7AD9A';
   $('#ix_bs_progress').style.width=`${bodyScore}%`;
+  $('#ix_bs_progress').style.background='#70755D';
+  
   $('#ix_reco').textContent = buildReco(faceScore, noiseScore, bodyScore, state);
   $('#ix_meaning').textContent = buildMeaning(ix);
 
@@ -544,14 +549,15 @@ async function finalizeAndReport(){
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
         combined_score: ix,
-        journal_entry: journalText || null, // Usar la variable local
+        journal_entry: journalText || null,
         work_hours: state.contextSurvey.hours,
         workload_level: state.contextSurvey.workload,
         work_pace_level: state.contextSurvey.pace,
         stress_level: state.contextSurvey.stress
       };
       
-      const { error } = await db.from('measurements').insert(measurementData);
+      // CORRECCIÓN: Enviar los datos como un array de un objeto
+      const { error } = await db.from('measurements').insert([measurementData]);
       if (error) throw error;
     }
   } catch(err) {
@@ -572,8 +578,8 @@ function buildReco(face, noise, body, st){
   const painsCount=st.body.pains.head.length+st.body.pains.upper.length+st.body.pains.lower.length;
   if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min.');
   if(noise < 45) parts.push('Busca una zona más silenciosa.');
-  if((st.journal||'').length>60) parts.push('Gracias por compartir.');
-  if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves.');
+  if((st.journal||'').length > 10) parts.push('Gracias por compartir tus reflexiones.');
+  if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves y celebra tus avances.');
   return parts.join(' ');
 }
 function emotionToScore(e){
