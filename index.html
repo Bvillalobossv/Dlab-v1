@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RaiZen · Dlab-v1</title>
 
-  <link rel="stylesheet" href="./styles.css?v=1.9" />
+  <link rel="stylesheet" href="./styles.css?v=1.10" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -100,7 +100,7 @@
   </div>
 
   <div id="screenArea" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 1 de 8</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 1 de 7</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
     <div class="card max-900">
       <div id="areaGrid" class="area-grid">
         <button class="area-pill" data-area="Administración">💼 Administración</button>
@@ -116,7 +116,7 @@
   </div>
 
   <div id="screenFace" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 2 de 8</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 2 de 7</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
     <div class="card max-900">
       <video id="faceVideo" class="video" playsinline muted></video>
       <canvas id="faceCanvas" class="video" style="display:none"></canvas>
@@ -139,7 +139,7 @@
   </div>
 
   <div id="screenAudioPrep" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 3 de 8</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 3 de 7</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
     <div class="card max-700">
       <ul class="tips">
         <li>Mantén el móvil quieto.</li>
@@ -154,7 +154,7 @@
   </div>
 
   <div id="screenMeasure" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 4 de 8</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 4 de 7</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
     <div class="card max-900">
       <div class="gauge-wrapper"><canvas id="gaugeChart" width="280" height="180"></canvas><div class="gauge-center"><span id="dbValue" class="db-value">0</span><span class="db-unit">dB</span><div id="dbLabel" class="db-label"></div><div id="countdown" class="countdown">5.0 s</div></div></div>
       <p id="status" class="muted">Pulsa “Iniciar 5s”.</p>
@@ -174,7 +174,7 @@
   </div>
   
   <div id="screenBodyScan" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 5 de 8</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 5 de 7</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
     <div class="card max-900 text-left">
       <h3>💆 Cabeza y cuello <span id="valHead" class="val-num">0/10</span></h3>
       <input id="bs_head" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
@@ -193,7 +193,7 @@
   </div>
   
   <div id="screenContext" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 6 de 8</span><h2>Encuesta breve de contexto</h2><p class="lead">Carga, ritmo y estrés de hoy.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 6 de 7</span><h2>Encuesta breve de contexto</h2><p class="lead">Carga, ritmo y estrés de hoy.</p></div>
     <div class="card max-700 text-left">
       <div class="form-row"><label>Fecha y hora</label><input id="ctx_datetime" type="text" disabled></div>
       <div class="form-row"><label>Horas trabajadas</label><input id="ctx_hours" type="number" placeholder="Ej: 8" required></div>
@@ -208,7 +208,7 @@
   </div>
 
   <div id="screenJournal" class="screen">
-    <div class="step-header"><span class="step-counter">Paso 7 de 8</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
+    <div class="step-header"><span class="step-counter">Paso 7 de 7</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
     <div class="card max-700">
       <textarea id="journal-input" placeholder="Escribe libremente… (opcional)"></textarea>
       <a href="#" class="open-modal-link" data-modal-id="modal-why-journal">¿Por qué medimos esto?</a>
@@ -228,12 +228,12 @@
 
   <div id="modal-container">
     <div id="modal-terms" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>Términos y Condiciones</h2><p><b>Finalidad.</b> RaiZen es una herramienta de bienestar, no un dispositivo médico. La información es orientativa y no sustituye atención profesional.</p><p><b>Datos procesados.</b> Se usan cámara y micrófono para calcular emoción estimada, nivel de ruido y tensiones corporales. No guardamos audio/video crudo; sólo resultados agregados y tus comentarios voluntarios.</p><p><b>Privacidad.</b> Los datos se almacenan en Supabase y se asocian a tu cuenta. Puedes solicitar su eliminación. Aplicamos buenas prácticas de seguridad, aunque ningún sistema es infalible.</p><p><b>Consentimiento.</b> Al usar RaiZen aceptas este tratamiento y el uso de almacenamiento local para sesión.</p></div></div>
-    <div id="modal-why-face" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un análisis facial?</h2><p>Tus expresiones faciales son un indicador directo de tu estado emocional. El estrés, la alegría o la fatiga se reflejan en tu rostro, a menudo de forma inconsciente.</p><p>Al analizar tu expresión dominante al inicio del día, podemos tener un punto de partida para entender tu estado anímico. No es un diagnóstico, sino una forma rápida y no invasiva de conectar contigo mismo y ser más consciente de tus emociones.</p><p><strong>Tu privacidad es clave:</strong> este análisis se realiza 100% en tu dispositivo y nunca se guarda la imagen.</p></div></div>
-    <div id="modal-why-noise" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué medir el ruido?</h2><p>El ambiente acústico tiene un impacto directo en tu capacidad de concentración, niveles de estrés y fatiga cognitiva. Un entorno constantemente ruidoso (> 80 dB) puede agotar tus recursos mentales sin que te des cuenta.</p><p>Medir el nivel de decibeles de tu espacio de trabajo nos ayuda a entender si tu entorno favorece la concentración o si, por el contrario, podría ser una fuente de estrés invisible. Con esta información, puedes tomar acciones como usar auriculares o moverte a un lugar más tranquilo para tareas importantes.</p></div></div>
-    <div id="modal-why-body" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un escaneo corporal?</h2><p>El estrés y la carga de trabajo no solo afectan tu mente, sino también tu cuerpo. La tensión acumulada en el cuello, hombros y espalda es una de las manifestaciones físicas más comunes del agotamiento laboral (burnout).</p><p>Este auto-reporte te invita a hacer una pausa y conectar con tu cuerpo. Al tomar conciencia de dónde se acumula la tensión, puedes realizar pausas activas o estiramientos específicos para liberar esa carga antes de que se convierta en una molestia crónica. Es una herramienta de prevención y autocuidado.</p></div></div>
-    <div id="modal-why-journal" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué escribir cómo te sientes?</h2><p>Poner tus pensamientos y sentimientos en palabras, conocido como "journaling", es una técnica poderosa para procesar emociones, reducir el estrés y ganar claridad mental.</p><p>Este espacio es tuyo y es 100% opcional. Lo que escribas aquí nos ayuda a contextualizar los datos objetivos de las otras mediciones. A veces, un mal día no se refleja en la tensión corporal, pero sí en tus palabras. Escribir te permite desahogarte y nos da una visión más completa de tu bienestar.</p></div></div>
+    <div id="modal-why-face" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un análisis facial?</h2><p>Tus expresiones faciales son un indicador directo de tu estado emocional...</p></div></div>
+    <div id="modal-why-noise" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué medir el ruido?</h2><p>El ambiente acústico tiene un impacto directo en tu capacidad de concentración...</p></div></div>
+    <div id="modal-why-body" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un escaneo corporal?</h2><p>El estrés y la carga de trabajo no solo afectan tu mente, sino también tu cuerpo...</p></div></div>
+    <div id="modal-why-journal" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué escribir cómo te sientes?</h2><p>Poner tus pensamientos y sentimientos en palabras es una técnica poderosa...</p></div></div>
   </div>
   
-  <script src="./app.js?v=1.9"></script>
+  <script src="./app.js?v=1.10"></script>
 </body>
 </html>
