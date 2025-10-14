@@ -47,6 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const initComponents = [
     { name: 'Intro', func: initIntro },
+    // CORRECCIÓN: Se restaura la inicialización de las pestañas de login/registro
+    { name: 'Tabs & Terms', func: initTabsTerms },
     { name: 'Auth Forms', func: initAuthForms },
     { name: 'Navigation', func: initNav },
     { name: 'Area', func: initArea },
@@ -105,6 +107,18 @@ function initIntro(){
   next.onclick=()=>{ if(i<n-1){i++;render();} };
   start.onclick=()=>show('screenAuth');
   render();
+}
+
+function initTabsTerms(){
+  $('#authTabLogin')?.addEventListener('click',()=>toggleAuth('login'));
+  $('#authTabSignup')?.addEventListener('click',()=>toggleAuth('signup'));
+}
+
+function toggleAuth(which){
+  const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
+  if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
+  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
+  setAuthMessage('');
 }
 
 function initAuthForms(){
@@ -347,7 +361,7 @@ function initMicPrep(){
 }
 
 function initNoise(){
-  const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
+  const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
   const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
   const canvas = $('#gaugeChart');
   if(!btn || !canvas) return;

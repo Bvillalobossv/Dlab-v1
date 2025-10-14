@@ -14,7 +14,6 @@ body{font-family:'Montserrat',sans-serif;background:var(--background);color:var(
 #screenIntro.active {
   display: flex;
   flex-direction: column;
-  justify-content: center;
 }
 
 .max-600{max-width:600px;margin:0 auto}
@@ -56,7 +55,7 @@ textarea{min-height:150px;resize:vertical}
 .slides {
   display: flex;
   overflow: hidden;
-  flex-grow: 1;
+  flex: 1;
 }
 .slide {
   min-width: 100%;
@@ -71,12 +70,15 @@ textarea{min-height:150px;resize:vertical}
 .slide-image {
   display: block;
   max-width: 100%;
-  max-height: 40vh;
+  max-height: 50vh;
   object-fit: contain;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+.slide-text {
+  /* No se necesitan estilos especiales aquí, el layout flex se encarga */
 }
 .intro-footer {
-  padding-top: 1rem;
+  flex-shrink: 0;
 }
 .dots {
   display: flex;
@@ -97,19 +99,6 @@ textarea{min-height:150px;resize:vertical}
   display: flex;
   justify-content: center;
   padding-bottom: 1rem;
-}
-
-/* Estilos para la lista en la tarjeta de bienvenida */
-.features-list-card {
-    list-style: disc;
-    padding-left: 20px;
-    margin: 1.5rem 0;
-}
-.features-list-card li {
-    margin-bottom: 0.8rem;
-}
-.home-buttons-card {
-    text-align: center;
 }
 
 
