@@ -72,12 +72,28 @@ function onSignedOut(){ state.user=null; show('screenIntro'); }
 /*************** INTRO + AUTH (CORREGIDO) *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
-  // CORRECCIÓN: Se cambió $$ por $ para seleccionar los botones correctamente.
-  const prev=$('#introPrev'), next=$('#introNext'), start=$('#introStart');
-  if(!slides) return;
+  // CORRECCIÓN DEFINITIVA: Todos los selectores usan '$' correctamente.
+  const prev = $('#introPrev'), next = $('#introNext'), start = $('#introStart');
+  if(!slides || !prev || !next || !start) return; // Añadida una comprobación de seguridad extra.
+
   const n=slides.children.length; let i=0;
-  const render=()=>{ slides.style.transform=`translateX(${-i*100}%)`; dots.innerHTML=''; for(let k=0;k<n;k++){const d=document.createElement('div'); d.className='dot'+(k===i?' active':''); dots.appendChild(d);} prev.disabled=i===0; next.style.display=i<n-1?'inline-block':'none'; start.style.display=i===n-1?'inline-block':'none'; };
-  prev.onclick=()=>{ if(i>0){i--;render();} }; next.onclick=()=>{ if(i<n-1){i++;render();} }; start.onclick=()=>show('screenAuth'); render();
+  const render=()=>{
+    slides.style.transform=`translateX(${-i*100}%)`;
+    dots.innerHTML='';
+    for(let k=0;k<n;k++){
+      const d=document.createElement('div');
+      d.className='dot'+(k===i?' active':'');
+      dots.appendChild(d);
+    }
+    prev.disabled=i===0;
+    next.style.display=i<n-1?'inline-block':'none';
+    start.style.display=i===n-1?'inline-block':'none';
+  };
+
+  prev.onclick=()=>{ if(i>0){i--;render();} };
+  next.onclick=()=>{ if(i<n-1){i++;render();} };
+  start.onclick=()=>show('screenAuth');
+  render();
 }
 
 function initTabsTerms(){
@@ -90,7 +106,7 @@ function initTabsTerms(){
 function toggleAuth(which){
   const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
   if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
-  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');} // CORRECCIÓN: Se arregló un error de sintaxis aquí.
+  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
   setAuthMessage('');
 }
 
