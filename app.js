@@ -338,7 +338,7 @@ function initMicPrep(){
     });
 }
 
-/*************** NOISE 5s PROMEDIO (CORREGIDO Y MEJORADO) *****************/
+/*************** NOISE 5s PROMEDIO (CORREGIDO) *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
   const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
@@ -363,13 +363,21 @@ function initNoise(){
     started = false;
 
     const avg = values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+    const avgDb = Math.round(avg);
     const label = classify(avg);
-    if(finalDb) finalDb.textContent=`${Math.round(avg)} dB`; 
+
+    if(finalDb) finalDb.textContent=`${avgDb} dB`; 
     if(finalLabel) finalLabel.textContent=label;
     resultsCard?.classList.remove('hidden'); 
     if(status) status.textContent='Medición finalizada.'; 
     if(next) next.disabled=false;
-    state.noise={samples:values.slice(),avg:Math.round(avg),label};
+    state.noise={samples:values.slice(),avg:avgDb,label};
+
+    document.querySelectorAll('.ref-card').forEach(card => card.classList.remove('active'));
+    if (avgDb < 45) $('#ref-saludable')?.classList.add('active');
+    else if (avgDb < 65) $('#ref-oficina')?.classList.add('active');
+    else if (avgDb < 80) $('#ref-ruidoso')?.classList.add('active');
+    else $('#ref-muyruidoso')?.classList.add('active');
   };
 
   async function startMeasure(){
@@ -385,7 +393,7 @@ function initNoise(){
     if(started) return;
 
     started=true; 
-    const values = []; // Array local para la medición actual
+    const values = [];
     smoothedDb = 0.0;
     status.textContent='Midiendo…'; 
     btn.textContent='⏹️ Detener'; 
@@ -424,7 +432,7 @@ function initNoise(){
         if(remaining > 0){ 
             raf=requestAnimationFrame(tick);
         } else { 
-            stopMeasure(values); // Pasar los valores recolectados
+            stopMeasure(values);
         }
       };
       raf=requestAnimationFrame(tick);
@@ -437,10 +445,34 @@ function initNoise(){
   btn?.addEventListener('click',()=>startMeasure());
 }
 
-
+/*************** MODAL INDICADORES (RESTAURADO) *****************/
 function initIndicatorsModal(){
-  const carousel = $('#refCarousel');
-  if(!carousel) return;
+  const tips={
+    saludable:{title:'Ambiente Saludable (< 45 dB)',img:'./images/ind-saludable.png',body:'Tu ambiente es silencioso, similar a una biblioteca. Esto es ideal para tareas que requieren alta concentración y pensamiento profundo. Aprovéchalo para avanzar en tus proyectos más complejos.'},
+    oficina:{title:'Oficina Activa (45-65 dB)',img:'./images/ind-conversacion.png',body:'Este es el nivel de una conversación normal. Es un ambiente sano para la colaboración y el trabajo en equipo. Si necesitas concentrarte, unos auriculares con música suave pueden ser suficientes.'},
+    ruidoso:{title:'Ambiente Ruidoso (65-80 dB)',img:'./images/ind-ruido.png',body:'El ruido equivale a conversaciones fuertes o varias llamadas a la vez. Puede interrumpir la concentración y generar estrés. Considera usar zonas de silencio o cabinas para tareas importantes.'},
+    muyruidoso:{title:'Ambiente Muy Ruidoso (> 80 dB)',img:'./images/ind-silencio.png',body:'Este nivel de ruido es agotador y puede causar fatiga cognitiva. Es importante tomar pausas en lugares más tranquilos para recuperarte y proteger tu bienestar auditivo y mental.'}
+  };
+  const modalContainer = document.getElementById('modal-container'); // Usar el contenedor general
+  const noiseModal = document.createElement('div');
+  noiseModal.className = 'modal hidden';
+  noiseModal.innerHTML = `
+    <div class="modal-card text-left">
+      <button class="modal-close">✕</button>
+      <img id="modalImg" class="modal-img" alt="">
+      <h3 id="modalTitle"></h3>
+      <p id="modalBody"></p>
+    </div>`;
+  modalContainer.appendChild(noiseModal);
+
+  const mImg=noiseModal.querySelector('#modalImg'), mTitle=noiseModal.querySelector('#modalTitle'), mBody=noiseModal.querySelector('#modalBody');
+  
+  $('#refCarousel')?.addEventListener('click',e=>{
+    const card=e.target.closest('.ref-card'); if(!card) return;
+    const k=card.dataset.key, t=tips[k]; if(!t) return;
+    mImg.src=t.img; mImg.alt=t.title; mTitle.textContent=t.title; mBody.textContent=t.body;
+    noiseModal.classList.remove('hidden');
+  });
 }
 
 function getBodyScanMessages(head, upper, lower, pains) {
