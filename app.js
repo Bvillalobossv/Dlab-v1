@@ -536,7 +536,7 @@ async function finalizeAndReport(){
   $('#ix_bs_progress').style.width=`${bodyScore}%`;
   $('#ix_bs_progress').style.background='#70755D';
   
-  $('#ix_reco').textContent = buildReco(faceScore, noiseScore, bodyScore, state);
+  $('#ix_reco').textContent = buildReco(state);
   $('#ix_meaning').textContent = buildMeaning(ix);
 
   try{
@@ -570,13 +570,13 @@ function buildMeaning(ix){
   if(ix>=34) return '“Atento”: hay señales de cansancio.';
   return '“Revisa tu día”: tu cuerpo/entorno piden descanso.';
 }
-function buildReco(face, noise, body, st){
+function buildReco(st){
   const journalText = document.getElementById('journal-input') ? document.getElementById('journal-input').value : "";
   const parts=[];
   if(['sad','angry','fearful'].includes(st.face.emotion)) parts.push('Respira 2-3 min.');
   const painsCount=st.body.pains.head.length+st.body.pains.upper.length+st.body.pains.lower.length;
-  if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min.');
-  if(noise < 45) parts.push('Busca una zona más silenciosa.');
+  if(painsCount > 0 || (st.body.head + st.body.upper + st.body.lower)/3 > 3) parts.push('Estira cuello y espalda 2 min.');
+  if(st.noise.avg > 65) parts.push('Busca una zona más silenciosa.');
   if(journalText.length > 10) parts.push('Gracias por compartir tus reflexiones.');
   if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves y celebra tus avances.');
   return parts.join(' ');

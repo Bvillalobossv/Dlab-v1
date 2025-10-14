@@ -40,11 +40,12 @@
           </div>
         </section>
       </div>
-      <div class="dots" id="introDots"></div>
-      <div class="stack-sm intro-nav-buttons">
-        <button id="introPrev" class="btn btn-secondary">Anterior</button>
-        <button id="introNext" class="btn">Siguiente</button>
-        <button id="introStart" class="btn" style="display:none">¡Comenzar!</button>
+      <div> <div class="dots" id="introDots"></div>
+        <div class="intro-nav-buttons">
+          <button id="introPrev" class="btn btn-secondary">Anterior</button>
+          <button id="introNext" class="btn">Siguiente</button>
+          <button id="introStart" class="btn" style="display:none">¡Comenzar!</button>
+        </div>
       </div>
     </div>
   </div>
@@ -53,19 +54,16 @@
     <img src="./images/logo.png" alt="RaiZen" class="logo" onerror="this.style.display='none'"/>
     <h1>RaiZen</h1>
     <p class="lead">Inicia sesión o crea tu cuenta.</p>
-
     <div class="card max-600">
       <div class="segmented">
         <button id="authTabLogin" class="segment active">Iniciar sesión</button>
         <button id="authTabSignup" class="segment">Crear cuenta</button>
       </div>
-
       <form id="formLogin" class="form" novalidate>
         <div class="form-row"><label>Usuario</label><input id="login_user" type="text" autocomplete="username" required></div>
         <div class="form-row"><label>Contraseña</label><input id="login_pass" type="password" autocomplete="current-password" required></div>
         <button class="btn" type="submit">Entrar</button>
       </form>
-
       <form id="formSignup" class="form" style="display:none" novalidate>
         <div class="form-row"><label>Nuevo usuario</label><input id="su_user" type="text" autocomplete="username" required></div>
         <div class="form-row"><label>Contraseña (mín. 6)</label><input id="su_pass" type="password" autocomplete="new-password" minlength="6" required></div>
@@ -74,11 +72,9 @@
         </div>
         <button class="btn" type="submit">Crear cuenta</button>
       </form>
-
       <p id="auth-message" class="muted small"></p>
     </div>
   </div>
-
   <div id="screenTerms" class="screen">
     <div class="card max-700 text-left">
       <h2>Términos y Condiciones</h2>
@@ -89,7 +85,6 @@
       <button id="close-terms-button" class="btn">Entendido</button>
     </div>
   </div>
-
   <div id="screenHome" class="screen">
     <div class="card max-700">
       <h2 id="welcome-user">¡Hola!</h2>
@@ -99,7 +94,6 @@
       <button id="btnSignOut" class="btn btn-secondary">Cerrar sesión</button>
     </div>
   </div>
-
   <div id="screenArea" class="screen">
     <div class="step-header"><span class="step-counter">Paso 1 de 8</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
     <div class="card max-900">
@@ -115,7 +109,6 @@
     </div>
     <div class="navigation-buttons"><button id="btnAreaNext" class="btn" disabled>Siguiente</button></div>
   </div>
-
   <div id="screenFace" class="screen">
     <div class="step-header"><span class="step-counter">Paso 2 de 8</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
     <div class="card max-900">
@@ -138,7 +131,6 @@
       <button id="btnFaceSkip" class="btn btn-secondary">Saltar</button>
     </div>
   </div>
-
   <div id="screenAudioPrep" class="screen">
     <div class="step-header"><span class="step-counter">Paso 3 de 8</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
     <div class="card max-700">
@@ -152,7 +144,6 @@
       <div class="navigation-buttons"><button id="btnGoToMeasure" class="btn" disabled>Continuar</button></div>
     </div>
   </div>
-
   <div id="screenMeasure" class="screen">
     <div class="step-header"><span class="step-counter">Paso 4 de 8</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
     <div class="card max-900">
@@ -167,11 +158,9 @@
       <p id="status" class="muted">Pulsa “Iniciar 5s”.</p>
       <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
     </div>
-
     <div id="noise-results-card" class="card max-900 hidden">
       <h3>Tu ambiente es...</h3>
       <p>Promedio: <b id="final-db-result">-- dB</b>. Haz clic en un indicador para saber más.</p>
-
       <div class="ref-carousel" id="refCarousel">
         <button id="ref-saludable" class="ref-card" data-key="saludable">
           <img src="./images/ind-saludable.png" alt="Ambiente saludable" />
@@ -193,14 +182,12 @@
     </div>
     <div class="navigation-buttons"><button id="btnMeasureNext" class="btn" disabled>Siguiente</button></div>
   </div>
-
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <button id="modalClose" class="modal-close" aria-label="Cerrar">✕</button>
       <img id="modalImg" class="modal-img" alt=""><h3 id="modalTitle"></h3><p id="modalBody" class="text-left"></p>
     </div>
   </div>
-
   <div id="screenBodyScan" class="screen">
     <div class="step-header"><span class="step-counter">Paso 5 de 8</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
     <div class="card max-900 text-left">
@@ -211,7 +198,6 @@
         <label><input type="checkbox" class="pain-head" value="Dolor de cabeza"> Dolor de cabeza</label>
         <label><input type="checkbox" class="pain-head" value="Bruxismo / mandíbula"> Bruxismo / mandíbula</label>
       </div>
-
       <h3>💪 Tronco superior <span id="valUpper" class="val-num">0/10</span></h3>
       <input id="bs_upper" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
       <div class="chk-group">
@@ -219,7 +205,6 @@
         <label><input type="checkbox" class="pain-upper" value="Tensión de hombros"> Tensión de hombros</label>
         <label><input type="checkbox" class="pain-upper" value="Molestia dorsal/pecho"> Molestia dorsal/pecho</label>
       </div>
-
       <h3>🦵 Tren inferior <span id="valLower" class="val-num">0/10</span></h3>
       <input id="bs_lower" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
       <div class="chk-group">
@@ -227,31 +212,25 @@
         <label><input type="checkbox" class="pain-lower" value="Tensión de pantorrillas"> Tensión de pantorrillas</label>
         <label><input type="checkbox" class="pain-lower" value="Dolor de pies"> Dolor de pies</label>
       </div>
-      
       <p id="bs_feeling" class="muted">Ajusta los niveles para recibir un consejo.</p>
       <p id="bs_advice" class="muted small"></p>
     </div>
     <div class="navigation-buttons"><button id="btnBodyScanNext" class="btn">Siguiente</button></div>
   </div>
-
   <div id="screenContext" class="screen">
     <div class="step-header"><span class="step-counter">Paso 6 de 8</span><h2>Encuesta breve de contexto</h2><p class="lead">Carga, ritmo y estrés de hoy.</p></div>
     <div class="card max-700 text-left">
       <div class="form-row"><label>Fecha y hora</label><input id="ctx_datetime" type="text" disabled></div>
       <div class="form-row"><label>Horas trabajadas</label><input id="ctx_hours" type="number" placeholder="Ej: 8" required></div>
-      
       <h3>Carga de trabajo hoy <span id="valWorkload" class="val-num">5/10</span></h3>
       <input id="ctx_workload" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
-
       <h3>Ritmo de trabajo <span id="valPace" class="val-num">5/10</span></h3>
       <input id="ctx_pace" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
-
       <h3>Estrés general <span id="valStress" class="val-num">5/10</span></h3>
       <input id="ctx_stress" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
     </div>
     <div class="navigation-buttons"><button id="btnContextNext" class="btn">Siguiente</button></div>
   </div>
-
   <div id="screenJournal" class="screen">
     <div class="step-header"><span class="step-counter">Paso 7 de 8</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
     <div class="card max-700">
@@ -259,7 +238,6 @@
     </div>
     <div class="navigation-buttons"><button id="btnJournalNext" class="btn">Finalizar y ver informe</button></div>
   </div>
-
   <div id="screenIntegration" class="screen">
     <div class="step-header"><h2>Tu Informe de Bienestar</h2></div>
     <div class="card max-900 report-card">
