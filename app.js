@@ -515,7 +515,7 @@ function initContextSurvey() {
     }
 }
 
-/*************** REPORTE + PERSISTENCIA (CORREGIDO) *****************/
+/*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
   const journalText = document.getElementById('journal-input') ? document.getElementById('journal-input').value.slice(0, 1000) : "";
 
@@ -529,7 +529,6 @@ async function finalizeAndReport(){
   $('#ix_score_circle').style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e';
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
   
-  // CORRECCIÓN: Restaurar el color de fondo de las barras de progreso
   $('#ix_face_progress').style.width=`${faceScore}%`;
   $('#ix_face_progress').style.background='#8DB596';
   $('#ix_db_progress').style.width=`${noiseScore}%`;
@@ -556,7 +555,6 @@ async function finalizeAndReport(){
         stress_level: state.contextSurvey.stress
       };
       
-      // CORRECCIÓN: Enviar los datos como un array de un objeto
       const { error } = await db.from('measurements').insert([measurementData]);
       if (error) throw error;
     }
