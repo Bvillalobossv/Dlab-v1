@@ -7,14 +7,15 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;height:100%}
 body{font-family:'Montserrat',sans-serif;background:var(--background);color:var(--text-dark);text-align:center}
-.screen{display:none;min-height:100vh;padding:2rem 1rem}
+.screen{display:none;min-height:100vh;padding:1rem}
 .screen.active{display:block;animation:fadeIn .35s ease}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-/* Modificación para el layout del Onboarding */
-#screenIntro {
+/* CORRECCIÓN: Aplicar display:flex solo cuando la pantalla de intro esté activa */
+#screenIntro.active {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .max-600{max-width:600px;margin:0 auto}
@@ -44,31 +45,26 @@ textarea{min-height:150px;resize:vertical}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
 .divider{border:none;height:1px;background:#eee;margin:1.5rem 0}
 
-/* Onboarding (Reescrito por 3ra vez, versión definitiva y simple) */
+/* Onboarding (Versión Final Súper Simplificada) */
 .carousel-shell {
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
-  flex-grow: 1; /* Ocupa el espacio disponible */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 .slides {
   display: flex;
   overflow: hidden;
-  width: 100%;
 }
 .slide {
   min-width: 100%;
   transition: transform 0.5s ease;
   padding: 1rem;
-  opacity: 1; /* Asegurar que sea visible */
+  opacity: 1;
 }
 .slide-image {
   display: block;
   max-width: 100%;
-  height: 300px; /* Altura consistente para la imagen */
+  height: 300px;
   object-fit: contain;
   margin: 0 auto 1.5rem auto;
 }
@@ -79,7 +75,7 @@ textarea{min-height:150px;resize:vertical}
   display: flex;
   gap: .5rem;
   justify-content: center;
-  margin: 1.5rem 0;
+  padding: 1rem 0;
 }
 .dots .dot {
   width: 10px;
@@ -92,7 +88,9 @@ textarea{min-height:150px;resize:vertical}
 }
 .intro-nav-buttons {
   padding-top: 1rem;
+  text-align: center;
 }
+
 
 /* Pasos */
 .step-header{margin-bottom:1rem}

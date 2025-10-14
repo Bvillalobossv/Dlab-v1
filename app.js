@@ -168,7 +168,6 @@ function initAuthForms(){
   }
 }
 
-/*************** NAV *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
@@ -183,7 +182,6 @@ function initNav(){
   $('#btnIntegrationHome')?.addEventListener('click',()=>show('screenHome'));
 }
 
-/*************** ÁREA  *****************/
 function initArea(){
   const grid = $('#areaGrid'), out = $('#areaSelected'), next = $('#btnAreaNext');
   if(!grid) return;
@@ -201,7 +199,6 @@ function initArea(){
   });
 }
 
-/*************** CÁMARA / FACE *****************/
 async function ensureFaceModels(statusElement){
   if(faceModelsReady) return true;
   try {
@@ -309,7 +306,6 @@ function tipForEmotion(e,c){
   }
 }
 
-/*************** MIC PREP  *****************/
 function initMicPrep(){
     let micTested = false;
     const btn = $('#btnTestMic'), res = $('#audio-permission-result'), next = $('#btnGoToMeasure');
@@ -330,7 +326,6 @@ function initMicPrep(){
     });
 }
 
-/*************** NOISE 5s PROMEDIO *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), status=$('#status');
   const canvas = $('#gaugeChart');
@@ -407,7 +402,6 @@ function initNoise(){
   });
 }
 
-/*************** MODAL INDICADORES *****************/
 function initIndicatorsModal(){
   const tips={
     saludable:{title:'Ambiente Saludable (< 45 dB)',img:'./images/ind-saludable.png',body:'Tu ambiente es silencioso, similar a una biblioteca. Esto es ideal para tareas que requieren alta concentración y pensamiento profundo. Aprovéchalo para avanzar en tus proyectos más complejos.'},
@@ -429,7 +423,6 @@ function initIndicatorsModal(){
   modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/*************** BODY SCAN *****************/
 function getBodyScanMessages(head, upper, lower, pains) {
     const avg = (head + upper + lower) / 3;
     let feeling = '';
@@ -489,7 +482,6 @@ function initBodyScan(){
   update();
 }
 
-/*************** ENCUESTA DE CONTEXTO *****************/
 function initContextSurvey() {
     const dtInput = $('#ctx_datetime');
     const hoursInput = $('#ctx_hours');
@@ -515,7 +507,6 @@ function initContextSurvey() {
     }
 }
 
-/*************** REPORTE + PERSISTENCIA *****************/
 async function finalizeAndReport(){
   const journalText = document.getElementById('journal-input') ? document.getElementById('journal-input').value.slice(0, 1000) : "";
 
