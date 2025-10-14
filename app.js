@@ -34,7 +34,7 @@ const EMOJI_GIF={
   surprised:'./images/mascots/surprised.gif'
 };
 
-/*************** BOOT (A PRUEBA DE ERRORES) *****************/
+/*************** BOOT *****************/
 document.addEventListener('DOMContentLoaded', async () => {
   const initComponents = [
     { name: 'Intro', func: initIntro },
@@ -390,7 +390,7 @@ function initIndicatorsModal(){
   modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/*************** BODY SCAN (MENSAJES AMIGABLES) *****************/
+/*************** BODY SCAN *****************/
 function getBodyScanMessages(head, upper, lower, pains) {
     const avg = (head + upper + lower) / 3;
     let feeling = '';
@@ -476,16 +476,18 @@ function initContextSurvey() {
     }
 }
 
-/*************** REPORTE + PERSISTENCIA *****************/
+/*************** REPORTE + PERSISTENCIA (CORREGIDO) *****************/
 async function finalizeAndReport(){
   state.journal = ($('#journal-input')?.value || '').slice(0,1000);
 
+  // --- Cálculos ---
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
   const noiseScore = 100 - Math.min(Math.max(state.noise.avg, 0, 100));
   const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3;
   const bodyScore = 100 - (bodyAvg10 * 10);
   const ix = Math.round(0.25 * faceScore + 0.35 * noiseScore + 0.40 * bodyScore);
 
+  // --- Actualización de la UI ---
   $('#ix_score_circle').textContent = ix;
   $('#ix_score_circle').style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e';
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
@@ -495,15 +497,15 @@ async function finalizeAndReport(){
   $('#ix_db_progress').style.background='#A7AD9A';
   $('#ix_bs_progress').style.width=`${bodyScore}%`;
   $('#ix_bs_progress').style.background='#70755D';
-
   $('#ix_reco').textContent = buildReco(faceScore, noiseScore, bodyScore, state);
   $('#ix_meaning').textContent = buildMeaning(ix);
 
+  // --- Guardado en Supabase ---
   try{
-    const u=(await db.auth.getUser())?.data?.user;
-    if(u?.id){
-      await db.from('measurements').insert({
-        user_id_uuid: u.id,
+    const { data: { user } } = await db.auth.getUser();
+    if(user?.id){
+      const measurementData = {
+        user_id: user.id, // Columna para vincular al usuario
         face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
@@ -513,9 +515,21 @@ async function finalizeAndReport(){
         workload_level: state.contextSurvey.workload,
         work_pace_level: state.contextSurvey.pace,
         stress_level: state.contextSurvey.stress
-      });
+      };
+      
+      console.log("Enviando a Supabase:", measurementData);
+
+      const { error } = await db.from('measurements').insert(measurementData);
+
+      if (error) {
+        console.error('Error de Supabase al insertar:', error);
+      } else {
+        console.log('Datos guardados en Supabase con éxito.');
+      }
     }
-  }catch(err){ console.error('[supabase insert]', err); }
+  } catch(err) {
+    console.error('Error al intentar guardar en Supabase:', err);
+  }
 
   show('screenIntegration');
 }
