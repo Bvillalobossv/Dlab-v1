@@ -1,6 +1,6 @@
 /*************** SUPABASE  *****************/
 const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzIJNiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
 let db = null;
 
 /*************** STATE  *****************/
@@ -20,6 +20,7 @@ const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
 const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
 const MODEL_URL='./models';
@@ -299,7 +300,7 @@ function initMicPrep(){
     });
 }
 
-/*************** NOISE 5s PROMEDIO (INDICADORES MEJORADOS) *****************/
+/*************** NOISE 5s PROMEDIO *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), status=$('#status');
   const canvas = $('#gaugeChart');
@@ -490,7 +491,8 @@ async function finalizeAndReport(){
 
   // --- Cálculos ---
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
-  const noiseScore = 100 - Math.min(Math.max(state.noise.avg, 0, 100));
+  // CORRECCIÓN: Usar la utilidad clamp para asegurar que el valor esté entre 0 y 100
+  const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
   const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3;
   const bodyScore = 100 - (bodyAvg10 * 10);
   const ix = Math.round(0.25 * faceScore + 0.35 * noiseScore + 0.40 * bodyScore);
@@ -499,12 +501,9 @@ async function finalizeAndReport(){
   $('#ix_score_circle').textContent = ix;
   $('#ix_score_circle').style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e';
   $('#ix_label').textContent = ix>=67 ? 'En verde' : ix>=34 ? 'Atento' : 'Revisa tu día';
-  $('#ix_face_progress').style.width=`${faceScore}%`; 
-  $('#ix_face_progress').style.background='#8DB596';
-  $('#ix_db_progress').style.width=`${noiseScore}%`; // CORRECCIÓN: Asegurar que esta barra se actualice
-  $('#ix_db_progress').style.background='#A7AD9A';
+  $('#ix_face_progress').style.width=`${faceScore}%`;
+  $('#ix_db_progress').style.width=`${noiseScore}%`;
   $('#ix_bs_progress').style.width=`${bodyScore}%`;
-  $('#ix_bs_progress').style.background='#70755D';
   $('#ix_reco').textContent = buildReco(faceScore, noiseScore, bodyScore, state);
   $('#ix_meaning').textContent = buildMeaning(ix);
 
@@ -513,7 +512,7 @@ async function finalizeAndReport(){
     const { data: { user } } = await db.auth.getUser();
     if(user?.id){
       const measurementData = {
-        user_id_uuid: user.id, // CORRECCIÓN: Usar el nombre de columna correcto de tu tabla
+        user_id_uuid: user.id, // CORRECCIÓN: Usar el nombre de columna correcto que tienes en tu tabla
         face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
@@ -538,18 +537,18 @@ async function finalizeAndReport(){
 }
 
 function buildMeaning(ix){
-  if(ix>=67) return '“En verde”: tu día luce equilibrado. Mantén pausas breves y conserva lo que te está funcionando hoy.';
-  if(ix>=34) return '“Atento”: hay señales de cansancio físico o ruido ambiental. Ajusta el entorno y toma micro-pausas para recuperar foco.';
-  return '“Revisa tu día”: tu cuerpo/entorno piden descanso. Prioriza lo esencial y cuida tus hombros/espalda.';
+  if(ix>=67) return '“En verde”: tu día luce equilibrado.';
+  if(ix>=34) return '“Atento”: hay señales de cansancio.';
+  return '“Revisa tu día”: tu cuerpo/entorno piden descanso.';
 }
 function buildReco(face, noise, body, st){
   const parts=[];
-  if(['sad','angry','fearful'].includes(st.face.emotion)) parts.push('Respira 2-3 min y afloja hombros para resetear el foco.');
+  if(['sad','angry','fearful'].includes(st.face.emotion)) parts.push('Respira 2-3 min.');
   const painsCount=st.body.pains.head.length+st.body.pains.upper.length+st.body.pains.lower.length;
-  if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min; camina 1 minuto para oxigenar.');
-  if(noise < 45) parts.push('Si puedes, cambia a una zona más silenciosa o usa cancelación de ruido.');
-  if((st.journal||'').length>60) parts.push('Gracias por compartir: lo que escribes ayuda a ajustar tu día.');
-  if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves y celebra tus avances.');
+  if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min.');
+  if(noise < 45) parts.push('Busca una zona más silenciosa.');
+  if((st.journal||'').length>60) parts.push('Gracias por compartir.');
+  if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves.');
   return parts.join(' ');
 }
 function emotionToScore(e){
