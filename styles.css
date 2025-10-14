@@ -101,6 +101,19 @@ textarea{min-height:150px;resize:vertical}
   padding-bottom: 1rem;
 }
 
+/* Estilos para la lista en la tarjeta de bienvenida */
+.features-list-card {
+    list-style: disc;
+    padding-left: 20px;
+    margin: 1.5rem 0;
+}
+.features-list-card li {
+    margin-bottom: 0.8rem;
+}
+.home-buttons-card {
+    text-align: center;
+}
+
 
 /* Pasos */
 .step-header{margin-bottom:1rem}

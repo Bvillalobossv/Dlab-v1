@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RaiZen · Dlab-v1</title>
 
-  <link rel="stylesheet" href="./styles.css?v=1.12" />
+  <link rel="stylesheet" href="./styles.css?v=1.11" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -40,13 +40,13 @@
           </div>
         </section>
       </div>
-      <div class="intro-footer">
-        <div class="dots" id="introDots"></div>
-        <div class="intro-nav-buttons">
-            <button id="introPrev" class="btn btn-secondary">Anterior</button>
-            <button id="introNext" class="btn">Siguiente</button>
-            <button id="introStart" class="btn" style="display:none">¡Comenzar!</button>
-        </div>
+    </div>
+    <div class="intro-footer">
+      <div class="dots" id="introDots"></div>
+      <div class="intro-nav-buttons">
+          <button id="introPrev" class="btn btn-secondary">Anterior</button>
+          <button id="introNext" class="btn">Siguiente</button>
+          <button id="introStart" class="btn" style="display:none">¡Comenzar!</button>
       </div>
     </div>
   </div>
@@ -76,7 +76,164 @@
       <p id="auth-message" class="muted small"></p>
     </div>
   </div>
+
+  <div id="screenHome" class="screen">
+    <div class="card max-700 text-left">
+        <h2 id="welcome-user" style="text-align: center;">¡Hola!</h2>
+        <p>Esta aplicación está pensada como un <strong>espacio integral de bienestar</strong>, con herramientas de detección temprana, prevención y apoyo para tu autocuidado.</p>
+        
+        <ul class="features-list-card">
+          <li><strong>Selfie emocional:</strong> Detección de emoción dominante en el rostro.</li>
+          <li><strong>Ruido ambiental:</strong> Estimación de dB(A) en 5s.</li>
+          <li><strong>Body Scan:</strong> Tensión en 3 zonas con resumen y gráfico.</li>
+        </ul>
+
+        <p class="small muted"><strong>Privacidad:</strong> El análisis de audio y rostro ocurre en tu dispositivo. Puedes borrar tus datos en "Cerrar sesión".</p>
+        
+        <hr class="divider">
+
+        <div class="home-buttons-card">
+          <button id="btnHomeStart" class="btn">Comenzar mediciones</button>
+          <button id="btnSignOut" class="btn btn-secondary">Cerrar Sesión</button>
+        </div>
+    </div>
+  </div>
+
+  <div id="screenArea" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 1 de 7</span><h2>Tu área de trabajo</h2><p class="lead">Elige el área donde te desempeñas.</p></div>
+    <div class="card max-900">
+      <div id="areaGrid" class="area-grid">
+        <button class="area-pill" data-area="Administración">💼 Administración</button>
+        <button class="area-pill" data-area="TI">🧑‍💻 TI</button>
+        <button class="area-pill" data-area="Operaciones">⚙️ Operaciones</button>
+        <button class="area-pill" data-area="Ventas">📈 Ventas</button>
+        <button class="area-pill" data-area="Marketing">🎨 Marketing</button>
+        <button class="area-pill" data-area="Salud">💊 Salud</button>
+      </div>
+      <p id="areaSelected" class="muted small">Selecciona tu área para continuar.</p>
+    </div>
+    <div class="navigation-buttons"><button id="btnAreaNext" class="btn" disabled>Siguiente</button></div>
+  </div>
+
+  <div id="screenFace" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 2 de 7</span><h2>Análisis facial</h2><p class="lead">Una selfie rápida para comenzar.</p></div>
+    <div class="card max-900">
+      <video id="faceVideo" class="video" playsinline muted></video>
+      <canvas id="faceCanvas" class="video" style="display:none"></canvas>
+      <div class="stack-sm">
+        <button id="btnFaceStart" class="btn" disabled>📸 Activar cámara</button>
+        <button id="btnFaceSnap" class="btn btn-secondary" disabled>Analizar mi expresión</button>
+      </div>
+      <div id="faceStatus" class="muted small">Cargando modelos de IA...</div>
+      <div id="face-results-content" class="hidden">
+        <p><b>Emoción:</b> <span id="faceEmotion">—</span></p>
+        <img id="faceMascot" class="mascot" alt="gif emoción" />
+        <p id="faceTip" class="muted"></p>
+      </div>
+      <a href="#" class="open-modal-link" data-modal-id="modal-why-face">¿Por qué medimos esto?</a>
+    </div>
+    <div class="navigation-buttons">
+      <button id="btnFaceNext" class="btn" disabled>Siguiente</button>
+      <button id="btnFaceSkip" class="btn btn-secondary">Saltar</button>
+    </div>
+  </div>
+
+  <div id="screenAudioPrep" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 3 de 7</span><h2>Preparar medición acústica</h2><p class="lead">Permite el micrófono y busca un lugar estable.</p></div>
+    <div class="card max-700">
+      <ul class="tips">
+        <li>Mantén el móvil quieto.</li>
+        <li>No cubras el micrófono.</li>
+        <li>Acepta el permiso cuando te lo pida.</li>
+      </ul>
+      <button id="btnTestMic" class="btn">🎤 Probar micrófono</button>
+      <p id="audio-permission-result" class="small"></p>
+      <a href="#" class="open-modal-link" data-modal-id="modal-why-noise">¿Por qué medimos esto?</a>
+    </div>
+    <div class="navigation-buttons"><button id="btnGoToMeasure" class="btn" disabled>Continuar</button></div>
+  </div>
+
+  <div id="screenMeasure" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 4 de 7</span><h2>Ambiente acústico</h2><p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p></div>
+    <div class="card max-900">
+      <div class="gauge-wrapper"><canvas id="gaugeChart" width="280" height="180"></canvas><div class="gauge-center"><span id="dbValue" class="db-value">0</span><span class="db-unit">dB</span><div id="dbLabel" class="db-label"></div><div id="countdown" class="countdown">5.0 s</div></div></div>
+      <p id="status" class="muted">Pulsa “Iniciar 5s”.</p>
+      <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
+    </div>
+    <div id="noise-results-card" class="card max-900 hidden">
+      <h3>Tu ambiente es...</h3>
+      <p>Promedio: <b id="final-db-result">-- dB</b>. Haz clic en un indicador para saber más.</p>
+      <div class="ref-carousel" id="refCarousel">
+        <button id="ref-saludable" class="ref-card" data-key="saludable"><img src="./images/ind-saludable.png" alt="Ambiente saludable" /><div><h4>Saludable (&lt; 45 dB)</h4><p>Ideal para concentración profunda.</p></div></button>
+        <button id="ref-oficina" class="ref-card" data-key="oficina"><img src="./images/ind-conversacion.png" alt="Oficina activa" /><div><h4>Activo (45-65 dB)</h4><p>Bueno para colaborar y conversar.</p></div></button>
+        <button id="ref-ruidoso" class="ref-card" data-key="ruidoso"><img src="./images/ind-ruido.png" alt="Ruidoso" /><div><h4>Ruidoso (65-80 dB)</h4><p>Puede interrumpir y generar estrés.</p></div></button>
+        <button id="ref-muyruidoso" class="ref-card" data-key="muyruidoso"><img src="./images/ind-silencio.png" alt="Muy ruidoso" /><div><h4>Agotador (&gt; 80 dB)</h4><p>Riesgo de fatiga cognitiva y auditiva.</p></div></button>
+      </div>
+    </div>
+    <div class="navigation-buttons"><button id="btnMeasureNext" class="btn" disabled>Siguiente</button></div>
+  </div>
   
-  <script src="./app.js?v=1.12"></script>
+  <div id="screenBodyScan" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 5 de 7</span><h2>Escaneo corporal</h2><p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p></div>
+    <div class="card max-900 text-left">
+      <h3>💆 Cabeza y cuello <span id="valHead" class="val-num">0/10</span></h3>
+      <input id="bs_head" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
+      <div class="chk-group"><label><input type="checkbox" class="pain-head" value="Dolor cervical"> Dolor cervical</label><label><input type="checkbox" class="pain-head" value="Dolor de cabeza"> Dolor de cabeza</label><label><input type="checkbox" class="pain-head" value="Bruxismo / mandíbula"> Bruxismo / mandíbula</label></div>
+      <h3>💪 Tronco superior <span id="valUpper" class="val-num">0/10</span></h3>
+      <input id="bs_upper" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
+      <div class="chk-group"><label><input type="checkbox" class="pain-upper" value="Dolor lumbar"> Dolor lumbar</label><label><input type="checkbox" class="pain-upper" value="Tensión de hombros"> Tensión de hombros</label><label><input type="checkbox" class="pain-upper" value="Molestia dorsal/pecho"> Molestia dorsal/pecho</label></div>
+      <h3>🦵 Tren inferior <span id="valLower" class="val-num">0/10</span></h3>
+      <input id="bs_lower" type="range" min="0" max="10" value="0"><div class="range-labels"><span>0</span><span>10</span></div>
+      <div class="chk-group"><label><input type="checkbox" class="pain-lower" value="Dolor de rodillas"> Dolor de rodillas</label><label><input type="checkbox" class="pain-lower" value="Tensión de pantorrillas"> Tensión de pantorrillas</label><label><input type="checkbox" class="pain-lower" value="Dolor de pies"> Dolor de pies</label></div>
+      <p id="bs_feeling" class="muted">Ajusta los niveles para recibir un consejo.</p>
+      <p id="bs_advice" class="muted small"></p>
+      <a href="#" class="open-modal-link" data-modal-id="modal-why-body">¿Por qué medimos esto?</a>
+    </div>
+    <div class="navigation-buttons"><button id="btnBodyScanNext" class="btn">Siguiente</button></div>
+  </div>
+  
+  <div id="screenContext" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 6 de 7</span><h2>Encuesta breve de contexto</h2><p class="lead">Carga, ritmo y estrés de hoy.</p></div>
+    <div class="card max-700 text-left">
+      <div class="form-row"><label>Fecha y hora</label><input id="ctx_datetime" type="text" disabled></div>
+      <div class="form-row"><label>Horas trabajadas</label><input id="ctx_hours" type="number" placeholder="Ej: 8" required></div>
+      <h3>Carga de trabajo hoy <span id="valWorkload" class="val-num">5/10</span></h3>
+      <input id="ctx_workload" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+      <h3>Ritmo de trabajo <span id="valPace" class="val-num">5/10</span></h3>
+      <input id="ctx_pace" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+      <h3>Estrés general <span id="valStress" class="val-num">5/10</span></h3>
+      <input id="ctx_stress" type="range" min="0" max="10" value="5"><div class="range-labels"><span>0</span><span>10</span></div>
+    </div>
+    <div class="navigation-buttons"><button id="btnContextNext" class="btn">Siguiente</button></div>
+  </div>
+
+  <div id="screenJournal" class="screen">
+    <div class="step-header"><span class="step-counter">Paso 7 de 7</span><h2>Tu espacio</h2><p class="lead">Desahógate o cuenta cómo va tu día. También lo consideramos en el análisis final 🧠.</p></div>
+    <div class="card max-700">
+      <textarea id="journal-input" placeholder="Escribe libremente… (opcional)"></textarea>
+      <a href="#" class="open-modal-link" data-modal-id="modal-why-journal">¿Por qué medimos esto?</a>
+    </div>
+    <div class="navigation-buttons"><button id="btnJournalNext" class="btn">Finalizar y ver informe</button></div>
+  </div>
+
+  <div id="screenIntegration" class="screen">
+    <div class="step-header"><h2>Tu Informe de Bienestar</h2></div>
+    <div class="card max-900 report-card">
+      <div class="report-header"><div id="ix_score_circle" class="score-circle-large">--</div><div class="report-title"><h3 id="ix_label">Calculando…</h3><p>Índice de equilibrio</p></div></div>
+      <div class="report-breakdown"><h4>Desglose</h4><div class="progress-item"><span class="progress-label">Estado anímico</span><div class="progress-bar"><div id="ix_face_progress" class="progress-bar-fill"></div></div></div><div class="progress-item"><span class="progress-label">Ambiente acústico</span><div class="progress-bar"><div id="ix_db_progress" class="progress-bar-fill"></div></div></div><div class="progress-item"><span class="progress-label">Cuerpo (somático)</span><div class="progress-bar"><div id="ix_bs_progress" class="progress-bar-fill"></div></div></div></div>
+      <div class="report-recommendation"><h4>Consejo del día</h4><p id="ix_reco" class="muted">Analizando…</p><h4>¿Qué significa tu estado?</h4><p id="ix_meaning" class="muted">—</p></div>
+    </div>
+    <div class="navigation-buttons"><button id="btnIntegrationHome" class="btn">Nuevo check-in</button></div>
+  </div>
+
+  <div id="modal-container">
+    <div id="modal-terms" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>Términos y Condiciones</h2><p><b>Finalidad.</b> RaiZen es una herramienta de bienestar, no un dispositivo médico. La información es orientativa y no sustituye atención profesional.</p><p><b>Datos procesados.</b> Se usan cámara y micrófono para calcular emoción estimada, nivel de ruido y tensiones corporales. No guardamos audio/video crudo; sólo resultados agregados y tus comentarios voluntarios.</p><p><b>Privacidad.</b> Los datos se almacenan en Supabase y se asocian a tu cuenta. Puedes solicitar su eliminación. Aplicamos buenas prácticas de seguridad, aunque ningún sistema es infalible.</p><p><b>Consentimiento.</b> Al usar RaiZen aceptas este tratamiento y el uso de almacenamiento local para sesión.</p></div></div>
+    <div id="modal-why-face" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un análisis facial?</h2><p>Tus expresiones faciales son un indicador directo de tu estado emocional...</p></div></div>
+    <div id="modal-why-noise" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué medir el ruido?</h2><p>El ambiente acústico tiene un impacto directo en tu capacidad de concentración...</p></div></div>
+    <div id="modal-why-body" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué un escaneo corporal?</h2><p>El estrés y la carga de trabajo no solo afectan tu mente, sino también tu cuerpo...</p></div></div>
+    <div id="modal-why-journal" class="modal hidden"><div class="modal-card text-left"><button class="modal-close">✕</button><h2>¿Por qué escribir cómo te sientes?</h2><p>Poner tus pensamientos y sentimientos en palabras es una técnica poderosa...</p></div></div>
+  </div>
+  
+  <script src="./app.js?v=1.11"></script>
 </body>
 </html>
