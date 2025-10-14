@@ -19,7 +19,6 @@ const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
 const capitalize = s => s? s[0].toUpperCase()+s.slice(1) : s;
-const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]/g,'')}@example.com`;
 const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
 /*************** FACE-API  *****************/
@@ -491,7 +490,6 @@ async function finalizeAndReport(){
 
   // --- Cálculos ---
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
-  // CORRECCIÓN: Usar la utilidad clamp para asegurar que el valor esté entre 0 y 100
   const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
   const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3;
   const bodyScore = 100 - (bodyAvg10 * 10);
@@ -512,7 +510,7 @@ async function finalizeAndReport(){
     const { data: { user } } = await db.auth.getUser();
     if(user?.id){
       const measurementData = {
-        user_id_uuid: user.id, // CORRECCIÓN: Usar el nombre de columna correcto que tienes en tu tabla
+        user_id_uuid: user.id, // Nombre de columna correcto
         face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
         body_scan_avg: +(bodyAvg10.toFixed(1)),
@@ -525,7 +523,7 @@ async function finalizeAndReport(){
       };
       
       console.log("Enviando a Supabase:", measurementData);
-      const { error } = await db.from('measurements').insert(measurementData);
+      const { error } = await db.from('measurements').insert([measurementData]); // Importante: enviar como un array
       if (error) throw error;
       console.log('Datos guardados en Supabase con éxito.');
     }
