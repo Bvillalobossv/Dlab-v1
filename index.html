@@ -54,63 +54,78 @@
     <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
     <h1>RaiZen</h1>
     <p class="lead">Inicia tu camino hacia el equilibrio.</p>
+
     <div class="card max-600">
       <div class="segmented">
         <button id="authTabLogin" class="segment active">Iniciar sesión</button>
         <button id="authTabSignup" class="segment">Crear cuenta</button>
       </div>
-      <form id="formLogin" class="form">
-        <div class="form-row"><label>Usuario</label><input type="text" id="login_user" autocomplete="username" required /></div>
-        <div class="form-row"><label>Contraseña</label><input type="password" id="login_pass" autocomplete="current-password" required /></div>
+
+      <form id="formLogin" class="form" novalidate>
+        <div class="form-row">
+          <label>Usuario</label>
+          <input type="text" id="login_user" autocomplete="username" required />
+        </div>
+        <div class="form-row">
+          <label>Contraseña</label>
+          <input type="password" id="login_pass" autocomplete="current-password" required />
+        </div>
         <button type="submit" class="btn">Entrar</button>
       </form>
-      <form id="formSignup" class="form" style="display:none">
-        <div class="form-row"><label>Nuevo usuario</label><input type="text" id="su_user" autocomplete="username" required /></div>
-        <div class="form-row"><label>Contraseña (mínimo 6 caracteres)</label><input type="password" id="su_pass" autocomplete="new-password" minlength="6" required /></div>
-        <div class="form-row chk"><label><input type="checkbox" id="su_terms" required /> He leído y acepto los <a href="#" id="view-terms-link">Términos y Condiciones</a></label></div>
+
+      <form id="formSignup" class="form" style="display:none" novalidate>
+        <div class="form-row">
+          <label>Nuevo usuario</label>
+          <input type="text" id="su_user" autocomplete="username" required />
+        </div>
+        <div class="form-row">
+          <label>Contraseña (mínimo 6 caracteres)</label>
+          <input type="password" id="su_pass" autocomplete="new-password" minlength="6" required />
+        </div>
+        <div class="form-row chk">
+          <label>
+            <input type="checkbox" id="su_terms" required />
+            He leído y acepto los <a href="#" id="view-terms-link">Términos y Condiciones</a>
+          </label>
+        </div>
         <button type="submit" class="btn">Crear cuenta</button>
       </form>
+
       <p id="auth-message" class="muted small"></p>
     </div>
   </div>
 
-  <!-- ====================== TÉRMINOS Y CONDICIONES ====================== -->
+  <!-- ====================== TÉRMINOS ====================== -->
   <div id="screenTerms" class="screen">
-      <div class="card max-700 text-left">
-          <h2>Términos y Condiciones de RaiZen</h2>
-          <p><strong>Última actualización: 14 de Octubre, 2025</strong></p>
-          <p>Bienvenido a RaiZen. Al utilizar nuestra aplicación, aceptas los siguientes términos:</p>
-          <h4>1. Propósito de la Aplicación</h4>
-          <p>RaiZen es una herramienta diseñada para ayudarte a monitorear y gestionar tu bienestar laboral. Las mediciones (emocionales, ambientales y físicas) son estimaciones y no deben ser consideradas como un diagnóstico médico.</p>
-          <h4>2. Privacidad y Uso de Datos</h4>
-          <p>Tu privacidad es nuestra máxima prioridad. Todos los análisis de cámara (emoción) y micrófono (ruido) se procesan directamente en tu dispositivo y nunca se almacenan ni se envían a nuestros servidores.</p>
-          <ul>
-              <li><strong>Datos Recopilados:</strong> Guardamos de forma anónima y segura en nuestra base de datos (Supabase) únicamente los resultados de tus mediciones (ej. emoción "feliz", nivel de ruido "54 dB", puntaje "8/10") y tus comentarios opcionales.</li>
-              <li><strong>Finalidad:</strong> Estos datos se utilizan para mostrarte tu historial de bienestar y para que tu empleador (RRHH) pueda visualizar métricas generales y anónimas del bienestar del equipo, identificando tendencias y áreas de mejora en el ambiente laboral.</li>
-              <li><strong>Confidencialidad:</strong> Tu empleador solo verá datos agregados o identificará niveles de riesgo sin acceder a los detalles específicos de cada medición individual, a menos que sea estrictamente necesario para ofrecer apoyo.</li>
-          </ul>
-          <h4>3. Responsabilidades del Usuario</h4>
-          <p>Aceptas utilizar la aplicación de manera responsable. Eres responsable de la seguridad de tu cuenta y contraseña.</p>
-          <h4>4. Limitación de Responsabilidad</h4>
-          <p>RaiZen se proporciona "tal cual", sin garantías de ningún tipo. No nos hacemos responsables de las decisiones que tomes basadas en la información proporcionada por la aplicación.</p>
-          <button id="close-terms-button" class="btn">Entendido</button>
-      </div>
+    <div class="card max-700 text-left">
+      <h2>Términos y Condiciones de RaiZen</h2>
+      <p><strong>Última actualización: 14 de Octubre, 2025</strong></p>
+      <p>Bienvenido a RaiZen. Al utilizar nuestra aplicación, aceptas los siguientes términos:</p>
+      <h4>1. Propósito de la Aplicación</h4>
+      <p>RaiZen ayuda a monitorear tu bienestar laboral. No es un diagnóstico médico.</p>
+      <h4>2. Privacidad y Uso de Datos</h4>
+      <p>Los análisis de cámara y micrófono se procesan en tu dispositivo. Guardamos solo resultados agregados y tu comentario opcional.</p>
+      <h4>3. Responsabilidades</h4>
+      <p>Eres responsable de tu cuenta y contraseña.</p>
+      <h4>4. Limitación de Responsabilidad</h4>
+      <p>La app se entrega "tal cual", sin garantías.</p>
+      <button id="close-terms-button" class="btn">Entendido</button>
+    </div>
   </div>
 
-  <!-- ====================== PANTALLA DE BIENVENIDA (HOME) ====================== -->
+  <!-- ====================== HOME ====================== -->
   <div id="screenHome" class="screen">
-      <div class="card max-700">
-          <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
-          <h2 id="welcome-user">¡Hola!</h2>
-          <p class="lead">¿Listo para hacer tu check-in de bienestar de hoy?</p>
-          <button id="btnHomeStart" class="btn">Comenzar Nuevo Check-in</button>
-          <hr class="divider">
-          <button id="btnSignOut" class="btn btn-secondary">Cerrar Sesión</button>
-      </div>
+    <div class="card max-700">
+      <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
+      <h2 id="welcome-user">¡Hola!</h2>
+      <p class="lead">¿Listo para hacer tu check-in de bienestar de hoy?</p>
+      <button id="btnHomeStart" class="btn">Comenzar Nuevo Check-in</button>
+      <hr class="divider">
+      <button id="btnSignOut" class="btn btn-secondary">Cerrar Sesión</button>
+    </div>
   </div>
 
-
-  <!-- ====================== SELFIE EMOCIONAL ====================== -->
+  <!-- ====================== PASO 1: SELFIE ====================== -->
   <div id="screenFace" class="screen">
     <div class="step-header">
       <span class="step-counter">Paso 1 de 4</span>
@@ -146,7 +161,7 @@
     </div>
   </div>
 
-  <!-- ====================== MEDICIÓN DE RUIDO ====================== -->
+  <!-- ====================== PASO 2: RUIDO ====================== -->
   <div id="screenMeasure" class="screen">
     <div class="step-header">
       <span class="step-counter">Paso 2 de 4</span>
@@ -154,20 +169,28 @@
       <p class="lead">Mediremos el nivel de ruido de tu entorno durante 5 segundos.</p>
     </div>
     <div class="card max-700">
-      <div class="gauge-wrapper"><canvas id="gaugeCanvas" width="280" height="280"></canvas><div class="gauge-center"><span id="dbValue" class="db-value">0</span><span class="db-unit">dB</span><div id="dbLabel" class="db-label"></div><div id="countdown" class="countdown">5.0 s</div></div></div>
+      <div class="gauge-wrapper">
+        <canvas id="gaugeCanvas" width="280" height="280"></canvas>
+        <div class="gauge-center">
+          <span id="dbValue" class="db-value">0</span>
+          <span class="db-unit">dB</span>
+          <div id="dbLabel" class="db-label"></div>
+          <div id="countdown" class="countdown">5.0 s</div>
+        </div>
+      </div>
       <p id="status" class="muted">Presiona "Iniciar" para comenzar la medición.</p>
       <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
     </div>
     <div id="noise-results-card" class="card max-700 hidden">
-        <h3>Medición Finalizada</h3>
-        <p>El promedio de ruido en tu entorno fue de <b id="final-db-result">-- dB</b>, lo que se considera un ambiente <b id="final-db-label">--</b>.</p>
+      <h3>Medición Finalizada</h3>
+      <p>El promedio de ruido en tu entorno fue de <b id="final-db-result">-- dB</b>, lo que se considera un ambiente <b id="final-db-label">--</b>.</p>
     </div>
     <div class="navigation-buttons">
       <button id="btnMeasureNext" class="btn" disabled>Siguiente Paso</button>
     </div>
   </div>
-  
-  <!-- ====================== BODY SCAN ====================== -->
+
+  <!-- ====================== PASO 3: BODY SCAN ====================== -->
   <div id="screenBodyScan" class="screen">
     <div class="step-header">
       <span class="step-counter">Paso 3 de 4</span>
@@ -178,74 +201,101 @@
       <div class="card max-900">
         <h3>Área / Puesto de Trabajo</h3>
         <div class="form-row">
-            <select id="ws_area" required>
-                <option>Ventas</option><option>Administración</option><option>Finanzas</option>
-                <option>TI</option><option>Marketing</option><option>Operaciones</option>
-            </select>
+          <select id="ws_area" required>
+            <option>Ventas</option>
+            <option>Administración</option>
+            <option>Finanzas</option>
+            <option>TI</option>
+            <option>Marketing</option>
+            <option>Operaciones</option>
+          </select>
         </div>
       </div>
-      <div class="card max-900"><h3>Cabeza y Cuello</h3><div class="slider-group"><label>Nivel de tensión (1 = relajado, 10 = máxima tensión)</label><input type="range" id="bs_head_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
-      <div class="card max-900"><h3>Hombros y Espalda</h3><div class="slider-group"><label>Nivel de tensión</label><input type="range" id="bs_upper_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
-      <div class="card max-900"><h3>Pecho y Abdomen</h3><div class="slider-group"><label>Nivel de tensión</label><input type="range" id="bs_lower_tension" min="1" max="10" value="1"><div class="range-ticks"><span>1</span><span>10</span></div></div></div>
+      <div class="card max-900">
+        <h3>Cabeza y Cuello</h3>
+        <div class="slider-group">
+          <label>Nivel de tensión (1 = relajado, 10 = máxima tensión)</label>
+          <input type="range" id="bs_head_tension" min="1" max="10" value="1">
+          <div class="range-ticks"><span>1</span><span>10</span></div>
+        </div>
+      </div>
+      <div class="card max-900">
+        <h3>Hombros y Espalda</h3>
+        <div class="slider-group">
+          <label>Nivel de tensión</label>
+          <input type="range" id="bs_upper_tension" min="1" max="10" value="1">
+          <div class="range-ticks"><span>1</span><span>10</span></div>
+        </div>
+      </div>
+      <div class="card max-900">
+        <h3>Pecho y Abdomen</h3>
+        <div class="slider-group">
+          <label>Nivel de tensión</label>
+          <input type="range" id="bs_lower_tension" min="1" max="10" value="1">
+          <div class="range-ticks"><span>1</span><span>10</span></div>
+        </div>
+      </div>
     </form>
-    <div class="navigation-buttons"><button id="btnBodyScanNext" class="btn">Siguiente Paso</button></div>
+    <div class="navigation-buttons">
+      <button id="btnBodyScanNext" class="btn">Siguiente Paso</button>
+    </div>
   </div>
 
-  <!-- ====================== JOURNAL ====================== -->
+  <!-- ====================== PASO 4: JOURNAL ====================== -->
   <div id="screenJournal" class="screen">
-      <div class="step-header">
-          <span class="step-counter">Paso 4 de 4</span>
-          <h2>Tu Espacio</h2>
-          <p class="lead">¿Algo más en tu mente hoy? A veces, ponerlo en palabras ayuda.</p>
-      </div>
-      <div class="card max-700">
-          <form id="journalForm">
-              <textarea id="journal-input" placeholder="Puedes hablar sobre tu carga de trabajo, alguna preocupación o algo positivo que haya ocurrido... (Opcional)"></textarea>
-              <p class="muted small">Este comentario será confidencial y solo se usará para entender el contexto de tu bienestar.</p>
-          </form>
-      </div>
-      <div class="navigation-buttons">
-          <button id="btnJournalNext" class="btn">Finalizar y Ver Informe</button>
-      </div>
+    <div class="step-header">
+      <span class="step-counter">Paso 4 de 4</span>
+      <h2>Tu Espacio</h2>
+      <p class="lead">¿Algo más en tu mente hoy? A veces, ponerlo en palabras ayuda.</p>
+    </div>
+    <div class="card max-700">
+      <form id="journalForm">
+        <textarea id="journal-input" placeholder="(Opcional) Comparte un contexto breve de tu día..."></textarea>
+        <p class="muted small">Este comentario será confidencial y se usa solo para entender tu bienestar.</p>
+      </form>
+    </div>
+    <div class="navigation-buttons">
+      <button id="btnJournalNext" class="btn">Finalizar y Ver Informe</button>
+    </div>
   </div>
 
-  <!-- ====================== INFORME DE BIENESTAR ====================== -->
+  <!-- ====================== INFORME ====================== -->
   <div id="screenIntegration" class="screen">
-      <div class="step-header">
-          <h2>Tu Informe de Bienestar</h2>
-          <p class="lead">Aquí tienes un resumen de tu check-in de hoy.</p>
+    <div class="step-header">
+      <h2>Tu Informe de Bienestar</h2>
+      <p class="lead">Aquí tienes un resumen de tu check-in de hoy.</p>
+    </div>
+    <div class="card max-900 report-card">
+      <div class="report-header">
+        <div id="ix_score_circle" class="score-circle-large">--</div>
+        <div class="report-title">
+          <h3 id="ix_label">Calculando...</h3>
+          <p>Tu Índice de Equilibrio Hoy</p>
+        </div>
       </div>
-      <div class="card max-900 report-card">
-          <div class="report-header">
-              <div id="ix_score_circle" class="score-circle-large">--</div>
-              <div class="report-title">
-                  <h3 id="ix_label">Calculando...</h3>
-                  <p>Tu Índice de Equilibrio Hoy</p>
-              </div>
-          </div>
-          <div class="report-breakdown">
-              <h4>Desglose de tu Índice:</h4>
-              <div class="progress-item">
-                  <span class="progress-label">Estado Anímico</span>
-                  <div class="progress-bar"><div id="ix_face_progress" class="progress-bar-fill"></div></div>
-              </div>
-              <div class="progress-item">
-                  <span class="progress-label">Entorno Sonoro</span>
-                  <div class="progress-bar"><div id="ix_db_progress" class="progress-bar-fill"></div></div>
-              </div>
-              <div class="progress-item">
-                  <span class="progress-label">Tensión Corporal</span>
-                  <div class="progress-bar"><div id="ix_bs_progress" class="progress-bar-fill"></div></div>
-              </div>
-          </div>
-          <div class="report-recommendation">
-              <h4>Consejo del Día:</h4>
-              <p id="ix_reco" class="muted">Analizando tus resultados para darte la mejor recomendación...</p>
-          </div>
+      <div class="report-breakdown">
+        <h4>Desglose de tu Índice:</h4>
+        <div class="progress-item">
+          <span class="progress-label">Estado Anímico</span>
+          <div class="progress-bar"><div id="ix_face_progress" class="progress-bar-fill"></div></div>
+        </div>
+        <div class="progress-item">
+          <span class="progress-label">Entorno Sonoro</span>
+          <div class="progress-bar"><div id="ix_db_progress" class="progress-bar-fill"></div></div>
+        </div>
+        <div class="progress-item">
+          <span class="progress-label">Tensión Corporal</span>
+          <div class="progress-bar"><div id="ix_bs_progress" class="progress-bar-fill"></div></div>
+        </div>
       </div>
-      <div class="navigation-buttons">
-        <button id="btnIntegrationHome" class="btn">Hacer un Nuevo Check-in</button>
+      <div class="report-recommendation">
+        <h4>Consejo del Día:</h4>
+        <p id="ix_reco" class="muted">Analizando tus resultados para darte la mejor recomendación...</p>
       </div>
+    </div>
+    <div class="navigation-buttons">
+      <button id="btnIntegrationHome" class="btn">Hacer un Nuevo Check-in</button>
+    </div>
   </div>
 
   <script src="app.js"></script>

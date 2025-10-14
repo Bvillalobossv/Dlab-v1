@@ -1,466 +1,255 @@
-/* ===================== UTILIDADES BÁSICAS ===================== */
-const $ = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-function show(id) {
-  $$('.screen').forEach(sc => sc.classList.remove('active'));
-  $(id).classList.add('active');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+// ============ CONFIGURACIÓN SUPABASE ============
+const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
+
+let db = null;
+let supabaseReady = false;
+
+// ============ UTILIDADES DE UI / RUTAS ============
+function $(sel) { return document.querySelector(sel); }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+  else console.warn(`[router] pantalla no encontrada: ${id}`);
+}
+function setAuthMessage(msg, isError = false) {
+  const el = $('#auth-message');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = isError ? 'var(--danger)' : 'var(--text-light)';
 }
 
-/* ===================== CONEXIÓN A SUAPBASE ===================== */
-const { createClient } = supabase;
-const SUPABASE_URL = 'https://kdxoxusimqdznduwyvhl.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc';
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+function toEmailFromUser(user) {
+  const base = (user || '').trim().toLowerCase();
+  if (!base) return null;
+  const safe = base.replace(/[^a-z0-9._-]/g, '');
+  return `${safe}@example.com`;
+}
 
-let currentUser = null;
+// ============ INICIALIZACIÓN ============
+document.addEventListener('DOMContentLoaded', async () => {
+  initIntroCarousel();
+  initAuthTabs();
+  initTermsLinks();
 
-/* ===================== ONBOARDING ===================== */
-(() => {
-  const slides = document.querySelector('#introSlides');
-  const totalSlides = slides.children.length;
-  const dots = $('#introDots');
-  const prev = $('#introPrev');
-  const next = $('#introNext');
-  const start = $('#introStart');
-  let idx = 0;
+  supabaseReady = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-  function renderDots() {
-    dots.innerHTML = '';
-    for (let i = 0; i < totalSlides; i++) {
-      const d = document.createElement('div');
-      d.className = 'dot' + (i === idx ? ' active' : '');
-      dots.appendChild(d);
+  if (!supabaseReady) {
+    console.error('[supabase] Faltan credenciales.');
+    setAuthMessage('Configuración de Supabase ausente.', true);
+  } else {
+    db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Sesión persistente
+    db.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        await onSignedIn(session.user);
+      } else {
+        onSignedOut();
+      }
+    });
+
+    const { data: { session }, error } = await db.auth.getSession();
+    if (error) {
+      console.error('[supabase] getSession error:', error);
+      setAuthMessage('No se pudo verificar la sesión.', true);
+      showScreen('screenIntro');
+    } else if (session?.user) {
+      await onSignedIn(session.user);
+    } else {
+      showScreen('screenIntro');
     }
   }
 
-  function go(i) {
-    idx = Math.max(0, Math.min(i, totalSlides - 1));
-    slides.style.transform = `translateX(-${idx * 100}%)`;
-    renderDots();
-    prev.style.display = (idx === 0) ? 'none' : 'inline-block';
-    next.style.display = (idx === totalSlides - 1) ? 'none' : 'inline-block';
-    start.style.display = (idx === totalSlides - 1) ? 'inline-block' : 'none';
-  }
+  initAuthForms();
+  initMainNavigation();
+});
 
-  prev.addEventListener('click', () => go(idx - 1));
-  next.addEventListener('click', () => go(idx + 1));
-  start.addEventListener('click', () => show('#screenAuth'));
-  renderDots();
-  go(0);
-})();
-
-/* ===================== AUTH (CON SUPABASE) ===================== */
-async function signOut() {
-  await db.auth.signOut();
-  currentUser = null;
-  Object.keys(sessionStorage).forEach(key => sessionStorage.removeItem(key));
-  show('#screenAuth');
+// ============ SESIÓN ============
+async function onSignedIn(user) {
+  const name = (user?.user_metadata?.username) || (user?.email?.split('@')[0]) || 'Usuario';
+  $('#welcome-user').textContent = `¡Hola, ${capitalize(name)}!`;
+  showScreen('screenHome');
+  setAuthMessage('');
 }
 
-(() => {
+function onSignedOut() {
+  showScreen('screenIntro');
+  setAuthMessage('');
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+// ============ INTRO ============
+function initIntroCarousel() {
+  const slides = $('#introSlides');
+  const dotsWrap = $('#introDots');
+  const btnPrev = $('#introPrev');
+  const btnNext = $('#introNext');
+  const btnStart = $('#introStart');
+  if (!slides) return;
+
+  const slideCount = slides.children.length;
+  let i = 0;
+
+  function render() {
+    slides.style.transform = `translateX(${-i * 100}%)`;
+    dotsWrap.innerHTML = '';
+    for (let k = 0; k < slideCount; k++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (k === i ? ' active' : '');
+      dotsWrap.appendChild(d);
+    }
+    btnPrev.disabled = (i === 0);
+    btnNext.style.display = i < slideCount - 1 ? 'inline-block' : 'none';
+    btnStart.style.display = i === slideCount - 1 ? 'inline-block' : 'none';
+  }
+  btnPrev.onclick = () => { if (i > 0) { i--; render(); } };
+  btnNext.onclick = () => { if (i < slideCount - 1) { i++; render(); } };
+  btnStart.onclick = () => showScreen('screenAuth');
+  render();
+}
+
+// ============ TÉRMINOS ============
+function initTermsLinks() {
+  const link = $('#view-terms-link');
+  const closeBtn = $('#close-terms-button');
+  if (link) link.addEventListener('click', e => { e.preventDefault(); showScreen('screenTerms'); });
+  if (closeBtn) closeBtn.addEventListener('click', () => showScreen('screenAuth'));
+}
+
+// ============ TABS AUTH ============
+function initAuthTabs() {
   const tabLogin = $('#authTabLogin');
   const tabSignup = $('#authTabSignup');
   const formLogin = $('#formLogin');
   const formSignup = $('#formSignup');
-  const authMessage = $('#auth-message');
-  const viewTermsLink = $('#view-terms-link');
-  const closeTermsButton = $('#close-terms-button');
-  const btnSignOut = $('#btnSignOut');
-  const btnHomeStart = $('#btnHomeStart');
+  if (!tabLogin) return;
 
   tabLogin.addEventListener('click', () => {
-    tabLogin.classList.add('active'); tabSignup.classList.remove('active');
-    formLogin.style.display = 'block'; formSignup.style.display = 'none';
-    authMessage.textContent = '';
+    tabLogin.classList.add('active');
+    tabSignup.classList.remove('active');
+    formLogin.style.display = 'block';
+    formSignup.style.display = 'none';
+    setAuthMessage('');
   });
+
   tabSignup.addEventListener('click', () => {
-    tabSignup.classList.add('active'); tabLogin.classList.remove('active');
-    formLogin.style.display = 'none'; formSignup.style.display = 'block';
-    authMessage.textContent = '';
+    tabSignup.classList.add('active');
+    tabLogin.classList.remove('active');
+    formSignup.style.display = 'block';
+    formLogin.style.display = 'none';
+    setAuthMessage('');
   });
+}
 
-  viewTermsLink.addEventListener('click', (e) => {
+// ============ FORMULARIOS ============
+function initAuthForms() {
+  const formLogin = $('#formLogin');
+  const formSignup = $('#formSignup');
+
+  if (formLogin) {
+    formLogin.addEventListener('submit', async e => {
       e.preventDefault();
-      show('#screenTerms');
-  });
+      if (!supabaseReady) return setAuthMessage('Configura Supabase.', true);
+      const user = $('#login_user').value.trim();
+      const pass = $('#login_pass').value;
+      if (!user || !pass) return setAuthMessage('Completa los campos.', true);
 
-  closeTermsButton.addEventListener('click', () => {
-      show('#screenAuth');
-  });
-
-  formSignup.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = $('#su_user').value.trim();
-    const password = $('#su_pass').value;
-    const ok = $('#su_terms').checked;
-    if (!username || !password) return authMessage.textContent = 'Por favor, completa todos los campos.';
-    if (!ok) return authMessage.textContent = 'Debes aceptar los términos y condiciones.';
-
-    authMessage.textContent = 'Creando cuenta...';
-    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
-
-    const { data, error } = await db.auth.signUp({ email, password, options: { data: { username } } });
-
-    if (error) return authMessage.textContent = `Error: ${error.message}`;
-    
-    if (data.user) {
-      const { error: profileError } = await db.from('profiles').insert({ id: data.user.id, username: username });
-      if (profileError) return authMessage.textContent = `Error al crear perfil: ${profileError.message}`;
-      
-      authMessage.textContent = '¡Cuenta creada! Por favor, inicia sesión.';
-      tabLogin.click();
-      $('#login_user').value = username;
-      $('#login_pass').focus();
-    }
-  });
-
-  formLogin.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    authMessage.textContent = 'Ingresando...';
-    const username = $('#login_user').value.trim();
-    const password = $('#login_pass').value;
-    const email = `${username.toLowerCase().replace(/[^a-z0-9]/gi, '')}@example.com`;
-    const { error } = await db.auth.signInWithPassword({ email, password });
-    if (error) authMessage.textContent = 'Usuario o contraseña incorrectos.';
-  });
-  
-  btnSignOut.addEventListener('click', signOut);
-  btnHomeStart.addEventListener('click', () => show('#screenFace'));
-
-})();
-
-/* ===================== SELFIE EMOCIONAL ===================== */
-const video = $('#faceVideo');
-const canvas = $('#faceCanvas');
-const btnFaceStart = $('#btnFaceStart');
-const btnFaceSnap  = $('#btnFaceSnap');
-const btnFaceNext  = $('#btnFaceNext');
-const btnFaceSkip  = $('#btnFaceSkip');
-const faceEmotion  = $('#faceEmotion');
-const faceConfidence = $('#faceConfidence');
-const faceTip = $('#faceTip');
-const faceMascot = $('#faceMascot');
-const faceResultsContent = $('#face-results-content');
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights';
-
-let faceStream = null;
-let modelsLoaded = false;
-let lastFace = null;
-
-const emotionCopy = {
-  happy: { label:'Alegría', tip:'Una sonrisa es un gran comienzo. Mantén esa energía positiva durante tu día.' },
-  neutral:{ label:'Calma', tip:'Un estado de calma es ideal para la concentración. Aprovecha para enfocarte en tus tareas.' },
-  angry:  { label:'Tensión', tip:'Parece que algo te preocupa. Una pausa para respirar profundamente puede hacer una gran diferencia.' },
-  sad:    { label:'Tristeza', tip:'Es válido no sentirse bien. Sé amable contigo mismo y permítete un momento para procesarlo.' },
-  surprised:{ label:'Sorpresa', tip:'La sorpresa activa la mente. ¿Qué nueva oportunidad puedes ver en esto?' },
-  fearful:{ label:'Inquietud', tip:'La inquietud es una señal para proceder con cautela. Paso a paso, puedes manejarlo.' },
-  disgusted:{ label:'Disgusto', tip:'Algo no te agrada. Identificar qué es, es el primer paso para cambiarlo.' }
-};
-
-async function ensureModels(){
-  if(modelsLoaded) return;
-  btnFaceStart.textContent = 'Cargando IA...';
-  await Promise.all([
-    faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
-    faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
-  ]);
-  modelsLoaded = true;
-  btnFaceStart.textContent = '📸 Activar cámara';
-}
-
-function stopFace(){
-  if(faceStream){
-    faceStream.getTracks().forEach(t => t.stop());
-    faceStream = null;
-  }
-}
-
-btnFaceStart.addEventListener('click', async () => {
-  btnFaceStart.disabled = true;
-  try {
-    await ensureModels();
-    faceStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
-    video.srcObject = faceStream;
-    video.onloadedmetadata = () => {
-      video.play();
-      btnFaceSnap.disabled = false;
-      btnFaceStart.textContent = 'Cámara Activa';
-      $('#faceHelp').textContent = '¡Listo! Presiona el botón para analizar.';
-    };
-  } catch (err) {
-    alert('No pudimos acceder a la cámara. Revisa permisos o abre en HTTPS.');
-    btnFaceStart.disabled = false;
-    btnFaceStart.textContent = '📸 Activar cámara';
-  }
-});
-
-btnFaceSnap.addEventListener('click', async ()=>{
-  try {
-    const det = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 })).withFaceExpressions();
-    if(!det) {
-      faceTip.textContent = 'No pudimos detectar un rostro. Intenta mejorar la iluminación.';
-      faceResultsContent.classList.remove('hidden');
-      return;
-    }
-    let { expression, probability } = det.expressions.asSortedArray()[0];
-    if (expression === 'neutral' && det.expressions.happy < 0.1) {
-      const negativeScore = (det.expressions.angry || 0) + (det.expressions.disgusted || 0);
-      if (negativeScore > 0.25) {
-        expression = 'angry';
-        probability = negativeScore;
+      const email = toEmailFromUser(user);
+      try {
+        setAuthMessage('Iniciando sesión...');
+        const { error } = await db.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+        setAuthMessage('Sesión iniciada.');
+      } catch (err) {
+        console.error('[login] error', err);
+        setAuthMessage(humanizeAuthError(err), true);
       }
-    }
-    lastFace = { expression, probability };
-    const map = emotionCopy[expression] || emotionCopy.neutral;
-    faceEmotion.textContent = map.label;
-    faceConfidence.textContent = `${(probability*100).toFixed(0)}%`;
-    faceTip.textContent = map.tip;
-    faceMascot.src = `images/mascots/${expression}.gif`;
-    faceResultsContent.classList.remove('hidden');
-    btnFaceNext.disabled = false;
-  } catch(err) {
-    alert('Ocurrió un problema al analizar el rostro.');
+    });
   }
-});
 
-btnFaceSkip.addEventListener('click', () => {
-  lastFace = null;
-  stopFace();
-  show('#screenMeasure');
-});
-btnFaceNext.addEventListener('click', () => {
-  stopFace();
-  show('#screenMeasure');
-});
+  if (formSignup) {
+    formSignup.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!supabaseReady) return setAuthMessage('Configura Supabase.', true);
+      const user = $('#su_user').value.trim();
+      const pass = $('#su_pass').value;
+      const accepted = $('#su_terms').checked;
+      if (!user || !pass) return setAuthMessage('Completa los campos.', true);
+      if (!accepted) return setAuthMessage('Debes aceptar los términos.', true);
+      const email = toEmailFromUser(user);
 
-
-/* ===================== MEDICIÓN DE RUIDO ===================== */
-const gaugeCanvas = $('#gaugeCanvas');
-const dbValue = $('#dbValue');
-const dbLabel = $('#dbLabel');
-const countdownEl = $('#countdown');
-const statusEl = $('#status');
-const toggleBtn = $('#toggleBtn');
-const btnMeasureNext = $('#btnMeasureNext');
-const finalDbResult = $('#final-db-result');
-const finalDbLabel = $('#final-db-label');
-const noiseResultsCard = $('#noise-results-card');
-
-let audioCtx, analyser, micStream;
-let samples = [];
-let lastNoiseAvg = 0;
-
-function drawGauge(val){
-  const ctx = gaugeCanvas.getContext('2d');
-  const w = gaugeCanvas.width, h = gaugeCanvas.height;
-  ctx.clearRect(0,0,w,h);
-  const pct = Math.max(0, Math.min(1, (val - 30)/(90-30)));
-  ctx.lineWidth = 22;
-  ctx.strokeStyle = 'rgba(0,0,0,.08)';
-  ctx.beginPath();
-  ctx.arc(w/2, h/2, w/2-22, Math.PI*0.75, Math.PI*2.25);
-  ctx.stroke();
-  ctx.strokeStyle = getColor(val).bg;
-  ctx.beginPath();
-  ctx.arc(w/2, h/2, w/2-22, Math.PI*0.75, Math.PI*0.75 + pct*Math.PI*1.5);
-  ctx.stroke();
-}
-function getColor(dB) {
-  if(dB < 50) return { bg: 'var(--success)'};
-  if(dB < 70) return { bg: 'var(--warning)'};
-  return { bg: 'var(--danger)'};
-}
-function labelFor(dB){
-  if(dB < 50) return 'Tranquilo';
-  if(dB < 70) return 'Moderado';
-  return 'Ruidoso';
-}
-
-toggleBtn.addEventListener('click', async () => {
-  toggleBtn.disabled = true;
-  statusEl.textContent = 'Midiendo...';
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    micStream = await navigator.mediaDevices.getUserMedia({ audio:true });
-    const src = audioCtx.createMediaStreamSource(micStream);
-    analyser = audioCtx.createAnalyser();
-    src.connect(analyser);
-    
-    samples = [];
-    const duration = 5;
-    let timeLeft = duration;
-    
-    const interval = setInterval(() => {
-      timeLeft -= 0.1;
-      countdownEl.textContent = `${timeLeft.toFixed(1)} s`;
-      
-      const buf = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(buf);
-      const rms = Math.sqrt(buf.reduce((sum, val) => sum + val*val, 0) / buf.length);
-      const dB = 20 * Math.log10(rms) + 90;
-      if (isFinite(dB)) samples.push(dB);
-      
-      const smoothed = samples.slice(-5).reduce((a,b)=>a+b,0) / Math.min(5, samples.length);
-      dbValue.textContent = Math.round(smoothed);
-      const colorInfo = getColor(smoothed);
-      dbLabel.style.backgroundColor = colorInfo.bg;
-      dbLabel.style.color = 'white';
-      dbLabel.textContent = labelFor(smoothed);
-      drawGauge(smoothed);
-
-      if (timeLeft <= 0) {
-        clearInterval(interval);
-        micStream.getTracks().forEach(t => t.stop());
-        audioCtx.close();
-        lastNoiseAvg = Math.round(samples.reduce((a,b)=>a+b,0) / samples.length);
-        finalDbResult.textContent = lastNoiseAvg;
-        finalDbLabel.textContent = labelFor(lastNoiseAvg).toLowerCase();
-        noiseResultsCard.classList.remove('hidden');
-        btnMeasureNext.disabled = false;
-        statusEl.textContent = 'Medición finalizada.';
-        toggleBtn.style.display = 'none';
-      }
-    }, 100);
-  } catch (err) {
-    alert('No se pudo acceder al micrófono.');
-    toggleBtn.disabled = false;
-    statusEl.textContent = 'Error al acceder al micrófono.';
-  }
-});
-btnMeasureNext.addEventListener('click', () => show('#screenBodyScan'));
-
-/* ===================== BODY SCAN & JOURNAL ===================== */
-const btnBodyScanNext = $('#btnBodyScanNext');
-const btnJournalNext = $('#btnJournalNext');
-
-let bodyScanData = {};
-let journalEntry = "";
-
-btnBodyScanNext.addEventListener('click', () => {
-    bodyScanData = {
-        head: +$('#bs_head_tension').value,
-        upper: +$('#bs_upper_tension').value,
-        lower: +$('#bs_lower_tension').value,
-    };
-    show('#screenJournal');
-});
-
-btnJournalNext.addEventListener('click', async () => {
-    journalEntry = $('#journal-input').value.trim();
-    await renderFinalReport();
-    show('#screenIntegration');
-});
-
-/* ===================== INFORME DE BIENESTAR ===================== */
-const ixScoreCircle = $('#ix_score_circle');
-const ixLabel = $('#ix_label');
-const ixFaceProgress = $('#ix_face_progress');
-const ixDbProgress = $('#ix_db_progress');
-const ixBsProgress = $('#ix_bs_progress');
-const ixReco = $('#ix_reco');
-const btnIntegrationHome = $('#btnIntegrationHome');
-
-async function renderFinalReport() {
-    let faceScore;
-    if (lastFace) {
-        if (lastFace.expression === 'happy') faceScore = 95;
-        else if (lastFace.expression === 'neutral' || lastFace.expression === 'surprised') faceScore = 75;
-        else faceScore = 30;
-    } else {
-        faceScore = 60;
-    }
-
-    const noiseScore = Math.max(0, 100 - (Math.abs(lastNoiseAvg - 50) * 2.5));
-    const tensionAvg = (bodyScanData.head + bodyScanData.upper + bodyScanData.lower) / 3;
-    const tensionScore = Math.round(100 - ((tensionAvg - 1) / 9) * 100);
-    
-    const combinedScore = Math.round((faceScore * 0.4) + (noiseScore * 0.2) + (tensionScore * 0.4));
-
-    let label, color;
-    if (combinedScore >= 75) { label = 'En Equilibrio'; color = 'var(--success)'; }
-    else if (combinedScore >= 50) { label = 'Atención Moderada'; color = 'var(--warning)'; }
-    else { label = 'Alto Desbalance'; color = 'var(--danger)'; }
-
-    const scores = { 'Anímico': faceScore, 'Entorno': noiseScore, 'Corporal': tensionScore };
-    const worstDimension = Object.keys(scores).reduce((a, b) => scores[a] < scores[b] ? a : b);
-    
-    let reco = `Tu Índice de Equilibrio es ${combinedScore}%. Hoy, tu área de mayor oportunidad es la dimensión <strong>${worstDimension}</strong>. `;
-    if (worstDimension === 'Anímico') {
-        reco += 'Dedica unos minutos a una actividad que disfrutes o habla con alguien de confianza.';
-    } else if (worstDimension === 'Entorno') {
-        reco += 'Busca un espacio más tranquilo o usa audífonos con música relajante para mejorar tu concentración.';
-    } else {
-        reco += 'Tómate una pausa activa de 2 minutos para estirar las zonas con mayor tensión. Tu cuerpo te lo agradecerá.';
-    }
-
-    ixScoreCircle.textContent = combinedScore;
-    ixScoreCircle.style.backgroundColor = color;
-    ixLabel.textContent = label;
-
-    ixFaceProgress.style.width = `${faceScore}%`;
-    ixFaceProgress.style.backgroundColor = faceScore > 70 ? 'var(--success)' : (faceScore > 40 ? 'var(--warning)' : 'var(--danger)');
-    
-    ixDbProgress.style.width = `${noiseScore}%`;
-    ixDbProgress.style.backgroundColor = noiseScore > 70 ? 'var(--success)' : (noiseScore > 40 ? 'var(--warning)' : 'var(--danger)');
-
-    ixBsProgress.style.width = `${tensionScore}%`;
-    ixBsProgress.style.backgroundColor = tensionScore > 70 ? 'var(--success)' : (tensionScore > 40 ? 'var(--warning)' : 'var(--danger)');
-    
-    ixReco.innerHTML = reco;
-
-    if (currentUser) {
-        const selectedDepartment = $('#ws_area').value;
-        const { error: measurementError } = await db.from('measurements').insert({
-            user_id: currentUser.id,
-            face_emotion: lastFace ? lastFace.expression : 'skipped',
-            noise_db: lastNoiseAvg,
-            body_scan_avg: tensionAvg,
-            combined_score: combinedScore,
-            journal_entry: journalEntry
+      try {
+        setAuthMessage('Creando cuenta...');
+        const { error } = await db.auth.signUp({
+          email,
+          password: pass,
+          options: { data: { username: user } }
         });
-        if (measurementError) console.error('Error al guardar medición:', measurementError);
-
-        const { error: profileError } = await db.from('profiles')
-          .update({ department: selectedDepartment })
-          .eq('id', currentUser.id);
-        if (profileError) console.error('Error al actualizar departamento:', profileError);
-    }
+        if (error) throw error;
+        setAuthMessage('Cuenta creada. Iniciando sesión...');
+        await db.auth.signInWithPassword({ email, password: pass });
+      } catch (err) {
+        console.error('[signup] error', err);
+        setAuthMessage(humanizeAuthError(err), true);
+      }
+    });
+  }
 }
 
-btnIntegrationHome.addEventListener('click', () => {
-    // Resetear variables
-    lastFace = null;
-    lastNoiseAvg = 0;
-    bodyScanData = {};
-    journalEntry = "";
-    // Resetear UI
-    $('#face-results-content').classList.add('hidden');
-    btnFaceNext.disabled = true;
-    toggleBtn.style.display = 'inline-block';
-    toggleBtn.disabled = false;
-    noiseResultsCard.classList.add('hidden');
-    btnMeasureNext.disabled = true;
-    $('#journal-input').value = '';
-    // Reiniciar sliders de body scan
-    $('#bs_head_tension').value = 1;
-    $('#bs_upper_tension').value = 1;
-    $('#bs_lower_tension').value = 1;
-    
-    show('#screenHome');
-});
+function humanizeAuthError(err) {
+  const msg = (err?.message || '').toLowerCase();
+  if (msg.includes('invalid login credentials')) return 'Usuario o contraseña incorrectos.';
+  if (msg.includes('password')) return 'Contraseña no válida.';
+  if (msg.includes('network')) return 'Error de conexión.';
+  return err?.message || 'Error inesperado.';
+}
 
-/* ===================== MANEJO DE SESIÓN Y RUTAS ===================== */
-db.auth.onAuthStateChange(async (event, session) => {
-  if (session && session.user) {
-    currentUser = session.user;
-    const { data: profile } = await db.from('profiles').select('username').eq('id', currentUser.id).single();
-    $('#welcome-user').textContent = `¡Hola, ${profile ? profile.username : ''}!`;
-    show('#screenHome');
-  } else {
-    currentUser = null;
-    show('#screenIntro');
+// ============ NAVEGACIÓN ============
+function initMainNavigation() {
+  const btnHomeStart = $('#btnHomeStart');
+  const btnSignOut = $('#btnSignOut');
+  const btnFaceNext = $('#btnFaceNext');
+  const btnFaceSkip = $('#btnFaceSkip');
+  const btnMeasureNext = $('#btnMeasureNext');
+  const btnBodyScanNext = $('#btnBodyScanNext');
+  const btnJournalNext = $('#btnJournalNext');
+  const btnIntegrationHome = $('#btnIntegrationHome');
+
+  if (btnHomeStart) btnHomeStart.addEventListener('click', () => showScreen('screenFace'));
+  if (btnSignOut) btnSignOut.addEventListener('click', async () => { await db?.auth.signOut(); onSignedOut(); });
+
+  if (btnFaceSkip) btnFaceSkip.addEventListener('click', () => { $('#faceEmotion').textContent = '—'; $('#faceConfidence').textContent = '—'; btnFaceNext.removeAttribute('disabled'); });
+  if (btnFaceNext) btnFaceNext.addEventListener('click', () => showScreen('screenMeasure'));
+  if (btnMeasureNext) btnMeasureNext.addEventListener('click', () => showScreen('screenBodyScan'));
+  if (btnBodyScanNext) btnBodyScanNext.addEventListener('click', () => showScreen('screenJournal'));
+  if (btnJournalNext) btnJournalNext.addEventListener('click', () => { renderFinalReport(); showScreen('screenIntegration'); });
+  if (btnIntegrationHome) btnIntegrationHome.addEventListener('click', () => showScreen('screenHome'));
+}
+
+// ============ INFORME ============
+function renderFinalReport() {
+  const face = 70, dbScore = 65, body = 60;
+  const ix = Math.round(0.33 * face + 0.33 * dbScore + 0.34 * body);
+  const circle = $('#ix_score_circle');
+  const label = $('#ix_label');
+  const pf = $('#ix_face_progress');
+  const pd = $('#ix_db_progress');
+  const pb = $('#ix_bs_progress');
+  const reco = $('#ix_reco');
+
+  if (circle) {
+    circle.textContent = ix;
+    circle.style.background = ix >= 67 ? '#48bb78' : ix >= 34 ? '#f6ad55' : '#e53e3e';
   }
-});
+  if (label) label.textContent = ix >= 67 ? 'En Verde' : ix >= 34 ? 'Atento' : 'Revisa tu día';
+  if (pf) pf.style.width = `${face}%`, pf.style.background = '#8DB596';
+  if (pd) pd.style.width = `${dbScore}%`, pd.style.background = '#A7AD9A';
+  if (pb) pb.style.width = `${body}%`, pb.style.background = '#70755D';
+  if (reco) reco.textContent = 'Consejo: tómate 2 minutos para respirar profundo y estirar hombros.';
+}
+
 
 
