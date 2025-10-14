@@ -1,9 +1,9 @@
-/***************  SUPABASE  *****************/
+/*************** SUPABASE  *****************/
 const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
 let db = null;
 
-/***************  STATE  *****************/
+/*************** STATE  *****************/
 const state = {
   user: null,
   context: { area: null },
@@ -13,7 +13,7 @@ const state = {
   journal: ''
 };
 
-/***************  UTILS  *****************/
+/*************** UTILS  *****************/
 const $ = s => document.querySelector(s);
 const show = id => { document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active')); $('#'+id)?.classList.add('active'); };
 const setAuthMessage = (t,err=false)=>{ const el=$('#auth-message'); if(!el) return; el.textContent=t||''; el.style.color=err?'var(--danger)':'var(--text-light)'; };
@@ -22,7 +22,7 @@ const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const delay = ms => new Promise(r=>setTimeout(r,ms));
 
-/***************  FACE-API  *****************/
+/*************** FACE-API  *****************/
 const MODEL_URL='./models';
 let faceModelsReady=false, cameraStream=null;
 const EMOJI_GIF={
@@ -35,10 +35,10 @@ const EMOJI_GIF={
   surprised:'./images/mascots/surprised.gif'
 };
 
-/***************  GAUGE  *****************/
+/*************** GAUGE  *****************/
 let gaugeChart=null;
 
-/***************  BOOT  *****************/
+/*************** BOOT  *****************/
 document.addEventListener('DOMContentLoaded', async () => {
   db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   db.auth.onAuthStateChange((_e, session) => session?.user ? onSignedIn(session.user) : onSignedOut());
@@ -51,14 +51,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNav();
 
   initArea();
-  initFace();
+  initFace(); // <-- CORRECCIÓN: Se inicia aquí para pre-cargar modelos
   initMicPrep();
   initNoise();
   initIndicatorsModal();
   initBodyScan();
 });
 
-/***************  SESSION  *****************/
+/*************** SESSION  *****************/
 async function onSignedIn(user){
   state.user=user;
   const name=(user?.user_metadata?.username)||(user?.email?.split('@')[0])||'Usuario';
@@ -67,7 +67,7 @@ async function onSignedIn(user){
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
 
-/***************  INTRO + AUTH  *****************/
+/*************** INTRO + AUTH  *****************/
 function initIntro(){
   const slides=$('#introSlides'), dots=$('#introDots');
   const prev=$('#introPrev'), next=$('#introNext'), start=$('#introStart');
@@ -107,16 +107,13 @@ function initAuthForms(){
   });
 }
 
-/***************  NAV  *****************/
+/*************** NAV  *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
-
   $('#btnAreaNext')?.addEventListener('click',()=>show('screenFace'));
-
-  $('#btnFaceSkip')?.addEventListener('click',()=>{ $('#faceEmotion').textContent='—'; $('#faceTip').textContent=''; $('#btnFaceNext').disabled=false; });
+  $('#btnFaceSkip')?.addEventListener('click',()=>{ $('#faceEmotion').textContent='—'; $('#faceTip').textContent=''; $('#btnFaceNext').disabled=false; stopCamera(); show('screenAudioPrep'); });
   $('#btnFaceNext')?.addEventListener('click',()=>{ stopCamera(); show('screenAudioPrep'); });
-
   $('#btnGoToMeasure')?.addEventListener('click',()=>show('screenMeasure'));
   $('#btnMeasureNext')?.addEventListener('click',()=>show('screenBodyScan'));
   $('#btnBodyScanNext')?.addEventListener('click',()=>show('screenJournal'));
@@ -124,7 +121,7 @@ function initNav(){
   $('#btnIntegrationHome')?.addEventListener('click',()=>show('screenHome'));
 }
 
-/***************  ÁREA  *****************/
+/*************** ÁREA  *****************/
 function initArea(){
   const grid = $('#areaGrid'), out = $('#areaSelected'), next = $('#btnAreaNext');
   grid?.addEventListener('click', async (e)=>{
@@ -134,7 +131,6 @@ function initArea(){
     state.context.area = btn.dataset.area;
     out.textContent = `Área seleccionada: ${state.context.area}`;
     next.disabled = false;
-
     try{
       const u = (await db.auth.getUser())?.data?.user;
       if (u?.id && state.context.area) await db.from('profiles').update({ department: state.context.area }).eq('id', u.id);
@@ -142,88 +138,130 @@ function initArea(){
   });
 }
 
-/***************  CÁMARA / FACE  *****************/
+/*************** CÁMARA / FACE (CORREGIDO) *****************/
+async function ensureFaceModels(){
+  if(faceModelsReady) return;
+  const status = $('#faceStatus');
+  try {
+    status.textContent = 'Cargando modelos de IA...';
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+    ]);
+    faceModelsReady = true;
+    status.textContent = 'Modelos listos. Puedes activar la cámara.';
+  } catch (err) {
+    console.error('[face-api models]', err);
+    status.textContent = 'Error al cargar los modelos de IA. Refresca la página.';
+    faceModelsReady = false;
+  }
+}
+
 function initFace(){
   const video=$('#faceVideo'), canvas=$('#faceCanvas');
   const btnStart=$('#btnFaceStart'), btnSnap=$('#btnFaceSnap'), status=$('#faceStatus');
 
   if (video) { video.setAttribute('playsinline',''); video.muted=true; video.autoplay=true; }
 
+  // CORRECCIÓN: Pre-cargar modelos y actualizar UI
+  ensureFaceModels().then(() => {
+    if (faceModelsReady) {
+      btnStart.disabled = false;
+    } else {
+      btnStart.disabled = true;
+    }
+  });
+
   btnStart?.addEventListener('click', async ()=>{
+    if (!faceModelsReady) {
+      status.textContent = 'Los modelos de IA aún no están listos. Espera un momento.';
+      return;
+    }
+    btnStart.disabled = true; // Evitar doble click
+    status.textContent = 'Iniciando cámara...';
     try{
-      await ensureFaceModels();
-      const s=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{ideal:'user'},width:{ideal:640},height:{ideal:480}},
-        audio:false
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'user' }, width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false
       });
-      cameraStream=s; video.srcObject=s; await video.play();
-      await delay(150);
-      btnSnap.disabled=false;
-      status.textContent='Cámara lista ✅';
-    }catch(err){
-      console.error('[camera]',err);
-      status.textContent='No se pudo activar la cámara. Verifica permisos y HTTPS.';
+      cameraStream = stream;
+      video.srcObject = stream;
+      await video.play();
+      await delay(200); // Dar tiempo al video para estabilizarse
+      btnSnap.disabled = false;
+      status.textContent = 'Cámara lista ✅. Centra tu rostro y analiza.';
+    } catch(err){
+      console.error('[camera]', err);
+      status.textContent = 'No se pudo activar la cámara. Verifica permisos y HTTPS.';
+      btnStart.disabled = false; // Permitir reintentar
     }
   });
 
   btnSnap?.addEventListener('click', async ()=>{
     if(!video?.srcObject){ status.textContent='Activa primero la cámara.'; return; }
+    btnSnap.disabled = true;
+    status.textContent = 'Analizando rostro…';
     try{
-      status.textContent='Analizando rostro…';
-      await delay(500);
-
-      // 1) Intento directo sobre <video>
+      // Intento directo sobre <video>
       let detections = await faceapi
-        .detectAllFaces(video,new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.5}))
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
         .withFaceExpressions();
 
-      // 2) Fallback: snapshot a <canvas>
+      // Fallback a <canvas> si falla el video
       if(!detections?.length){
+        await delay(100); // Pequeña pausa
         const ctx = canvas.getContext('2d');
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
-        ctx.drawImage(video,0,0,canvas.width,canvas.height);
-        await delay(60);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         detections = await faceapi
-          .detectAllFaces(canvas,new faceapi.TinyFaceDetectorOptions({inputSize:224,scoreThreshold:.5}))
+          .detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 }))
           .withFaceExpressions();
       }
 
       if(!detections?.length){
-        status.textContent='No se detectó rostro. Busca mejor luz y centra tu cara 🙂';
-        $('#faceEmotion').textContent='No detectada';
+        status.textContent = 'No se detectó rostro. Busca mejor luz y centra tu cara 🙂';
+        $('#faceEmotion').textContent = 'No detectada';
         $('#face-results-content').classList.remove('hidden');
-        $('#btnFaceNext').disabled=false;
-        state.face={emotion:null,confidence:0};
+        $('#btnFaceNext').disabled = false;
+        state.face = { emotion: null, confidence: 0 };
+        btnSnap.disabled = false; // Permitir reintento
         return;
       }
 
       const expr = detections[0].expressions.asSortedArray()[0];
       const emotion = expr.expression;
-      const conf = +(expr.probability*100).toFixed(1);
+      const conf = +(expr.probability * 100).toFixed(1);
 
-      $('#faceEmotion').textContent=emotion;
-      const img=$('#faceMascot'); img.src=EMOJI_GIF[emotion]||EMOJI_GIF.neutral; img.alt=`emoción ${emotion}`;
-      $('#faceTip').textContent=tipForEmotion(emotion,conf);
+      $('#faceEmotion').textContent = capitalize(emotion);
+      const img = $('#faceMascot');
+      img.src = EMOJI_GIF[emotion] || EMOJI_GIF.neutral;
+      img.alt = `Emoción: ${emotion}`;
+      $('#faceTip').textContent = tipForEmotion(emotion, conf);
       $('#face-results-content').classList.remove('hidden');
-      $('#btnFaceNext').disabled=false;
-      status.textContent='Análisis completado ✅';
-      state.face={emotion,confidence:conf};
-    }catch(err){
-      console.error('[analyze]',err);
-      status.textContent='Error al analizar rostro. Intenta nuevamente.';
+      $('#btnFaceNext').disabled = false;
+      status.textContent = 'Análisis completado ✅';
+      state.face = { emotion, confidence: conf };
+
+    } catch(err){
+      console.error('[analyze]', err);
+      status.textContent = 'Error al analizar rostro. Intenta nuevamente.';
+      btnSnap.disabled = false; // Permitir reintento
     }
   });
 }
-async function ensureFaceModels(){
-  if(faceModelsReady) return;
-  await Promise.all([
-    faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-    faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
-  ]);
-  faceModelsReady=true;
+
+function stopCamera(){
+  try{
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+      $('#faceVideo').srcObject = null;
+    }
+  } catch(err) {
+    console.warn('Error al detener la cámara:', err);
+  }
 }
-function stopCamera(){ try{ cameraStream?.getTracks().forEach(t=>t.stop()); }catch{} }
 function tipForEmotion(e,c){
   const conf=c?` (${c}%)`:'';
   switch(e){
@@ -238,7 +276,7 @@ function tipForEmotion(e,c){
   }
 }
 
-/***************  MIC PREP  *****************/
+/*************** MIC PREP  *****************/
 let micTested=false;
 function initMicPrep(){
   const btn=$('#btnTestMic'), res=$('#audio-permission-result'), next=$('#btnGoToMeasure');
@@ -251,7 +289,7 @@ function initMicPrep(){
   });
 }
 
-/***************  NOISE 5s PROMEDIO  *****************/
+/*************** NOISE 5s PROMEDIO  *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
   const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
@@ -307,7 +345,7 @@ function initNoise(){
   btn?.addEventListener('click',()=>startMeasure());
 }
 
-/***************  MODAL INDICADORES  *****************/
+/*************** MODAL INDICADORES  *****************/
 function initIndicatorsModal(){
   const tips={
     saludable:{title:'Ambiente saludable',img:'./images/ind-saludable.png',body:'<45 dB. Ideal para foco profundo. Mantén “franjas de silencio” y avisa al equipo cuando necesites concentración.'},
@@ -326,7 +364,7 @@ function initIndicatorsModal(){
   modal?.addEventListener('click',e=>{ if(e.target===modal) modal.classList.add('hidden'); });
 }
 
-/***************  BODY SCAN  *****************/
+/*************** BODY SCAN  *****************/
 function initBodyScan(){
   const head=$('#bs_head'), upper=$('#bs_upper'), lower=$('#bs_lower'), tip=$('#bs_tip');
   const vH=$('#valHead'), vU=$('#valUpper'), vL=$('#valLower');
@@ -351,16 +389,17 @@ function initBodyScan(){
   update();
 }
 
-/***************  REPORTE + PERSISTENCIA  *****************/
+/*************** REPORTE + PERSISTENCIA  *****************/
 async function finalizeAndReport(){
   state.journal = ($('#journal-input')?.value || '').slice(0,1000);
 
-  const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
-  const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
-  const bodyAvg01 = (state.body.head + state.body.upper + state.body.lower)/3; // 0..10
-  const bodyScore = Math.round(bodyAvg01*10); // 0..100
+  // CORRECCIÓN: Ponderación ajustada a README (Selfie 25%, Ruido 35%, Cuerpo 40%)
+  const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60; // Puntuación de 0 a 100
+  const noiseScore = 100 - clamp(state.noise.avg, 0, 100); // Puntuación de 0 a 100 (mayor ruido, menor puntaje)
+  const bodyAvg10 = (state.body.head + state.body.upper + state.body.lower)/3; // Promedio de 0 a 10
+  const bodyScore = 100 - (bodyAvg10 * 10); // Puntuación de 0 a 100 (mayor tensión, menor puntaje)
 
-  const ix = Math.round(0.33*faceScore + 0.33*noiseScore + 0.34*bodyScore);
+  const ix = Math.round(0.25 * faceScore + 0.35 * noiseScore + 0.40 * bodyScore);
 
   const circle=$('#ix_score_circle'), label=$('#ix_label'), pf=$('#ix_face_progress'), pd=$('#ix_db_progress'), pb=$('#ix_bs_progress');
   if(circle){ circle.textContent=ix; circle.style.background = ix>=67?'#48bb78':ix>=34?'#f6ad55':'#e53e3e'; }
@@ -373,14 +412,13 @@ async function finalizeAndReport(){
   $('#ix_meaning').textContent = buildMeaning(ix, state);
 
   try{
-    const u=(await db.auth.getUser())?.data?.user; 
+    const u=(await db.auth.getUser())?.data?.user;
     if(u?.id){
-      if(state.context.area) await db.from('profiles').update({ department: state.context.area }).eq('id', u.id);
       await db.from('measurements').insert({
         user_id_uuid: u.id,
-        face_emotion: state.face.emotion || 'neutral',
+        face_emotion: state.face.emotion || 'skipped',
         noise_db: state.noise.avg || 0,
-        body_scan_avg: +(bodyAvg01.toFixed(1)),
+        body_scan_avg: +(bodyAvg10.toFixed(1)),
         combined_score: ix,
         journal_entry: state.journal || null
       });
@@ -399,19 +437,19 @@ function buildReco(face, noise, body, st){
   const parts=[];
   if(['sad','angry','fearful'].includes(st.face.emotion)) parts.push('Respira 2-3 min y afloja hombros para resetear el foco.');
   const painsCount=st.body.pains.head.length+st.body.pains.upper.length+st.body.pains.lower.length;
-  if(painsCount>0 || body<60) parts.push('Estira cuello y espalda 2 min; camina 1 minuto para oxigenar.');
-  if((100-noise)<55) parts.push('Si puedes, cambia a una zona más silenciosa o usa cancelación de ruido.');
+  if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min; camina 1 minuto para oxigenar.');
+  if(noise < 45) parts.push('Si puedes, cambia a una zona más silenciosa o usa cancelación de ruido.');
   if((st.journal||'').length>60) parts.push('Gracias por compartir: lo que escribes ayuda a ajustar tu día con más precisión.');
   if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves y celebra tus avances.');
   return parts.join(' ');
 }
 function emotionToScore(e){
   switch(e){
-    case 'happy': return 85;
-    case 'neutral': return 65;
-    case 'surprised': return 70;
+    case 'happy': return 95;
+    case 'neutral': return 75;
+    case 'surprised': return 80;
     case 'sad': return 40;
-    case 'angry': return 35;
+    case 'angry': return 30;
     case 'fearful': return 45;
     case 'disgusted': return 50;
     default: return 60;
