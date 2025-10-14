@@ -44,7 +44,7 @@ textarea{min-height:150px;resize:vertical}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
 .divider{border:none;height:1px;background:#eee;margin:1.5rem 0}
 
-/* Onboarding */
+/* Onboarding (Versión Final Simplificada) */
 .carousel-shell {
   width: 100%;
   max-width: 520px;
@@ -167,16 +167,13 @@ ul.tips li{margin:.25rem 0}
 .modal.hidden{display:none}
 .modal-card{background:#fff;border-radius:18px;max-width:560px;width:100%;padding:2rem;border:1px solid #eee;text-align:center;position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.1);}
 .modal-close{position:absolute;top:10px;right:10px;border:none;background:transparent;font-size: 1.5rem; color: #aaa; cursor:pointer;}
-
-/* CORRECCIÓN: Estilo para la imagen dentro de CUALQUIER modal */
 .modal-img {
     display: block;
     margin: 0 auto 1.5rem auto;
-    height: 80px; /* Altura fija */
-    width: 80px; /* Ancho fijo */
-    object-fit: contain; /* Asegura que la imagen no se deforme */
+    height: 80px;
+    width: 80px;
+    object-fit: contain;
 }
-
 
 /* Informe */
 .report-card{text-align:left}

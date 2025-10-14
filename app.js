@@ -110,6 +110,14 @@ function initIntro(){
 function initAuthForms(){
   const formLogin = $('#formLogin');
   const formSignup = $('#formSignup');
+  const signupButton = $('#btnSignup');
+  const termsCheckbox = $('#su_terms');
+
+  if (termsCheckbox && signupButton) {
+      termsCheckbox.addEventListener('change', () => {
+          signupButton.disabled = !termsCheckbox.checked;
+      });
+  }
 
   if (formLogin) {
     formLogin.addEventListener('submit', async e => {
@@ -338,7 +346,6 @@ function initMicPrep(){
     });
 }
 
-/*************** NOISE 5s PROMEDIO (CORREGIDO) *****************/
 function initNoise(){
   const btn=$('#toggleBtn'), dbValue=$('#dbValue'), dbLabel=$('#dbLabel'), countdown=$('#countdown'), status=$('#status');
   const resultsCard=$('#noise-results-card'), finalDb=$('#final-db-result'), finalLabel=$('#final-db-label'), next=$('#btnMeasureNext');
@@ -445,7 +452,6 @@ function initNoise(){
   btn?.addEventListener('click',()=>startMeasure());
 }
 
-/*************** MODAL INDICADORES (RESTAURADO) *****************/
 function initIndicatorsModal(){
   const tips={
     saludable:{title:'Ambiente Saludable (< 45 dB)',img:'./images/ind-saludable.png',body:'Tu ambiente es silencioso, similar a una biblioteca. Esto es ideal para tareas que requieren alta concentración y pensamiento profundo. Aprovéchalo para avanzar en tus proyectos más complejos.'},
@@ -453,7 +459,7 @@ function initIndicatorsModal(){
     ruidoso:{title:'Ambiente Ruidoso (65-80 dB)',img:'./images/ind-ruido.png',body:'El ruido equivale a conversaciones fuertes o varias llamadas a la vez. Puede interrumpir la concentración y generar estrés. Considera usar zonas de silencio o cabinas para tareas importantes.'},
     muyruidoso:{title:'Ambiente Muy Ruidoso (> 80 dB)',img:'./images/ind-silencio.png',body:'Este nivel de ruido es agotador y puede causar fatiga cognitiva. Es importante tomar pausas en lugares más tranquilos para recuperarte y proteger tu bienestar auditivo y mental.'}
   };
-  const modalContainer = document.getElementById('modal-container'); // Usar el contenedor general
+  const modalContainer = document.getElementById('modal-container');
   const noiseModal = document.createElement('div');
   noiseModal.className = 'modal hidden';
   noiseModal.innerHTML = `
@@ -463,7 +469,7 @@ function initIndicatorsModal(){
       <h3 id="modalTitle"></h3>
       <p id="modalBody"></p>
     </div>`;
-  modalContainer.appendChild(noiseModal);
+  if (modalContainer) modalContainer.appendChild(noiseModal);
 
   const mImg=noiseModal.querySelector('#modalImg'), mTitle=noiseModal.querySelector('#modalTitle'), mBody=noiseModal.querySelector('#modalBody');
   
