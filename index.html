@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RaiZen</title>
-  <link rel="stylesheet" href="styles.css" />
+  <title>RaiZen · Dlab-v1</title>
+  <link rel="stylesheet" href="./styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
@@ -14,29 +14,26 @@
 </head>
 <body>
 
-  <!-- ====================== ONBOARDING ====================== -->
+  <!-- ============== INTRO ============== -->
   <div id="screenIntro" class="screen active">
     <div class="carousel-shell">
       <div class="slides" id="introSlides">
         <section class="slide">
-          <img src="https://i.imgur.com/8a5g8G3.png" alt="Bienestar en el trabajo" class="slide-image"/>
           <div class="slide-text">
             <h2>Bienvenido a RaiZen</h2>
-            <p>Tu espacio para conectar con tu bienestar laboral y encontrar el equilibrio, día a día.</p>
+            <p>Un check-in breve para entender tu bienestar hoy.</p>
           </div>
         </section>
         <section class="slide">
-          <img src="https://i.imgur.com/sL3b5x2.png" alt="Privacidad" class="slide-image"/>
           <div class="slide-text">
-            <h2>Tu Privacidad es Sagrada</h2>
-            <p>Procesamos cámara y micrófono en tu dispositivo. Guardamos solo resultados.</p>
+            <h2>Privacidad</h2>
+            <p>Procesamos cámara y micrófono en tu dispositivo. Guardamos resultados, no crudos.</p>
           </div>
         </section>
         <section class="slide">
-          <img src="https://i.imgur.com/yXF8AFs.png" alt="Análisis rápido" class="slide-image"/>
           <div class="slide-text">
-            <h2>Un Check-in en Minutos</h2>
-            <p>En 4 pasos tendrás una visión clara de tu estado actual.</p>
+            <h2>Rápido</h2>
+            <p>En minutos tendrás un informe y un consejo accionable.</p>
           </div>
         </section>
       </div>
@@ -49,11 +46,11 @@
     </div>
   </div>
 
-  <!-- ====================== AUTH ====================== -->
+  <!-- ============== AUTH ============== -->
   <div id="screenAuth" class="screen">
-    <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
+    <img src="./images/logo.png" alt="" class="logo" onerror="this.style.display='none'"/>
     <h1>RaiZen</h1>
-    <p class="lead">Inicia tu camino hacia el equilibrio.</p>
+    <p class="lead">Inicia sesión o crea tu cuenta.</p>
 
     <div class="card max-600">
       <div class="segmented">
@@ -79,13 +76,13 @@
           <input type="text" id="su_user" autocomplete="username" required />
         </div>
         <div class="form-row">
-          <label>Contraseña (mínimo 6 caracteres)</label>
+          <label>Contraseña (mínimo 6)</label>
           <input type="password" id="su_pass" autocomplete="new-password" minlength="6" required />
         </div>
         <div class="form-row chk">
           <label>
             <input type="checkbox" id="su_terms" required />
-            He leído y acepto los <a href="#" id="view-terms-link">Términos y Condiciones</a>
+            Acepto los <a href="#" id="view-terms-link">Términos</a>
           </label>
         </div>
         <button type="submit" class="btn">Crear cuenta</button>
@@ -95,36 +92,34 @@
     </div>
   </div>
 
-  <!-- ====================== TÉRMINOS ====================== -->
+  <!-- ============== TÉRMINOS ============== -->
   <div id="screenTerms" class="screen">
     <div class="card max-700 text-left">
-      <h2>Términos y Condiciones de RaiZen</h2>
-      <p><strong>Última actualización: 14 de Octubre, 2025</strong></p>
-      <p>RaiZen ayuda a monitorear tu bienestar laboral. No es un diagnóstico médico.</p>
-      <p>Los análisis de cámara y micrófono se procesan en tu dispositivo. Guardamos resultados agregados y tu comentario opcional.</p>
+      <h2>Términos</h2>
+      <p>RaiZen no es diagnóstico médico. Procesamos en local y guardamos métricas agregadas.</p>
       <button id="close-terms-button" class="btn">Entendido</button>
     </div>
   </div>
 
-  <!-- ====================== HOME ====================== -->
+  <!-- ============== HOME ============== -->
   <div id="screenHome" class="screen">
     <div class="card max-700">
-      <img src="https://i.imgur.com/dJ88p2F.png" alt="Logo RaiZen" class="logo" />
       <h2 id="welcome-user">¡Hola!</h2>
-      <p class="lead">¿Listo para hacer tu check-in de bienestar de hoy?</p>
-      <button id="btnHomeStart" class="btn">Comenzar Nuevo Check-in</button>
+      <p class="lead">¿Listo para tu check-in?</p>
+      <button id="btnHomeStart" class="btn">Comenzar</button>
       <hr class="divider">
       <button id="btnSignOut" class="btn btn-secondary">Cerrar Sesión</button>
     </div>
   </div>
 
-  <!-- ====================== PASO 1: SELFIE (EMOCIONES) ====================== -->
+  <!-- ============== PASO 1: ANÁLISIS FACIAL ============== -->
   <div id="screenFace" class="screen">
     <div class="step-header">
-      <span class="step-counter">Paso 1 de 5</span>
+      <span class="step-counter">Paso 1 de 6</span>
       <h2>Análisis Facial</h2>
-      <p class="lead">Una selfie para empezar el día. Tu rostro nos da pistas sobre tu estado de ánimo.</p>
+      <p class="lead">Una selfie para empezar el día.</p>
     </div>
+
     <div class="card max-900">
       <div class="two-cols">
         <div>
@@ -134,13 +129,16 @@
             <button id="btnFaceStart" class="btn">📸 Activar cámara</button>
             <button id="btnFaceSnap" class="btn btn-outline" disabled>Analizar mi expresión</button>
           </div>
-          <p id="faceHelp" class="muted small">En iPhone abre por HTTPS y permite la cámara. Si no aparece el diálogo, vuelve a tocar el botón.</p>
+          <p id="faceHelp" class="muted small">
+            iPhone/Safari: usa HTTPS. Si no ves el diálogo de permiso, tócalo de nuevo.
+          </p>
         </div>
+
         <div class="results-container">
-          <h3>Tu Resultado Emocional</h3>
-          <p class="muted small">(Tras analizar verás tu emoción dominante)</p>
+          <h3>Resultado</h3>
+          <p class="muted small">(aparecerá tras analizar)</p>
           <div id="face-results-content" class="hidden">
-            <p><b>Emoción dominante:</b> <span id="faceEmotion">—</span></p>
+            <p><b>Emoción:</b> <span id="faceEmotion">—</span></p>
             <p><b>Confianza:</b> <span id="faceConfidence">—</span></p>
             <img id="faceMascot" class="mascot" alt="Mascota emoción" />
             <p id="faceTip" class="muted"></p>
@@ -148,40 +146,41 @@
         </div>
       </div>
     </div>
+
     <div class="navigation-buttons">
-      <button id="btnFaceNext" class="btn" disabled>Siguiente Paso</button>
+      <button id="btnFaceNext" class="btn" disabled>Siguiente</button>
       <button id="btnFaceSkip" class="btn btn-secondary">Saltar</button>
     </div>
   </div>
 
-  <!-- ====================== PASO 2: PREPARACIÓN AUDIO ====================== -->
+  <!-- ============== PASO 2: PREP AUDIO ============== -->
   <div id="screenAudioPrep" class="screen">
     <div class="step-header">
-      <span class="step-counter">Paso 2 de 5</span>
+      <span class="step-counter">Paso 2 de 6</span>
       <h2>Preparar medición acústica</h2>
-      <p class="lead">Busca un lugar estable, permite acceso al micrófono y continuamos.</p>
+      <p class="lead">Permite el micrófono y busca un lugar estable.</p>
     </div>
     <div class="card max-700">
       <ul class="tips">
-        <li>Mantén el móvil quieto sobre la mesa.</li>
-        <li>Evita cubrir el micrófono.</li>
-        <li>Permite el acceso al micrófono cuando te lo solicite el navegador.</li>
+        <li>Mantén el móvil quieto.</li>
+        <li>No cubras el micrófono.</li>
+        <li>Cuando aparezca, acepta el permiso.</li>
       </ul>
       <p id="audio-permission-msg" class="muted">Pulsa “Probar micrófono”.</p>
       <button id="btnTestMic" class="btn">🎤 Probar micrófono</button>
       <p id="audio-permission-result" class="small"></p>
     </div>
     <div class="navigation-buttons">
-      <button id="btnGoToMeasure" class="btn" disabled>Continuar a medición</button>
+      <button id="btnGoToMeasure" class="btn" disabled>Continuar</button>
     </div>
   </div>
 
-  <!-- ====================== PASO 3: AMBIENTE ACÚSTICO ====================== -->
+  <!-- ============== PASO 3: AMBIENTE ACÚSTICO ============== -->
   <div id="screenMeasure" class="screen">
     <div class="step-header">
-      <span class="step-counter">Paso 3 de 5</span>
+      <span class="step-counter">Paso 3 de 6</span>
       <h2>Ambiente acústico</h2>
-      <p class="lead">Mediremos el nivel de ruido durante 5 segundos.</p>
+      <p class="lead">Mediremos durante 5 segundos y calcularemos el promedio.</p>
     </div>
 
     <div class="card max-900">
@@ -195,60 +194,100 @@
           <div id="countdown" class="countdown">5.0 s</div>
         </div>
       </div>
-      <p id="status" class="muted">Presiona "Iniciar 5s" para comenzar la medición.</p>
+      <p id="status" class="muted">Pulsa “Iniciar 5s”.</p>
       <button id="toggleBtn" class="btn">🎙️ Iniciar 5s</button>
     </div>
 
-    <!-- Resultados + gráfico -->
     <div id="noise-results-card" class="card max-900 hidden">
       <h3>Resultados</h3>
       <p>Promedio: <b id="final-db-result">-- dB</b> — <b id="final-db-label">--</b></p>
       <canvas id="noiseHistory" height="120"></canvas>
 
-      <!-- Carrusel de referencia -->
+      <!-- Indicadores (clicables) -->
       <div class="ref-carousel" id="refCarousel">
-        <div class="ref-card">
-          <img src="images/ind-saludable.png" alt="Ambiente saludable">
+        <button class="ref-card" data-key="saludable">
+          <img src="./images/ind-saludable.png" alt="Ambiente saludable">
           <div>
             <h4>Ambiente saludable</h4>
             <p>&lt; 45 dB — Librería / hogar silencioso.</p>
           </div>
-        </div>
-        <div class="ref-card">
-          <img src="images/ind-oficina.png" alt="Oficina activa">
+        </button>
+        <button class="ref-card" data-key="oficina">
+          <img src="./images/ind-conversacion.png" alt="Oficina activa">
           <div>
             <h4>Oficina activa</h4>
             <p>45–65 dB — Conversación normal / oficina.</p>
           </div>
-        </div>
-        <div class="ref-card">
-          <img src="images/ind-conversacion.png" alt="Ruidoso">
+        </button>
+        <button class="ref-card" data-key="ruidoso">
+          <img src="./images/ind-ruido.png" alt="Ruidoso">
           <div>
             <h4>Ruidoso</h4>
             <p>65–80 dB — Tránsito, cafetería concurrida.</p>
           </div>
-        </div>
-        <div class="ref-card">
-          <img src="images/ind-silencio.png" alt="Muy ruidoso">
+        </button>
+        <button class="ref-card" data-key="muyruidoso">
+          <img src="./images/ind-silencio.png" alt="Muy ruidoso">
           <div>
             <h4>Muy ruidoso</h4>
             <p>&gt; 80 dB — Taller, construcción.</p>
           </div>
-        </div>
+        </button>
       </div>
     </div>
 
     <div class="navigation-buttons">
-      <button id="btnMeasureNext" class="btn" disabled>Siguiente Paso</button>
+      <button id="btnMeasureNext" class="btn" disabled>Siguiente</button>
     </div>
   </div>
 
-  <!-- ====================== PASO 4: ENCUESTA CONTEXTO ====================== -->
+  <!-- MODAL de indicadores -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <button id="modalClose" class="modal-close" aria-label="Cerrar">✕</button>
+      <img id="modalImg" class="modal-img" alt="">
+      <h3 id="modalTitle"></h3>
+      <p id="modalBody" class="text-left"></p>
+    </div>
+  </div>
+
+  <!-- ============== PASO 4: ESCANEO SOMÁTICO (3 zonas) ============== -->
+  <div id="screenBodyScan" class="screen">
+    <div class="step-header">
+      <span class="step-counter">Paso 4 de 6</span>
+      <h2>Escaneo corporal</h2>
+      <p class="lead">Evalúa la tensión en tu cuerpo (1 = relajado, 10 = tensión alta).</p>
+    </div>
+
+    <div class="card max-900">
+      <div class="grid-2">
+        <div class="slider-block">
+          <label>Cuello / Hombros</label>
+          <input type="range" id="bs_head" min="1" max="10" value="1">
+        </div>
+        <div class="slider-block">
+          <label>Espalda / Tórax</label>
+          <input type="range" id="bs_upper" min="1" max="10" value="1">
+        </div>
+      </div>
+      <div class="slider-block">
+        <label>Piernas / Pies</label>
+        <input type="range" id="bs_lower" min="1" max="10" value="1">
+      </div>
+      <p id="bs_tip" class="muted small">Consejo: suelta hombros y respira 3 veces lentamente.</p>
+    </div>
+
+    <div class="navigation-buttons">
+      <button id="btnBodyScanNext" class="btn">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- ============== PASO 5: CONTEXTO ============== -->
   <div id="screenContext" class="screen">
     <div class="step-header">
-      <span class="step-counter">Paso 4 de 5</span>
+      <span class="step-counter">Paso 5 de 6</span>
       <h2>Encuesta breve de contexto</h2>
-      <p class="lead">Nos ayuda a entender mejor tu jornada y tu área de trabajo.</p>
+      <p class="lead">Área/puesto y carga actual.</p>
     </div>
 
     <form id="contextForm" class="card max-900 text-left">
@@ -265,7 +304,6 @@
           </select>
         </div>
       </div>
-
       <div class="grid-2">
         <div>
           <label>Horas trabajadas</label>
@@ -273,74 +311,63 @@
         </div>
         <div></div>
       </div>
-
-      <div class="slider-block">
-        <label>Carga de trabajo hoy</label>
-        <input type="range" id="ctx_load" min="1" max="10" value="5">
-      </div>
-      <div class="slider-block">
-        <label>Ritmo de trabajo</label>
-        <input type="range" id="ctx_pace" min="1" max="10" value="5">
-      </div>
-      <div class="slider-block">
-        <label>Estrés general</label>
-        <input type="range" id="ctx_stress" min="1" max="10" value="5">
-      </div>
+      <div class="slider-block"><label>Carga de trabajo hoy</label><input type="range" id="ctx_load" min="1" max="10" value="5"></div>
+      <div class="slider-block"><label>Ritmo de trabajo</label><input type="range" id="ctx_pace" min="1" max="10" value="5"></div>
+      <div class="slider-block"><label>Estrés general</label><input type="range" id="ctx_stress" min="1" max="10" value="5"></div>
     </form>
 
     <div class="navigation-buttons">
-      <button id="btnContextNext" class="btn">Siguiente Paso</button>
+      <button id="btnContextNext" class="btn">Siguiente</button>
     </div>
   </div>
 
-  <!-- ====================== PASO 5: JOURNAL ====================== -->
+  <!-- ============== PASO 6: JOURNAL ============== -->
   <div id="screenJournal" class="screen">
     <div class="step-header">
-      <span class="step-counter">Paso 5 de 5</span>
-      <h2>Tu Espacio</h2>
-      <p class="lead">¿Algo más en tu mente hoy? (Opcional)</p>
+      <span class="step-counter">Paso 6 de 6</span>
+      <h2>Tu espacio</h2>
+      <p class="lead">Opcional: comparte contexto de tu día.</p>
     </div>
     <div class="card max-700">
       <form id="journalForm">
-        <textarea id="journal-input" placeholder="(Opcional) Comparte un contexto breve de tu día..."></textarea>
-        <p class="muted small">Este comentario será confidencial.</p>
+        <textarea id="journal-input" placeholder="(Opcional) Comentario breve…"></textarea>
       </form>
     </div>
     <div class="navigation-buttons">
-      <button id="btnJournalNext" class="btn">Finalizar y Ver Informe</button>
+      <button id="btnJournalNext" class="btn">Finalizar y ver informe</button>
     </div>
   </div>
 
-  <!-- ====================== INFORME ====================== -->
+  <!-- ============== INFORME ============== -->
   <div id="screenIntegration" class="screen">
     <div class="step-header">
       <h2>Tu Informe de Bienestar</h2>
-      <p class="lead">Resumen de tu check-in de hoy.</p>
+      <p class="lead">Resumen del check-in.</p>
     </div>
     <div class="card max-900 report-card">
       <div class="report-header">
         <div id="ix_score_circle" class="score-circle-large">--</div>
         <div class="report-title">
-          <h3 id="ix_label">Calculando...</h3>
-          <p>Tu Índice de Equilibrio</p>
+          <h3 id="ix_label">Calculando…</h3>
+          <p>Índice de equilibrio</p>
         </div>
       </div>
       <div class="report-breakdown">
-        <h4>Desglose:</h4>
-        <div class="progress-item"><span class="progress-label">Estado Anímico</span><div class="progress-bar"><div id="ix_face_progress" class="progress-bar-fill"></div></div></div>
-        <div class="progress-item"><span class="progress-label">Ambiente Acústico</span><div class="progress-bar"><div id="ix_db_progress" class="progress-bar-fill"></div></div></div>
-        <div class="progress-item"><span class="progress-label">Tensión Corporal</span><div class="progress-bar"><div id="ix_bs_progress" class="progress-bar-fill"></div></div></div>
+        <h4>Desglose</h4>
+        <div class="progress-item"><span class="progress-label">Estado anímico</span><div class="progress-bar"><div id="ix_face_progress" class="progress-bar-fill"></div></div></div>
+        <div class="progress-item"><span class="progress-label">Ambiente acústico</span><div class="progress-bar"><div id="ix_db_progress" class="progress-bar-fill"></div></div></div>
+        <div class="progress-item"><span class="progress-label">Cuerpo (somático)</span><div class="progress-bar"><div id="ix_bs_progress" class="progress-bar-fill"></div></div></div>
       </div>
       <div class="report-recommendation">
-        <h4>Consejo del Día</h4>
-        <p id="ix_reco" class="muted">Analizando resultados...</p>
+        <h4>Consejo del día</h4>
+        <p id="ix_reco" class="muted">Analizando…</p>
       </div>
     </div>
     <div class="navigation-buttons">
-      <button id="btnIntegrationHome" class="btn">Hacer un Nuevo Check-in</button>
+      <button id="btnIntegrationHome" class="btn">Nuevo check-in</button>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
