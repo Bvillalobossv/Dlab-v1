@@ -38,18 +38,54 @@ textarea{min-height:150px;resize:vertical}
 .form-row.chk a{color:var(--green-dark);text-decoration:none;font-weight:600}
 .divider{border:none;height:1px;background:#eee;margin:1.5rem 0}
 
-/* Onboarding */
-.carousel-shell{max-width:520px;margin:0 auto; display: flex; flex-direction: column; height: calc(100vh - 4rem);} /* Ajuste para ocupar más altura */
-.slides{display:flex;overflow:hidden; flex-grow: 1; align-items: flex-start; /* Para que el contenido empiece arriba */ }
-.slide{min-width:100%;transition:transform .5s ease;padding:1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%;}
-.slide-image { max-width: 100%; height: auto; max-height: 40%; object-fit: contain; margin-bottom: 1.5rem; border-radius: 12px;}
-.slide-text { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 1rem; }
-.dots{display:flex;gap:.5rem;justify-content:center;margin:1rem 0}
-.dots .dot{width:10px;height:10px;border-radius:50%;background:var(--green-light)}
-.dots .dot.active{background:var(--green-dark)}
+/* Onboarding (Corregido) */
+.carousel-shell {
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centra el contenido verticalmente */
+  height: calc(100vh - 4rem); /* Ocupa la altura de la pantalla menos el padding */
+}
+.slides {
+  display: flex;
+  overflow: hidden;
+}
+.slide {
+  min-width: 100%;
+  transition: transform 0.5s ease;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.slide-image {
+  max-width: 100%;
+  height: 250px; /* Altura fija para la imagen */
+  object-fit: contain;
+  margin-bottom: 1.5rem;
+  border-radius: 12px;
+}
+.slide-text {
+  text-align: center;
+}
+.dots {
+  display: flex;
+  gap: .5rem;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+.dots .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green-light);
+}
+.dots .dot.active {
+  background: var(--green-dark);
+}
 .intro-nav-buttons {
-  margin-top: auto; /* Empuja los botones hacia abajo del carousel-shell */
-  padding-bottom: 1rem; /* Espacio extra al final */
+  margin-top: 1rem; /* Espacio entre los puntos y los botones */
 }
 
 
