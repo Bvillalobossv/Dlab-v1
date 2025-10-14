@@ -42,6 +42,7 @@ textarea{min-height:150px;resize:vertical}
 .carousel-shell{max-width:520px;margin:0 auto}
 .slides{display:flex;overflow:hidden}
 .slide{min-width:100%;transition:transform .5s ease;padding:1rem}
+.slide-image { max-width: 100%; height: 300px; object-fit: contain; margin-bottom: 1.5rem; border-radius: 12px;}
 .dots{display:flex;gap:.5rem;justify-content:center;margin:1rem 0}
 .dots .dot{width:10px;height:10px;border-radius:50%;background:var(--green-light)}
 .dots .dot.active{background:var(--green-dark)}

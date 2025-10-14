@@ -515,9 +515,9 @@ function initContextSurvey() {
     }
 }
 
-/*************** REPORTE + PERSISTENCIA *****************/
+/*************** REPORTE + PERSISTENCIA (CORREGIDO) *****************/
 async function finalizeAndReport(){
-  const journalText = ($('#journal-input')?.value || '').slice(0, 1000);
+  const journalText = document.getElementById('journal-input') ? document.getElementById('journal-input').value.slice(0, 1000) : "";
 
   const faceScore = state.face.emotion ? emotionToScore(state.face.emotion) : 60;
   const noiseScore = 100 - clamp(state.noise.avg, 0, 100);
@@ -573,12 +573,13 @@ function buildMeaning(ix){
   return '“Revisa tu día”: tu cuerpo/entorno piden descanso.';
 }
 function buildReco(face, noise, body, st){
+  const journalText = document.getElementById('journal-input') ? document.getElementById('journal-input').value : "";
   const parts=[];
   if(['sad','angry','fearful'].includes(st.face.emotion)) parts.push('Respira 2-3 min.');
   const painsCount=st.body.pains.head.length+st.body.pains.upper.length+st.body.pains.lower.length;
   if(painsCount > 0 || body < 60) parts.push('Estira cuello y espalda 2 min.');
   if(noise < 45) parts.push('Busca una zona más silenciosa.');
-  if((st.journal||'').length > 10) parts.push('Gracias por compartir tus reflexiones.');
+  if(journalText.length > 10) parts.push('Gracias por compartir tus reflexiones.');
   if(parts.length===0) parts.push('Vas muy bien: mantén pausas breves y celebra tus avances.');
   return parts.join(' ');
 }
