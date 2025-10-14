@@ -39,13 +39,19 @@ textarea{min-height:150px;resize:vertical}
 .divider{border:none;height:1px;background:#eee;margin:1.5rem 0}
 
 /* Onboarding */
-.carousel-shell{max-width:520px;margin:0 auto}
-.slides{display:flex;overflow:hidden}
-.slide{min-width:100%;transition:transform .5s ease;padding:1rem}
-.slide-image { max-width: 100%; height: 300px; object-fit: contain; margin-bottom: 1.5rem; border-radius: 12px;}
+.carousel-shell{max-width:520px;margin:0 auto; display: flex; flex-direction: column; height: calc(100vh - 4rem);} /* Ajuste para ocupar más altura */
+.slides{display:flex;overflow:hidden; flex-grow: 1; align-items: flex-start; /* Para que el contenido empiece arriba */ }
+.slide{min-width:100%;transition:transform .5s ease;padding:1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; height: 100%;}
+.slide-image { max-width: 100%; height: auto; max-height: 40%; object-fit: contain; margin-bottom: 1.5rem; border-radius: 12px;}
+.slide-text { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 1rem; }
 .dots{display:flex;gap:.5rem;justify-content:center;margin:1rem 0}
 .dots .dot{width:10px;height:10px;border-radius:50%;background:var(--green-light)}
 .dots .dot.active{background:var(--green-dark)}
+.intro-nav-buttons {
+  margin-top: auto; /* Empuja los botones hacia abajo del carousel-shell */
+  padding-bottom: 1rem; /* Espacio extra al final */
+}
+
 
 /* Pasos */
 .step-header{margin-bottom:1rem}
