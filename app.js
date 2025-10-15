@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const initComponents = [
     { name: 'Intro', func: initIntro },
+    { name: 'Tabs & Terms', func: initTabsTerms },
     { name: 'Auth Forms', func: initAuthForms },
     { name: 'Navigation', func: initNav },
     { name: 'Area', func: initArea },
@@ -110,16 +111,23 @@ function initIntro(){
   render();
 }
 
+function initTabsTerms(){
+  $('#authTabLogin')?.addEventListener('click',()=>toggleAuth('login'));
+  $('#authTabSignup')?.addEventListener('click',()=>toggleAuth('signup'));
+}
+
+function toggleAuth(which){
+  const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
+  if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
+  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
+  setAuthMessage('');
+}
+
 function initAuthForms(){
   const formLogin = $('#formLogin');
   const formSignup = $('#formSignup');
   const signupButton = $('#btnSignup');
   const termsCheckbox = $('#su_terms');
-  const authTabLogin = $('#authTabLogin');
-  const authTabSignup = $('#authTabSignup');
-
-  authTabLogin?.addEventListener('click',()=>toggleAuth('login'));
-  authTabSignup?.addEventListener('click',()=>toggleAuth('signup'));
 
   if (termsCheckbox && signupButton) {
       termsCheckbox.addEventListener('change', () => {
@@ -169,14 +177,6 @@ function initAuthForms(){
     });
   }
 }
-
-function toggleAuth(which){
-  const L=$('#formLogin'), S=$('#formSignup'), tL=$('#authTabLogin'), tS=$('#authTabSignup');
-  if(which==='login'){ L.style.display='block'; S.style.display='none'; tL.classList.add('active'); tS.classList.remove('active');}
-  else{ L.style.display='none'; S.style.display='block'; tS.classList.add('active'); tL.classList.remove('active');}
-  setAuthMessage('');
-}
-
 
 /*************** MODALES *****************/
 function initModals() {
