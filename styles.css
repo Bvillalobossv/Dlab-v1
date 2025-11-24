@@ -89,6 +89,29 @@ p.lead{
   margin:1.25rem auto;
 }
 
+/* Fila meta de la card (candado) */
+.card-meta-row{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:.4rem;
+}
+.privacy-lock{
+  border:none;
+  background:rgba(148,163,184,0.12);
+  border-radius:999px;
+  padding:.25rem .7rem;
+  font-size:.8rem;
+  display:inline-flex;
+  align-items:center;
+  gap:.25rem;
+  color:var(--text-light);
+  cursor:pointer;
+}
+.privacy-lock:hover{
+  background:rgba(124,140,255,0.12);
+  color:var(--primary);
+}
+
 /* Botones */
 .btn{
   background:var(--primary);
@@ -223,7 +246,7 @@ select:focus{
   object-fit:contain;
   margin-bottom:1.5rem;
 }
-.slide-text{/* texto manejado por layout */}
+.slide-text{}
 .intro-footer{
   flex-shrink:0;
 }

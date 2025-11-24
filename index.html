@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lia! · Check-in de bienestar</title>
 
-  <link rel="stylesheet" href="./styles.css?v=1.2" />
+  <link rel="stylesheet" href="./styles.css?v=1.3" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
@@ -58,6 +58,11 @@
     <h1>Lia!</h1>
     <p class="lead">Inicia sesión o crea tu cuenta para hacer tu check-in de bienestar.</p>
     <div class="card max-600">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-auth" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <div class="segmented">
         <button id="authTabLogin" class="segment active">Iniciar sesión</button>
         <button id="authTabSignup" class="segment">Crear cuenta</button>
@@ -98,6 +103,11 @@
   <!-- HOME -->
   <div id="screenHome" class="screen">
     <div class="card max-700 text-left">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-home" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <h2 id="welcome-user" style="text-align: center;">¡Hola!</h2>
       <p>
         Esta aplicación está pensada como un
@@ -110,11 +120,6 @@
         <li><strong>Ruido ambiental:</strong> Estimación de dB(A) en 5s.</li>
         <li><strong>Body Scan:</strong> Tensión en 3 zonas con resumen y gráfico.</li>
       </ul>
-
-      <p class="small muted">
-        <strong>Privacidad:</strong> El análisis de audio y rostro ocurre en tu dispositivo. Puedes borrar tus datos en
-        "Cerrar sesión".
-      </p>
 
       <hr class="divider">
 
@@ -133,6 +138,11 @@
       <p class="lead">Elige el área donde te desempeñas.</p>
     </div>
     <div class="card max-900">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-area" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <div id="areaGrid" class="area-grid">
         <button class="area-pill" data-area="Administración">💼 Administración</button>
         <button class="area-pill" data-area="TI">🧑‍💻 TI</button>
@@ -156,6 +166,11 @@
       <p class="lead">Una selfie rápida para comenzar.</p>
     </div>
     <div class="card max-900">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-face" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <video id="faceVideo" class="video" playsinline muted></video>
       <canvas id="faceCanvas" class="video" style="display:none"></canvas>
       <div class="stack-sm">
@@ -184,6 +199,11 @@
       <p class="lead">Permite el micrófono y busca un lugar estable.</p>
     </div>
     <div class="card max-700">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-noise" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <ul class="tips">
         <li>Mantén el móvil quieto.</li>
         <li>No cubras el micrófono.</li>
@@ -206,6 +226,11 @@
       <p class="lead">Mediremos 5 segundos y calcularemos el promedio.</p>
     </div>
     <div class="card max-900">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-noise" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <div class="gauge-wrapper">
         <canvas id="gaugeChart" width="280" height="180"></canvas>
         <div class="gauge-center">
@@ -268,6 +293,11 @@
       <p class="lead">Evalúa tu tensión (0 relajado — 10 tensión alta) y molestias.</p>
     </div>
     <div class="card max-900 text-left">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-body" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <h3>💆 Cabeza y cuello <span id="valHead" class="val-num">0/10</span></h3>
       <input id="bs_head" type="range" min="0" max="10" value="0">
       <div class="range-labels"><span>0</span><span>10</span></div>
@@ -313,6 +343,11 @@
       <p class="lead">Carga, ritmo y estrés de hoy.</p>
     </div>
     <div class="card max-700 text-left">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-context" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <div class="form-row">
         <label>Fecha y hora</label>
         <input id="ctx_datetime" type="text" disabled>
@@ -348,6 +383,11 @@
       </p>
     </div>
     <div class="card max-700">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-journal" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <textarea id="journal-input" placeholder="Escribe libremente… (opcional)"></textarea>
       <a href="#" class="open-modal-link" data-modal-id="modal-why-journal">¿Por qué medimos esto?</a>
     </div>
@@ -362,6 +402,11 @@
       <h2>Tu Informe de Bienestar</h2>
     </div>
     <div class="card max-900 report-card">
+      <div class="card-meta-row">
+        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-report" aria-label="Ver información de privacidad de esta pantalla">
+          🔒 <span>Privacidad</span>
+        </button>
+      </div>
       <div class="report-header">
         <div id="ix_score_circle" class="score-circle-large">--</div>
         <div class="report-title">
@@ -404,17 +449,118 @@
 
   <!-- MODALES -->
   <div id="modal-container">
+    <!-- TÉRMINOS GENERALES -->
     <div id="modal-terms" class="modal hidden">
       <div class="modal-card text-left">
         <button class="modal-close">✕</button>
         <h2>Términos y Condiciones</h2>
         <p><b>Finalidad.</b> Lia es una herramienta de bienestar, no un dispositivo médico. La información es orientativa y no sustituye atención profesional.</p>
         <p><b>Datos procesados.</b> Se usan cámara y micrófono para calcular emoción estimada, nivel de ruido y tensiones corporales. No guardamos audio/video crudo; sólo resultados agregados y tus comentarios voluntarios.</p>
-        <p><b>Privacidad.</b> Los datos se almacenan en Supabase y se asocian a tu cuenta. Puedes solicitar su eliminación. Aplicamos buenas prácticas de seguridad, aunque ningún sistema es infalible.</p>
+        <p><b>Privacidad.</b> Los datos se almacenan en Supabase y se asocian a tu cuenta. Tu organización puede solicitar la eliminación de tus registros según sus políticas internas. Aplicamos buenas prácticas de seguridad, aunque ningún sistema es infalible.</p>
         <p><b>Consentimiento.</b> Al usar Lia aceptas este tratamiento y el uso de almacenamiento local para sesión.</p>
       </div>
     </div>
 
+    <!-- PRIVACIDAD: AUTH -->
+    <div id="modal-privacy-auth" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en el inicio de sesión</h2>
+        <p>Tu cuenta en Lia se basa en un usuario y contraseña simples. Estos datos viajan cifrados mediante HTTPS (TLS) entre tu navegador y los servidores de Lia.</p>
+        <p>No utilizamos tus credenciales para ningún otro fin distinto a autenticarte. No se comparten con terceros ajenos a tu organización.</p>
+        <p>El acceso a los datos de bienestar está limitado a los perfiles autorizados por tu empresa (por ejemplo, el área de Personas o Bienestar) y se gestiona a través de Supabase, que cifra la información almacenada en la base de datos.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: HOME -->
+    <div id="modal-privacy-home" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>¿Cómo cuida Lia tus datos?</h2>
+        <p>Lia recoge sólo la información necesaria para construir tu índice de bienestar: emoción estimada, nivel de ruido, tensiones corporales, contexto laboral y, si quieres, tu comentario del día.</p>
+        <p>Los datos se envían de forma cifrada mediante HTTPS y se almacenan en Supabase, un servicio de base de datos con cifrado en reposo y controles de acceso basados en roles. Tu organización puede ver los resultados para acompañarte, pero no accede a tu cámara ni a tu micrófono en ningún momento.</p>
+        <p>El diseño de Lia busca que las decisiones se basen en <strong>tendencias y grupos</strong> más que en un único check-in aislado. Tus resultados se interpretan como una señal para ofrecer apoyo y no como un mecanismo de sanción.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: ÁREA -->
+    <div id="modal-privacy-area" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Tus datos por área de trabajo</h2>
+        <p>La selección de área (por ejemplo, Administración, TI u Operaciones) se utiliza para agrupar los resultados en los informes de la organización.</p>
+        <p>En los reportes para el empleador, los datos se analizan principalmente de forma <strong>agrupada por equipos de trabajo</strong>, por ejemplo “Equipo TI” o “Operaciones Centro”, para observar tendencias generales de bienestar.</p>
+        <p>El objetivo es entender cómo se sienten los distintos grupos y priorizar acciones de apoyo (como capacitaciones, cambios en el entorno o campañas internas), no monitorear a personas específicas por su área.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: SELFIE / FACE -->
+    <div id="modal-privacy-face" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en el análisis facial</h2>
+        <p>Cuando usas la selfie emocional, tu cámara se activa sólo en tu dispositivo. El análisis se realiza localmente con modelos de IA que corren en tu navegador (face-api.js).</p>
+        <p><strong>No se guarda ni se envía tu imagen</strong> a los servidores de Lia ni a tu empleador. Lo único que se almacena es una etiqueta de emoción estimada (por ejemplo, “neutral” o “alegre”) y un puntaje numérico asociado al estado anímico de ese momento.</p>
+        <p>Estos resultados viajan cifrados por HTTPS y se guardan en la base de datos como parte de tu check-in. Tu empleador nunca ve tu foto ni puede usarla para reconocimiento facial o identificación biométrica.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: RUIDO -->
+    <div id="modal-privacy-noise" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en la medición de ruido</h2>
+        <p>Al medir el ruido, Lia solicita acceso al micrófono sólo durante unos segundos para estimar el nivel de decibeles de tu entorno.</p>
+        <p><strong>No se graba audio ni se guarda tu voz.</strong> El sistema utiliza la señal sonora en tiempo real para calcular un promedio de dB(A) y luego descarta la muestra.</p>
+        <p>Lo único que se almacena es el valor numérico del nivel de ruido y una categoría (por ejemplo, “saludable” o “ruidoso”). Esa información se usa para entender si tu espacio favorece la concentración o puede generar estrés adicional.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: BODY SCAN -->
+    <div id="modal-privacy-body" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en el Body Scan</h2>
+        <p>El Body Scan se basa exclusivamente en lo que tú indicas: niveles de tensión entre 0 y 10 y posibles molestias en distintas zonas del cuerpo.</p>
+        <p>Guardamos estos valores como números y etiquetas de dolor auto-reportados, junto con la fecha y hora del check-in. No hay sensores externos ni mediciones médicas; es una herramienta de autoconciencia y prevención.</p>
+        <p>En los reportes, esta información se combina con otros indicadores para identificar tendencias (por ejemplo, aumento de tensión en espalda en un equipo específico) y proponer acciones de ergonomía o pausas activas.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: CONTEXTO -->
+    <div id="modal-privacy-context" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en la encuesta de contexto</h2>
+        <p>La encuesta de contexto recoge datos como horas trabajadas estimadas, carga, ritmo y nivel de estrés percibido en el día.</p>
+        <p>Estos datos se usan para interpretar mejor tu estado de bienestar (por ejemplo, diferenciar un día puntual de alta carga de una tendencia sostenida), y se combinan con otros indicadores para generar el índice final.</p>
+        <p>No están pensados como un sistema de control horario ni de productividad individual, sino como insumos para conversaciones de apoyo y ajustes organizacionales.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: JOURNAL -->
+    <div id="modal-privacy-journal" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en tu espacio de escritura</h2>
+        <p>El espacio de texto es totalmente opcional. Sirve para que puedas expresar con tus propias palabras cómo te sientes o qué está influyendo en tu día.</p>
+        <p>Lo que escribes se guarda asociado a tu check-in y puede ser visible para los roles autorizados en tu organización (por ejemplo, área de Personas o un equipo de bienestar). No se utiliza para evaluaciones de desempeño.</p>
+        <p>Si prefieres mantenerlo más general, puedes escribir de forma breve o simplemente dejar el campo vacío. Lia seguirá funcionando con los demás indicadores.</p>
+      </div>
+    </div>
+
+    <!-- PRIVACIDAD: INFORME FINAL -->
+    <div id="modal-privacy-report" class="modal hidden">
+      <div class="modal-card text-left">
+        <button class="modal-close">✕</button>
+        <h2>Privacidad en el informe final</h2>
+        <p>El informe de Lia combina diferentes señales (emoción estimada, ruido, tensión corporal y contexto) en un índice entre 0 y 100. Este índice se guarda junto con tus respuestas para construir tu historial de bienestar.</p>
+        <p>En los espacios para el empleador, los resultados se utilizan para identificar tendencias, priorizar equipos que necesitan apoyo y diseñar acciones preventivas. El foco está en la <strong>gestión del bienestar</strong>, no en sancionar a las personas.</p>
+        <p>Tu organización puede definir políticas internas para el tiempo de conservación de los datos y los procedimientos para solicitar su eliminación. Si tienes dudas, puedes consultarlas directamente con el área de Personas.</p>
+      </div>
+    </div>
+
+    <!-- EXPLICATIVOS "POR QUÉ MEDIMOS..." -->
     <div id="modal-why-face" class="modal hidden">
       <div class="modal-card text-left">
         <button class="modal-close">✕</button>
