@@ -659,3 +659,61 @@ function emotionToScore(e){
     default: return 60;
   }
 }
+// --- Asistente Lia flotante (UI local, sin API aún) ---
+(function initLiaAssistant(){
+  const btnToggle = document.getElementById('lia-assistant-toggle');
+  const panel = document.getElementById('lia-assistant-panel');
+  const btnClose = panel ? panel.querySelector('.lia-assistant-close') : null;
+  const form = document.getElementById('lia-assistant-form');
+  const input = document.getElementById('lia-assistant-input');
+  const messages = document.getElementById('lia-assistant-messages');
+
+  if (!btnToggle || !panel || !form || !input || !messages) return;
+
+  const togglePanel = (force) => {
+    const shouldShow = typeof force === 'boolean'
+      ? force
+      : panel.classList.contains('hidden');
+    if (shouldShow){
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  };
+
+  btnToggle.addEventListener('click', () => togglePanel());
+  if (btnClose){
+    btnClose.addEventListener('click', () => togglePanel(false));
+  }
+
+  const appendMessage = (type, text) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'lia-message ' + (type === 'user' ? 'lia-message-user' : 'lia-message-bot');
+    const bubble = document.createElement('div');
+    bubble.className = 'lia-message-bubble';
+    bubble.textContent = text;
+    wrapper.appendChild(bubble);
+    messages.appendChild(wrapper);
+    messages.scrollTop = messages.scrollHeight;
+  };
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = input.value.trim();
+    if (!value) return;
+
+    // Mensaje del usuario en el panel
+    appendMessage('user', value);
+
+    // Respuesta placeholder, mientras integramos la API de ChatGPT
+    setTimeout(() => {
+      appendMessage(
+        'bot',
+        'Gracias por escribir. Esta es una versión de prueba del asistente. ' +
+        'Pronto podrás recibir recomendaciones personalizadas de bienestar en tiempo real 💚.'
+      );
+    }, 300);
+
+    input.value = '';
+  });
+})();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lia! · Check-in de bienestar</title>
 
-  <link rel="stylesheet" href="./styles.css?v=1.3" />
+  <link rel="stylesheet" href="./styles.css?v=1.4" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
@@ -447,6 +447,48 @@
     </div>
   </div>
 
+  <!-- ASISTENTE LIA FLOTANTE -->
+  <button id="lia-assistant-toggle"
+          class="lia-assistant-btn"
+          aria-label="Abrir asistente de bienestar">
+    <img src="./images/lia-assistant.png" alt="Asistente Lia" />
+  </button>
+
+  <div id="lia-assistant-panel" class="lia-assistant-panel hidden">
+    <div class="lia-assistant-header">
+      <div class="lia-assistant-header-info">
+        <img src="./images/lia-assistant.png"
+             alt="Asistente Lia"
+             class="lia-assistant-avatar">
+        <div>
+          <h3>Lia · Asistente de bienestar</h3>
+          <p class="small muted">
+            Puedes hacer preguntas breves sobre tu bienestar laboral.
+          </p>
+        </div>
+      </div>
+      <button class="lia-assistant-close" aria-label="Cerrar asistente">✕</button>
+    </div>
+
+    <div id="lia-assistant-messages" class="lia-assistant-messages">
+      <div class="lia-message lia-message-bot">
+        <div class="lia-message-bubble">
+          ¡Hola! Soy Lia 😊. Puedo ayudarte a interpretar tu informe,
+          darte ideas de autocuidado y explicarte qué significa cada
+          medición. Cuéntame, ¿qué te gustaría saber hoy?
+        </div>
+      </div>
+    </div>
+
+    <form id="lia-assistant-form" class="lia-assistant-input-row">
+      <input id="lia-assistant-input"
+             type="text"
+             placeholder="Escribe tu pregunta..."
+             autocomplete="off" />
+      <button type="submit">Enviar</button>
+    </form>
+  </div>
+
   <!-- MODALES -->
   <div id="modal-container">
     <!-- TÉRMINOS GENERALES -->
@@ -599,6 +641,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=1.11"></script>
+  <script src="./app.js?v=1.12"></script>
 </body>
 </html>
