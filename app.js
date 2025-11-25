@@ -93,29 +93,61 @@ function onSignedOut(){ state.user=null; show('screenIntro'); }
 
 /*************** INTRO + AUTH *****************/
 function initIntro(){
-  const slides=$('#introSlides'), dots=$('#introDots');
-  const prev = $('#introPrev'), next = $('#introNext'), start = $('#introStart');
-  if(!slides || !prev || !next || !start) return;
+  const slidesContainer = $('#introSlides');
+  const dots = $('#introDots');
+  const prev = $('#introPrev');
+  const next = $('#introNext');
+  const start = $('#introStart');
 
-  const n=slides.children.length; let i=0;
-  const render=()=>{
-    slides.style.transform=`translateX(${-i*100}%)`;
-    dots.innerHTML='';
-    for(let k=0;k<n;k++){
-      const d=document.createElement('div');
-      d.className='dot'+(k===i?' active':'');
+  // Si por alguna razón falta algo, no hacemos nada
+  if (!slidesContainer || !prev || !next || !start || !dots) return;
+
+  // Todas las slides del carrusel
+  const slides = Array.from(slidesContainer.querySelectorAll('.slide'));
+  const n = slides.length;
+  let i = 0;
+
+  const render = () => {
+    // Mostrar SOLO la slide actual, ocultar el resto
+    slides.forEach((slide, idx) => {
+      slide.style.display = idx === i ? 'flex' : 'none';
+    });
+
+    // Actualizar los puntitos
+    dots.innerHTML = '';
+    for (let k = 0; k < n; k++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (k === i ? ' active' : '');
       dots.appendChild(d);
     }
-    prev.disabled=i===0;
-    next.style.display=i<n-1?'inline-block':'none';
-    start.style.display=i===n-1?'inline-block':'none';
+
+    // Botones
+    prev.disabled = i === 0;
+    next.style.display = i < n - 1 ? 'inline-block' : 'none';
+    start.style.display = i === n - 1 ? 'inline-block' : 'none';
   };
 
-  prev.onclick=()=>{ if(i>0){i--;render();} };
-  next.onclick=()=>{ if(i<n-1){i++;render();} };
-  start.onclick=()=>show('screenAuth');
+  prev.onclick = () => {
+    if (i > 0) {
+      i--;
+      render();
+    }
+  };
+
+  next.onclick = () => {
+    if (i < n - 1) {
+      i++;
+      render();
+    }
+  };
+
+  start.onclick = () => show('screenAuth');
+
+  // Estado inicial
   render();
 }
+
+
 
 function initTabsTerms(){
   $('#authTabLogin')?.addEventListener('click',()=>toggleAuth('login'));
