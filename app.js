@@ -3,6 +3,9 @@ const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
 let db = null;
 
+const LIA_BACKEND_URL = "https://lia-backend-idhc.onrender.com";
+// 👆 reemplaza por TU URL real de Render
+
 /*************** STATE  *****************/
 const state = {
   user: null,
@@ -659,7 +662,7 @@ function emotionToScore(e){
     default: return 60;
   }
 }
-// --- Asistente Lia flotante (UI local, sin API aún) ---
+// --- Asistente Lia flotante (con API) ---
 (function initLiaAssistant(){
   const btnToggle = document.getElementById('lia-assistant-toggle');
   const panel = document.getElementById('lia-assistant-panel');
@@ -697,23 +700,63 @@ function emotionToScore(e){
     messages.scrollTop = messages.scrollHeight;
   };
 
-  form.addEventListener('submit', (e) => {
+  // historial de conversación
+  let conversation = [
+    {
+      role: "assistant",
+      content: "Hola, soy Lia 😊. ¿En qué puedo ayudarte hoy?",
+    },
+  ];
+
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const value = input.value.trim();
     if (!value) return;
 
-    // Mensaje del usuario en el panel
     appendMessage('user', value);
-
-    // Respuesta placeholder, mientras integramos la API de ChatGPT
-    setTimeout(() => {
-      appendMessage(
-        'bot',
-        'Gracias por escribir. Esta es una versión de prueba del asistente. ' +
-        'Pronto podrás recibir recomendaciones personalizadas de bienestar en tiempo real 💚.'
-      );
-    }, 300);
-
     input.value = '';
+
+    // Guardamos el mensaje del usuario
+    conversation.push({ role: "user", content: value });
+
+    // Mensaje temporal de "pensando..."
+    const thinkingEl = document.createElement('div');
+    thinkingEl.className = 'lia-message lia-message-bot';
+    const bubble = document.createElement('div');
+    bubble.className = 'lia-message-bubble';
+    bubble.textContent = "Estoy pensando cómo ayudarte… 💭";
+    thinkingEl.appendChild(bubble);
+    messages.appendChild(thinkingEl);
+    messages.scrollTop = messages.scrollHeight;
+
+    try {
+      const resp = await fetch(LIA_BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: conversation }),
+      });
+
+      if (!resp.ok) {
+        throw new Error("Error HTTP " + resp.status);
+      }
+
+      const data = await resp.json();
+      const reply = data.reply?.content || "Lo siento, hubo un problema al responder. Inténtalo más tarde.";
+
+      // Quitamos el “pensando…”
+      messages.removeChild(thinkingEl);
+
+      appendMessage('bot', reply);
+
+      // Añadimos respuesta al historial
+      conversation.push({
+        role: "assistant",
+        content: reply,
+      });
+    } catch (err) {
+      console.error("Error llamando a Lia backend:", err);
+      messages.removeChild(thinkingEl);
+      appendMessage('bot', "Tuvimos un problema técnico para responder. Intenta de nuevo en unos minutos 🙏.");
+    }
   });
 })();
