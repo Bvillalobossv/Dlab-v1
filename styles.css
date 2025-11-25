@@ -298,9 +298,22 @@ select:focus{
 
 /* Selfie */
 .logo{
-  width:90px;
-  margin-bottom:.5rem;
+  width:64px;
+  margin:0;
 }
+.auth-header{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:.75rem;
+  margin-bottom:.25rem;
+}
+
+.auth-title{
+  /* opcional: pequeño ajuste por si quieres que se vea un poco más grande */
+  font-size:2.25rem;
+}
+
 .video{
   width:100%;
   max-width:460px;
