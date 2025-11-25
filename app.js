@@ -1,10 +1,11 @@
 /*************** SUPABASE  *****************/
 const SUPABASE_URL = "https://kdxoxusimqdznduwyvhl.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkeG94dXNpbXFkem5kdXd5dmhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk5MDc4NDgsImV4cCI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9....CI6MjA3NTQ4Mzg0OH0.sfa5iISRNYwwOQLzkSstWLMAqSRUSKJHCItDkgFkQvc";
 let db = null;
 
-const LIA_BACKEND_URL = "const LIA_BACKEND_URL = "https://lia-backend-idhc.onrender.com/api/lia-chat";
-// 👆 reemplaza por TU URL real de Render
+// 🌐 Backend de Lia (IA)
+const LIA_BACKEND_URL = "https://lia-backend-idhc.onrender.com/api/lia-chat";
+// 👆 URL EXACTA de tu servicio en Render + /api/lia-chat
 
 /*************** STATE  *****************/
 const state = {
@@ -16,6 +17,7 @@ const state = {
   contextSurvey: { hours: null, workload: 5, pace: 5, stress: 5 },
   journal: ''
 };
+
 
 /*************** UTILS  *****************/
 const $ = s => document.querySelector(s);
