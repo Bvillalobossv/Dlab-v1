@@ -72,17 +72,22 @@
 
 
     <!-- AUTH -->
+    <!-- AUTH -->
   <div id="screenAuth" class="screen">
-    <div class="auth-header">
-      <!-- ?v=2 fuerza a que cargue el logo nuevo y no el cacheado -->
-      <img src="./images/logo.png?v=2" alt="Lia!" class="logo" onerror="this.style.display='none'"/>
-      <h1 class="auth-title">Lia!</h1>
-    </div>
-    <p class="lead">Inicia sesión o crea tu cuenta para hacer tu check-in de bienestar.</p>
-    
+    <!-- Solo logo, sin texto Lia!, con cache-busting -->
+    <img src="./images/logo.png?v=3"
+         alt="Lia!"
+         class="logo"
+         onerror="this.style.display='none'" />
+
+    <p class="lead">
+      Inicia sesión o crea tu cuenta para hacer tu check-in de bienestar.
+    </p>
     <div class="card max-600">
       <div class="card-meta-row">
-        <button class="privacy-lock open-modal-link" data-modal-id="modal-privacy-auth" aria-label="Ver información de privacidad de esta pantalla">
+        <button class="privacy-lock open-modal-link"
+                data-modal="modal-auth-privacy"
+                aria-label="Ver información de privacidad de esta pantalla">
           🔒 <span>Privacidad</span>
         </button>
       </div>

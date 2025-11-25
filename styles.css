@@ -298,9 +298,10 @@ select:focus{
 
 /* Selfie */
 .logo{
-  width:64px;
-  margin:0;
+  width:90px;
+  margin-bottom:.5rem;
 }
+
 .auth-header{
   display:flex;
   align-items:center;
