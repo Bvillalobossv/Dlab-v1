@@ -13,6 +13,14 @@ app.use(express.json());
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+// Documento interno de gamificación para equipos (resumen)
+const GAMIFICACION_KNOWLEDGE = `
+[AQUÍ pega, aunque sea breve, el resumen o puntos clave del archivo "Gamificación-Equipos":
+- cómo clasificas riesgo alto / medio / bajo
+- ideas de dinámicas o juegos
+- recomendaciones generales para equipos según su situación
+Puedes dejar un texto corto por ahora y después lo refinamos.]
+`;
 
 // Ruta para el chat de Lia
 app.post("/api/lia-chat", async (req, res) => {
@@ -65,6 +73,52 @@ Tu prioridad siempre es ayudar a la persona a entender mejor su resultado y darl
     return res.status(500).json({
       error: "Error al generar respuesta. Inténtalo de nuevo en unos minutos.",
     });
+  }
+});
+
+// Ruta para el asistente de gamificación del empleador (Lia Coach)
+app.post("/api/employer-assistant", async (req, res) => {
+  try {
+    const { messages } = req.body;
+
+    const chatMessages = [
+      {
+        role: "system",
+        content: `
+Eres "Lia Coach", un asistente de gamificación y bienestar para empleadores y líderes de equipo.
+Siempre respondes en ESPAÑOL, con tono cercano pero profesional.
+
+Tu contexto principal es el siguiente documento interno de la empresa sobre gamificación de equipos:
+${GAMIFICACION_KNOWLEDGE}
+
+REGLAS:
+- Da recomendaciones específicas según el nivel de riesgo del equipo (alto, medio, bajo) y su tendencia (mejorando, estable, empeorando).
+- Propón acciones prácticas y alcanzables en el contexto laboral (logística, oficinas, etc.).
+- Explica brevemente por qué recomiendas cada acción.
+- Si el usuario menciona datos del dashboard (promedios, tendencias, áreas), utilízalos para ajustar tus sugerencias.
+- Si la pregunta no está relacionada con gamificación o bienestar de equipos, responde brevemente y redirige el foco al tema principal.
+        `.trim(),
+      },
+      // Historial que viene del frontend
+      ...messages.map((m) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: m.content,
+      })),
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4.1-mini", // mismo modelo que el bot del trabajador
+      messages: chatMessages,
+      temperature: 0.7,
+    });
+
+    const reply =
+      completion.choices[0]?.message?.content ??
+      "No tengo una respuesta clara en este momento, revisemos más contexto del equipo.";
+    res.json({ reply });
+  } catch (error) {
+    console.error("Error en /api/employer-assistant:", error);
+    res.status(500).json({ error: "Error interno en Lia Coach" });
   }
 });
 
