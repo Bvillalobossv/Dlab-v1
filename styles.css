@@ -230,14 +230,14 @@ select:focus{
   flex:1;
 }
 .slide{
-  min-width:100%;
-  transition:transform .5s ease;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-  padding:1rem;
+  flex: 0 0 100%;
+  padding: 2rem 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
 }
 .slide-image{
   display:block;
