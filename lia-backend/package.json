@@ -1,0 +1,19 @@
+{
+  "name": "lia-backend",
+  "version": "1.0.0",
+  "description": "Backend de Lia, asistente de bienestar",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "openai": "^6.9.1"
+  }
+}
