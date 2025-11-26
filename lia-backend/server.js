@@ -139,6 +139,7 @@ REGLAS IMPORTANTES:
 
 
 
+
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Lia backend escuchando en http://localhost:${port}`);
