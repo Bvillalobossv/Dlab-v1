@@ -231,9 +231,10 @@ INSTRUCCIÓN: Como Lia Coach, analiza estos números. Si el estrés es alto (>5)
 // RUTA: Chat TRABAJADOR
 // ========================
 app.post("/api/lia-chat", async (req, res) => {
-  const { messages, workerId } = req.body;
+  const { messages, workerId, userName } = req.body;
 
   console.log("🔍 DIAGNÓSTICO CHAT -> ID Recibido:", workerId);
+  console.log("👤 Nombre usuario:", userName || "Sin nombre");
   console.log("📨 Mensajes recibidos:", messages?.length || 0);
   
   if (!Array.isArray(messages)) {
@@ -257,12 +258,15 @@ app.post("/api/lia-chat", async (req, res) => {
       console.warn("⚠️ No se recibió workerId");
     }
 
+    const userGreeting = userName ? `${userName}` : "Usuario";
+
     const chatMessages = [
       {
         role: "system",
         content: `
-Eres "Lia", compañera de bienestar IA.
-Tono: Cálido, empático, breve y en ESPAÑOL de Chile (neutro).
+Eres "Lia", compañera de bienestar IA del usuario ${userGreeting}.
+Tono: Cálido, empático, breve, personal y en ESPAÑOL de Chile (neutro).
+IMPORTANTE: Siempre saluda al usuario por su nombre "${userGreeting}" de forma natural en tu primera respuesta.
 
 INFORMACIÓN DEL USUARIO:
 ${systemData}

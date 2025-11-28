@@ -822,6 +822,11 @@ function emotionToScore(e){
       let url = LIA_BACKEND_URL;
       let body = { messages: conversation };
 
+      // Obtener nombre del usuario para personalización
+      const userName = (state.user?.user_metadata?.username) || 
+                       (state.user?.email?.split('@')[0]) || 
+                       'Usuario';
+
       if (isEmployer) {
         // Si es empleador, usar el endpoint de coach y enviar teamName
         url = LIA_EMPLOYER_URL;
@@ -830,7 +835,8 @@ function emotionToScore(e){
       } else {
         // Si es trabajador, usar el endpoint normal y enviar workerId
         body.workerId = getCurrentWorkerId();
-        console.log("[CHAT] Enviando como TRABAJADOR:", { workerId: body.workerId, url });
+        body.userName = userName; // Agregar nombre para personalización
+        console.log("[CHAT] Enviando como TRABAJADOR:", { workerId: body.workerId, userName, url });
       }
 
       console.log("[CHAT] Body final:", body);
