@@ -10,9 +10,11 @@ const API_BASE_URL =
   window.location.hostname.includes("localhost")
     ? "http://localhost:3000"
     : "https://lia-backend-idhc.onrender.com";
+ 
 
 const LIA_BACKEND_URL = `${API_BASE_URL}/api/lia-chat`;
-// 👆 backend Lia (trabajador)
+const LIA_EMPLOYER_URL = `${API_BASE_URL}/api/employer-assistant`;
+// 👆 backend Lia (trabajador y empleador)
 
 // Helper para obtener el ID del trabajador que se guarda al loguearse
 function getCurrentWorkerId() {
@@ -22,6 +24,16 @@ function getCurrentWorkerId() {
     (state.user && state.user.id) ||
     null
   );
+}
+
+// Helper para obtener el equipo/departamento del usuario (si es empleador)
+function getCurrentTeamName() {
+  return state.context?.area || null;
+}
+
+// Helper para detectar si el usuario actual es un empleador (tiene un equipo/departamento asignado)
+function isCurrentUserEmployer() {
+  return getCurrentTeamName() !== null;
 }
 
 
@@ -786,15 +798,24 @@ function emotionToScore(e){
     messages.scrollTop = messages.scrollHeight;
 
     try {
-      const workerId = getCurrentWorkerId();
+      // Detectar si el usuario es empleador o trabajador
+      const isEmployer = isCurrentUserEmployer();
+      let url = LIA_BACKEND_URL;
+      let body = { messages: conversation };
 
-      const resp = await fetch(LIA_BACKEND_URL, {
+      if (isEmployer) {
+        // Si es empleador, usar el endpoint de coach y enviar teamName
+        url = LIA_EMPLOYER_URL;
+        body.teamName = getCurrentTeamName();
+      } else {
+        // Si es trabajador, usar el endpoint normal y enviar workerId
+        body.workerId = getCurrentWorkerId();
+      }
+
+      const resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: conversation, // historial simple de la conversación
-          workerId,               // <-- clave para que el backend lea Supabase
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!resp.ok) {
