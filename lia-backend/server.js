@@ -71,7 +71,10 @@ async function getWorkerContextFromSupabase(workerId) {
 
     const { data, error } = await supabase
       .from("measurements")
-      .select("created_at, global_score, risk_level")
+      // ANTES:
+      // .select("created_at, global_score, risk_level")
+      // DESPUÉS (👈 CAMBIA ESTA LÍNEA):
+      .select("created_at, combined_score as global_score, risk_level")
       .eq("user_id_uuid", workerId)
       .order("created_at", { ascending: false })
       .limit(8);
@@ -91,12 +94,14 @@ async function getWorkerContextFromSupabase(workerId) {
     const scores = data
       .map((m) => m.global_score)
       .filter((s) => typeof s === "number");
+
     const avg =
       scores.length > 0
         ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
         : null;
 
-    const lastScore = typeof last.global_score === "number" ? last.global_score : avg;
+    const lastScore =
+      typeof last.global_score === "number" ? last.global_score : avg;
     const risk = last.risk_level || scoreToRisk(lastScore);
     const trend = getTrendText(lastScore, prev?.global_score);
 
@@ -112,6 +117,7 @@ Si la pregunta es "¿cómo he estado estos días?" o similar, deberás responder
     return null;
   }
 }
+
 
 // ========================
 // Supabase: equipo (empleador)
@@ -140,10 +146,10 @@ async function getTeamContextFromSupabase(teamName) {
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const { data: measurements, error: errorMeas } = await supabase
-      .from("measurements")
-      .select("user_id_uuid, created_at, global_score, risk_level")
-      .in("user_id_uuid", userIds)
-      .gte("created_at", oneWeekAgo.toISOString());
+  .from("measurements")
+  .select("user_id_uuid, created_at, combined_score as global_score, risk_level");
+  // si quieres seguir filtrando por fecha, agrega el .gte como lo tenías
+
 
     if (errorMeas) {
       console.error("[team] Error leyendo measurements:", errorMeas);
