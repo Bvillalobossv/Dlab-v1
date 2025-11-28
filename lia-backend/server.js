@@ -10,6 +10,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const KNOWN_TEAMS = ["Operaciones", "Ventas", "Administración", "TI", "Marketing", "Salud"];
+
+function detectTeamFromText(text) { ... }
+
+async function getTeamMetricsFromSupabase(teamName) { ... }
+
 dotenv.config();
 
 const app = express();
