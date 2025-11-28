@@ -327,22 +327,21 @@ Puedes hacer 1 pregunta breve al final sólo si realmente ayuda a orientar mejor
       ...messages,
     ];
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: chatMessages,
-      temperature: 0.6,
-      max_tokens: 400,
-    });
-
-    const reply = completion.choices[0]?.message;
-    return res.json({ reply });
-  } catch (err) {
-    console.error("Error en /api/lia-chat:", err);
-    return res.status(500).json({
-      error: "Error al generar respuesta. Inténtalo de nuevo en unos minutos.",
-    });
-  }
+   const completion = await openai.chat.completions.create({
+  model: "gpt-4.1-mini",
+  messages: chatMessages,
+  temperature: 0.6,
+  max_tokens: 400,
 });
+
+const replyMessage = completion.choices[0]?.message;
+const replyText =
+  replyMessage?.content ||
+  "Lo siento, no pude generar una respuesta en este momento.";
+
+// 👇 devolvemos SÓLO el texto
+return res.json({ reply: replyText });
+
 
 // -----------------------------
 // Ruta: Asistente empleador (Lia Coach)
@@ -419,19 +418,19 @@ Recuerda: eres una herramienta para que el líder sepa **qué hacer esta semana*
     ];
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: chatMessages,
-      temperature: 0.4,
-      max_tokens: 400,
-    });
-
-    const reply = completion.choices[0]?.message;
-    res.json({ reply });
-  } catch (error) {
-    console.error("Error en /api/employer-assistant:", error);
-    res.status(500).json({ error: "Error interno en Lia Coach" });
-  }
+  model: "gpt-4.1-mini",
+  messages: chatMessages,
+  temperature: 0.4,
+  max_tokens: 400,
 });
+
+const replyMessage = completion.choices[0]?.message;
+const replyText =
+  replyMessage?.content ||
+  "Lo siento, no pude generar una respuesta en este momento.";
+
+// 👇 igual que antes, sólo texto
+res.json({ reply: replyText });
 
 // -----------------------------
 // Healthcheck
