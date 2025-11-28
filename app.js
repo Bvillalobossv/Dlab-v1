@@ -18,12 +18,23 @@ const LIA_EMPLOYER_URL = `${API_BASE_URL}/api/employer-assistant`;
 
 // Helper para obtener el ID del trabajador que se guarda al loguearse
 function getCurrentWorkerId() {
-  return (
-    localStorage.getItem("worker_id_uuid") ||
-    localStorage.getItem("supabase_user_id") ||
-    (state.user && state.user.id) ||
-    null
-  );
+  // Intenta obtener del localStorage primero
+  let id = localStorage.getItem("worker_id_uuid") || localStorage.getItem("supabase_user_id");
+  
+  // Si no está en localStorage, obtiene del state.user (sesión actual)
+  if (!id && state.user && state.user.id) {
+    id = state.user.id;
+    // Opcionalmente, guarda en localStorage para futuras referencias
+    localStorage.setItem("supabase_user_id", id);
+  }
+  
+  if (!id) {
+    console.warn("[getCurrentWorkerId] ⚠️ No se pudo obtener UUID del usuario");
+  } else {
+    console.log("[getCurrentWorkerId] ✅ UUID obtenido:", id);
+  }
+  
+  return id || null;
 }
 
 // Helper para obtener el equipo/departamento del usuario (si es empleador)
@@ -111,6 +122,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 /*************** SESSION  *****************/
 async function onSignedIn(user){
   state.user=user;
+  
+  // Guardar el UUID del usuario en localStorage para enviarlo al chat
+  if (user?.id) {
+    localStorage.setItem("supabase_user_id", user.id);
+    console.log("[AUTH] ✅ Usuario logueado con UUID:", user.id);
+    console.log("[AUTH] Email/Username:", user.email || user.user_metadata?.username);
+  }
+  
   const name=(user?.user_metadata?.username)||(user?.email?.split('@')[0])||'Usuario';
   const welcomeUser = $('#welcome-user');
   if (welcomeUser) {
@@ -807,10 +826,14 @@ function emotionToScore(e){
         // Si es empleador, usar el endpoint de coach y enviar teamName
         url = LIA_EMPLOYER_URL;
         body.teamName = getCurrentTeamName();
+        console.log("[CHAT] Enviando como EMPLEADOR:", { teamName: body.teamName, url });
       } else {
         // Si es trabajador, usar el endpoint normal y enviar workerId
         body.workerId = getCurrentWorkerId();
+        console.log("[CHAT] Enviando como TRABAJADOR:", { workerId: body.workerId, url });
       }
+
+      console.log("[CHAT] Body final:", body);
 
       const resp = await fetch(url, {
         method: "POST",
@@ -850,3 +873,25 @@ function emotionToScore(e){
     }
   });
 })();
+
+// ========================
+// DEBUG HELPERS
+// ========================
+window.DEBUG_LIA = {
+  checkUserData: () => {
+    console.log("=== DEBUG USER DATA ===");
+    console.log("Current User ID:", getCurrentWorkerId());
+    console.log("Current Team Name:", getCurrentTeamName());
+    console.log("Is Employer:", isCurrentUserEmployer());
+    console.log("State User:", state.user);
+    console.log("State Context:", state.context);
+    console.log("LocalStorage supabase_user_id:", localStorage.getItem("supabase_user_id"));
+  },
+  clearLocalStorage: () => {
+    localStorage.clear();
+    console.log("✅ LocalStorage limpiado");
+  }
+};
+
+console.log("💡 Usa window.DEBUG_LIA.checkUserData() en la consola para verificar datos de usuario");
+console.log("💡 Usa window.DEBUG_LIA.clearLocalStorage() si necesitas resetear el localStorage");
