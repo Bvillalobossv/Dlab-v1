@@ -5,65 +5,37 @@ import dotenv from "dotenv";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 
-// 1) Cargar variables de entorno
+// ========================
+// Configuración básica
+// ========================
 dotenv.config();
 
-// 2) Inicializar Supabase de forma segura
+const app = express();
+app.use(cors({ origin: "*" }));
+app.use(express.json());
+
+// OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+// Supabase (service role, SOLO en el backend)
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let supabase = null;
 if (!supabaseUrl || !supabaseServiceRoleKey) {
   console.warn(
-    "⚠️ SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no están definidas. El backend funcionará sin leer datos del dashboard."
+    "[LIA BACKEND] Falta SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en las variables de entorno."
   );
 } else {
   supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 }
 
-// 3) Inicializar Express y OpenAI
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// -----------------------------
-// Helpers comunes
-// -----------------------------
-
-// Equipos conocidos (coinciden con profiles.department)
-const KNOWN_TEAMS = [
-  "Operaciones",
-  "Ventas",
-  "Administración",
-  "TI",
-  "Marketing",
-  "Salud",
-];
-
-function detectTeamFromText(text) {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-  for (const team of KNOWN_TEAMS) {
-    if (lower.includes(team.toLowerCase())) return team;
-  }
-  return null;
-}
-
-const isValidNumber = (n) =>
-  typeof n === "number" && !Number.isNaN(n);
-
-function average(nums) {
-  const filtered = nums.filter(isValidNumber);
-  if (!filtered.length) return null;
-  const sum = filtered.reduce((a, b) => a + b, 0);
-  return Number((sum / filtered.length).toFixed(1));
-}
-
-function formatDate(dateStr) {
+// ========================
+// Helpers
+// ========================
+function formatDateEs(dateStr) {
   if (!dateStr) return "sin fecha";
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return dateStr;
@@ -76,253 +48,195 @@ function formatDate(dateStr) {
   });
 }
 
-// -----------------------------
-// Supabase: contexto trabajador
-// -----------------------------
+function getTrendText(lastScore, prevScore) {
+  if (prevScore == null) return "Sin tendencia clara (pocos datos).";
+  if (lastScore > prevScore + 5) return "Tendencia al alza.";
+  if (lastScore < prevScore - 5) return "Tendencia a la baja.";
+  return "Tendencia estable.";
+}
+
+function scoreToRisk(score) {
+  if (score == null) return "desconocido";
+  if (score >= 75) return "riesgo bajo";
+  if (score >= 50) return "riesgo medio";
+  return "riesgo alto";
+}
+
+// ========================
+// Supabase: trabajador
+// ========================
 async function getWorkerContextFromSupabase(workerId) {
   try {
     if (!supabase || !workerId) return null;
 
     const { data, error } = await supabase
       .from("measurements")
-      .select("*")
+      .select("created_at, global_score, risk_level")
       .eq("user_id_uuid", workerId)
       .order("created_at", { ascending: false })
-      .limit(1);
+      .limit(8);
 
     if (error) {
-      console.error("Error leyendo measurements (worker):", error);
+      console.error("[worker] Error leyendo measurements:", error);
       return null;
     }
 
-    if (!data || data.length === 0) return null;
+    if (!data || data.length === 0) {
+      return null;
+    }
 
-    const row = data[0];
+    const last = data[0];
+    const prev = data[1];
 
-    const resumen = `
-Trabajador: ${workerId}
-Fecha última medición: ${formatDate(row.created_at)}
-Score combinado (0–100): ${row.combined_score ?? "N/D"}
-Emoción facial detectada: ${row.face_emotion ?? "N/D"}
-Ruido ambiente (dB): ${row.noise_db ?? "N/D"}
-Body scan promedio: ${row.body_scan_avg ?? "N/D"}
-Nivel de estrés reportado (1–10): ${row.stress_level ?? "N/D"}
-Carga de trabajo percibida (1–10): ${row.workload_level ?? "N/D"}
-Ritmo de trabajo percibido (1–10): ${row.work_pace_level ?? "N/D"}
-Entrada de diario (si existe): ${row.journal_entry ?? "sin registro"}
-`.trim();
+    const scores = data
+      .map((m) => m.global_score)
+      .filter((s) => typeof s === "number");
+    const avg =
+      scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
 
-    return resumen;
+    const lastScore = typeof last.global_score === "number" ? last.global_score : avg;
+    const risk = last.risk_level || scoreToRisk(lastScore);
+    const trend = getTrendText(lastScore, prev?.global_score);
+
+    return `
+Datos recientes del trabajador:
+- Última medición: ${formatDateEs(last.created_at)}.
+- Puntaje global último registro: ${lastScore ?? "sin dato"} (riesgo ${risk}).
+- Promedio últimos ${scores.length} registros: ${avg ?? "sin dato"}.
+- ${trend}
+Si la pregunta es "¿cómo he estado estos días?" o similar, deberás responder con base en este historial.`;
   } catch (err) {
-    console.error("Excepción en getWorkerContextFromSupabase:", err);
+    console.error("[worker] Excepción leyendo contexto:", err);
     return null;
   }
 }
 
-// -----------------------------
-// Supabase: métricas por equipo
-// -----------------------------
-async function getTeamMetricsFromSupabase(teamName) {
+// ========================
+// Supabase: equipo (empleador)
+// ========================
+async function getTeamContextFromSupabase(teamName) {
   try {
-    if (!supabase) {
-      console.warn(
-        "Supabase no inicializado; devolviendo null en getTeamMetricsFromSupabase"
-      );
-      return null;
-    }
+    if (!supabase || !teamName) return null;
 
-    // 1) Buscar personas del equipo en profiles
+    // 1) obtener ids de personas del equipo
     const { data: profiles, error: errorProfiles } = await supabase
       .from("profiles")
       .select("id")
       .eq("department", teamName);
 
     if (errorProfiles) {
-      console.error("Error leyendo profiles (equipo):", errorProfiles);
+      console.error("[team] Error leyendo profiles:", errorProfiles);
       return null;
     }
 
-    if (!profiles || profiles.length === 0) {
-      return null;
-    }
+    if (!profiles || profiles.length === 0) return null;
 
     const userIds = profiles.map((p) => p.id);
 
-    // 2) Medidas de esos usuarios
+    // 2) mediciones recientes de esos usuarios (últimos 7 días)
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
     const { data: measurements, error: errorMeas } = await supabase
       .from("measurements")
-      .select("*")
-      .in("user_id_uuid", userIds);
+      .select("user_id_uuid, created_at, global_score, risk_level")
+      .in("user_id_uuid", userIds)
+      .gte("created_at", oneWeekAgo.toISOString());
 
     if (errorMeas) {
-      console.error("Error leyendo measurements (equipo):", errorMeas);
+      console.error("[team] Error leyendo measurements:", errorMeas);
       return null;
     }
 
-    if (!measurements || measurements.length === 0) {
-      return null;
-    }
+    if (!measurements || measurements.length === 0) return null;
 
-    // 3) Última medición por persona
+    // última medición por persona
     const lastByUser = {};
     for (const m of measurements) {
-      const uid = m.user_id_uuid;
-      if (!uid) continue;
-      if (!lastByUser[uid]) {
-        lastByUser[uid] = m;
-      } else if (
-        new Date(m.created_at) > new Date(lastByUser[uid].created_at)
-      ) {
-        lastByUser[uid] = m;
+      const current = lastByUser[m.user_id_uuid];
+      if (!current || new Date(m.created_at) > new Date(current.created_at)) {
+        lastByUser[m.user_id_uuid] = m;
       }
     }
 
-    const lastMeasurements = Object.values(lastByUser);
-    const personasConMedicion = lastMeasurements.length;
-    const todasFechas = lastMeasurements.map((m) => m.created_at);
-    const lastDate =
-      todasFechas.length > 0
-        ? formatDate(
-            todasFechas.reduce((a, b) =>
-              new Date(a) > new Date(b) ? a : b
-            )
-          )
-        : "sin fecha";
+    const lastList = Object.values(lastByUser);
 
-    const scores = lastMeasurements.map((m) => m.combined_score);
-    const avgScore = average(scores);
+    const scores = lastList
+      .map((m) => m.global_score)
+      .filter((s) => typeof s === "number");
 
-    const stressVals = lastMeasurements.map((m) => m.stress_level);
-    const avgStress = average(stressVals);
+    const avg =
+      scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
 
-    const workloadVals = lastMeasurements.map(
-      (m) => m.workload_level
-    );
-    const avgWorkload = average(workloadVals);
+    const risk = scoreToRisk(avg);
+    const totalPeople = lastList.length;
 
-    const noiseVals = lastMeasurements.map((m) => m.noise_db);
-    const avgNoise = average(noiseVals);
+    return `
+Datos recientes del equipo "${teamName}":
+- Personas con mediciones esta semana: ${totalPeople}.
+- Puntaje global promedio último registro por persona: ${avg ?? "sin dato"} (riesgo ${risk}).
+- Rango de fechas consideradas: desde ${formatDateEs(oneWeekAgo.toISOString())} hasta hoy.
 
-    // Emoción predominante
-    const emotionCounts = {};
-    for (const m of lastMeasurements) {
-      const e = m.face_emotion || "sin_dato";
-      emotionCounts[e] = (emotionCounts[e] || 0) + 1;
-    }
-    const dominantEmotion =
-      Object.keys(emotionCounts).reduce((a, b) =>
-        emotionCounts[a] >= emotionCounts[b] ? a : b
-      ) || "sin_dato";
-
-    // Nivel de riesgo según score promedio
-    let riskLevel = "Sin datos";
-    if (isValidNumber(avgScore)) {
-      if (avgScore < 60) riskLevel = "Alto";
-      else if (avgScore < 75) riskLevel = "Medio";
-      else riskLevel = "Bajo";
-    }
-
-    // 4) Última nota de RRHH para alguien del equipo
-    let lastHrNoteText = null;
-    if (userIds.length > 0) {
-      const { data: hrNotes, error: hrError } = await supabase
-        .from("hr_notes")
-        .select("*")
-        .in("employee_id", userIds)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (hrError) {
-        console.error("Error leyendo hr_notes:", hrError);
-      } else if (hrNotes && hrNotes.length > 0) {
-        lastHrNoteText = hrNotes[0].note_text;
-      }
-    }
-
-    const resumen = `
-Equipo: ${teamName}
-Personas en el equipo (profiles): ${profiles.length}
-Personas con al menos una medición: ${personasConMedicion}
-Fecha de la última medición registrada: ${lastDate}
-Score combinado promedio (últimos registros, 0–100): ${
-      avgScore ?? "N/D"
-    }
-Nivel de riesgo estimado: ${riskLevel}
-Emoción predominante en el último registro por persona: ${dominantEmotion}
-Promedio de estrés auto-reportado (1–10): ${avgStress ?? "N/D"}
-Promedio de carga de trabajo percibida (1–10): ${avgWorkload ?? "N/D"}
-Promedio de ruido ambiental (dB): ${avgNoise ?? "N/D"}
-Última nota de RRHH relacionada: ${
-      lastHrNoteText ? `"${lastHrNoteText}"` : "sin notas recientes"
-    }
-`.trim();
-
-    return resumen;
+Cuando el usuario pregunte "¿cómo ha estado el equipo de ${teamName}?" o similar,
+describe el nivel de riesgo (bajo/medio/alto) con base en estos datos
+y luego sugiere acciones concretas para el líder.`;
   } catch (err) {
-    console.error("Excepción en getTeamMetricsFromSupabase:", err);
+    console.error("[team] Excepción leyendo contexto:", err);
     return null;
   }
 }
 
-// -----------------------------
-// Ruta: Chat app trabajador
-// -----------------------------
+// ========================
+// RUTA: Chat trabajador
+// ========================
 app.post("/api/lia-chat", async (req, res) => {
-  const { messages, workerId } = req.body; // workerId opcional
+  const { messages, workerId } = req.body;
 
-  if (!messages || !Array.isArray(messages)) {
+  if (!Array.isArray(messages)) {
     return res
       .status(400)
-      .json({ error: "messages es requerido y debe ser un arreglo" });
+      .json({ error: '"messages" es requerido y debe ser un arreglo.' });
   }
 
   try {
-    let workerSummary = "";
+    let workerSummary =
+      "No se entregó un identificador de trabajador. Usa sólo la información de la conversación y la escala de bienestar general.";
+
     if (workerId) {
-      const supabaseWorkerContext = await getWorkerContextFromSupabase(
-        workerId
-      );
+      const supabaseWorkerContext = await getWorkerContextFromSupabase(workerId);
       if (supabaseWorkerContext) {
         workerSummary = supabaseWorkerContext;
       } else {
         workerSummary =
-          "No se encontraron datos recientes en la base para este trabajador. Responde usando la escala de bienestar general y supuestos razonables.";
+          "No se encontraron datos recientes en Supabase para este trabajador. Responde usando la escala de bienestar general y supuestos razonables (riesgo MEDIO por defecto).";
       }
-    } else {
-      workerSummary =
-        "No se entregó un identificador de trabajador. Usa sólo la información de la conversación y la escala de bienestar general.";
     }
 
     const chatMessages = [
       {
         role: "system",
         content: `
-Eres **Lia**, una asistente digital de bienestar laboral.
+Eres "Lia", una asistente de bienestar para PERSONAS TRABAJADORAS.
+Siempre respondes en ESPAÑOL, con tono cercano, empático y sencillo.
 
-CONTEXTO DE DATOS:
-- Tienes este resumen (si existe) sobre la última medición del trabajador:
+CONTEXTO DE DATOS DEL TRABAJADOR:
 ---
 ${workerSummary}
 ---
-- La app mide rostro (emociones), ruido ambiental, body scan y una encuesta de contexto laboral, y calcula un **score combinado de 0 a 100**.
 
-TU ESTILO:
-- Responde SIEMPRE en ESPAÑOL, con tono cercano, cálido y profesional.
-- Usa 3 a 6 frases como máximo, salvo que el usuario pida más detalle.
+TU OBJETIVO:
+- Ayudar a la persona a entender CÓMO HA ESTADO estos días.
+- Dar 1 frase de lectura emocional y 2–3 recomendaciones prácticas muy simples.
 
-INTERPRETACIÓN DEL SCORE COMBINADO:
-- 85–100: bienestar muy bueno → refuerza hábitos positivos.
-- 70–84: bienestar bueno → sugiere pequeños ajustes preventivos.
-- 50–69: zona intermedia → hay señales leves de alerta; propone acciones concretas.
-- 0–49: zona de cuidado → anima a pedir apoyo, bajar exigencias si se puede y consultar a un profesional si el malestar es intenso o sostenido.
-
-OBJETIVO EN CADA RESPUESTA:
-1) Ayudar a entender el resultado o cómo se siente la persona.
-2) Proponer 2 o 3 recomendaciones prácticas (físicas, mentales o emocionales).
-3) Si hay síntomas fuertes o ideas de hacerse daño, anima a buscar ayuda profesional. No diagnostiques enfermedades.
-
-Puedes hacer 1 pregunta breve al final sólo si realmente ayuda a orientar mejor las recomendaciones.
-      `.trim(),
+REGLAS:
+- No des diagnósticos clínicos ni hables de enfermedades.
+- No uses lenguaje técnico.
+- Mantén la respuesta entre 3 y 5 frases máximo.
+- Si los datos muestran tendencia negativa o riesgo alto, sugiere hablar con su jefatura o bienestar de la empresa si existe.`,
       },
       ...messages,
     ];
@@ -330,54 +244,45 @@ Puedes hacer 1 pregunta breve al final sólo si realmente ayuda a orientar mejor
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: chatMessages,
-      temperature: 0.6,
-      max_tokens: 400,
+      temperature: 0.5,
+      max_tokens: 300,
     });
 
     const replyMessage = completion.choices[0]?.message;
     const replyText =
-      replyMessage?.content ||
+      replyMessage?.content?.trim() ||
       "Lo siento, no pude generar una respuesta en este momento.";
 
     return res.json({ reply: replyText });
-  } catch (err) {
-    console.error("Error en /api/lia-chat:", err);
-    return res.status(500).json({
-      error: "Error al generar respuesta. Inténtalo de nuevo en unos minutos.",
-    });
+  } catch (error) {
+    console.error("Error en /api/lia-chat:", error);
+    return res
+      .status(500)
+      .json({ error: "Error interno en Lia (trabajador)." });
   }
 });
 
-// -----------------------------
-// Ruta: Asistente empleador (Lia Coach)
-// -----------------------------
+// ========================
+// RUTA: Chat empleador
+// ========================
 app.post("/api/employer-assistant", async (req, res) => {
+  const { messages, teamName } = req.body;
+
+  if (!Array.isArray(messages)) {
+    return res
+      .status(400)
+      .json({ error: '"messages" es requerido y debe ser un arreglo.' });
+  }
+
   try {
-    const { messages } = req.body;
+    let supabaseSummary =
+      "No se detectó un equipo específico en la pregunta. Usa un riesgo MEDIO por defecto y propuestas generales para equipos.";
 
-    if (!messages || !Array.isArray(messages)) {
-      return res
-        .status(400)
-        .json({ error: "messages es requerido y debe ser un arreglo" });
-    }
-
-    const lastUserMessage =
-      [...messages].reverse().find((m) => m.role !== "assistant") ||
-      null;
-    const userText = lastUserMessage?.content || "";
-    const detectedTeam = detectTeamFromText(userText);
-
-    let supabaseSummary = "";
-    if (detectedTeam) {
-      const metricsText = await getTeamMetricsFromSupabase(detectedTeam);
-      if (metricsText) {
-        supabaseSummary = metricsText;
-      } else {
-        supabaseSummary = `No se encontraron datos recientes en Lia para el equipo "${detectedTeam}". Usa supuestos de riesgo MEDIO, pero deja claro que faltan datos en el dashboard.`;
+    if (teamName) {
+      const teamContext = await getTeamContextFromSupabase(teamName);
+      if (teamContext) {
+        supabaseSummary = teamContext;
       }
-    } else {
-      supabaseSummary =
-        "No se detectó un equipo específico en la pregunta. Usa un nivel de riesgo MEDIO por defecto y propuestas generales para equipos.";
     }
 
     const chatMessages = [
@@ -394,8 +299,8 @@ ${supabaseSummary}
 Nunca inventes números concretos; si algo no está en los datos, dilo explícito.
 
 TU OBJETIVO:
-- Ayudar a líderes a **actuar rápido** sobre sus equipos.
-- Responder de forma **corta, precisa y accionable**.
+- Ayudar a líderes a ACTUAR RÁPIDO sobre sus equipos.
+- Responder de forma CORTA, PRECISA y ACCIONABLE.
 
 REGLAS DE ESTILO (OBLIGATORIAS):
 1) Responde SIEMPRE con esta estructura:
@@ -407,43 +312,38 @@ REGLAS DE ESTILO (OBLIGATORIAS):
 
 CÓMO USAR LOS DATOS:
 - Si hay datos de Supabase:
-  - Usa score promedio, riesgo estimado, estrés, ruido, etc. para justificar TU diagnóstico en 1 frase.
-  - Ajusta la intensidad de las acciones (más contención si el riesgo es alto, más refuerzo/previsión si es bajo).
+  * Ajusta el diagnóstico según el nivel de riesgo observado.
+  * Prioriza acciones que no interrumpan la operación (micro-rituales, check-ins breves, ajustes pequeños).
 - Si NO hay datos:
-  - Asume riesgo MEDIO.
-  - Enfócate en prevención básica y en incentivar mediciones.
-
-Recuerda: eres una herramienta para que el líder sepa **qué hacer esta semana**, no para dar teoría.
-      `.trim(),
+  * Trabaja con riesgo MEDIO por defecto y sugerencias estándar para equipos.`,
       },
-      ...messages.map((m) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content,
-      })),
+      ...messages,
     ];
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: chatMessages,
       temperature: 0.4,
-      max_tokens: 400,
+      max_tokens: 350,
     });
 
     const replyMessage = completion.choices[0]?.message;
     const replyText =
-      replyMessage?.content ||
+      replyMessage?.content?.trim() ||
       "Lo siento, no pude generar una respuesta en este momento.";
 
-    res.json({ reply: replyText });
+    return res.json({ reply: replyText });
   } catch (error) {
     console.error("Error en /api/employer-assistant:", error);
-    res.status(500).json({ error: "Error interno en Lia Coach" });
+    return res
+      .status(500)
+      .json({ error: "Error interno en Lia Coach (empleador)." });
   }
 });
 
-// -----------------------------
+// ========================
 // Healthcheck
-// -----------------------------
+// ========================
 app.get("/", (req, res) => {
   res.send("Lia backend OK");
 });

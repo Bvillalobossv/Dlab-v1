@@ -5,8 +5,25 @@ let db = null;
 
 
 // 🌐 Backend de Lia (IA)
-const LIA_BACKEND_URL = "https://lia-backend-idhc.onrender.com/api/lia-chat";
-// 👆 URL EXACTA de tu servicio en Render + /api/lia-chat
+// Si estás en localhost, apunta a tu backend local; si no, a Render
+const API_BASE_URL =
+  window.location.hostname.includes("localhost")
+    ? "http://localhost:3000"
+    : "https://lia-backend-idhc.onrender.com";
+
+const LIA_BACKEND_URL = `${API_BASE_URL}/api/lia-chat`;
+// 👆 backend Lia (trabajador)
+
+// Helper para obtener el ID del trabajador que se guarda al loguearse
+function getCurrentWorkerId() {
+  return (
+    localStorage.getItem("worker_id_uuid") ||
+    localStorage.getItem("supabase_user_id") ||
+    (state.user && state.user.id) ||
+    null
+  );
+}
+
 
 /*************** STATE  *****************/
 const state = {
@@ -698,77 +715,86 @@ function emotionToScore(e){
   }
 }
 // --- Asistente Lia flotante (con API) ---
-(function initLiaAssistant(){
-  const btnToggle = document.getElementById('lia-assistant-toggle');
-  const panel = document.getElementById('lia-assistant-panel');
-  const btnClose = panel ? panel.querySelector('.lia-assistant-close') : null;
-  const form = document.getElementById('lia-assistant-form');
-  const input = document.getElementById('lia-assistant-input');
-  const messages = document.getElementById('lia-assistant-messages');
+(function initLiaAssistant() {
+  const btnToggle = document.getElementById("lia-assistant-toggle");
+  const panel = document.getElementById("lia-assistant-panel");
+  const btnClose = panel ? panel.querySelector(".lia-assistant-close") : null;
+  const form = document.getElementById("lia-assistant-form");
+  const input = document.getElementById("lia-assistant-input");
+  const messages = document.getElementById("lia-assistant-messages");
 
   if (!btnToggle || !panel || !form || !input || !messages) return;
 
   const togglePanel = (force) => {
-    const shouldShow = typeof force === 'boolean'
-      ? force
-      : panel.classList.contains('hidden');
-    if (shouldShow){
-      panel.classList.remove('hidden');
+    const shouldShow =
+      typeof force === "boolean" ? force : panel.classList.contains("hidden");
+    if (shouldShow) {
+      panel.classList.remove("hidden");
+      setTimeout(() => panel.classList.add("lia-open"), 10);
     } else {
-      panel.classList.add('hidden');
+      panel.classList.remove("lia-open");
+      setTimeout(() => panel.classList.add("hidden"), 200);
     }
   };
 
-  btnToggle.addEventListener('click', () => togglePanel());
-  if (btnClose){
-    btnClose.addEventListener('click', () => togglePanel(false));
+  btnToggle.addEventListener("click", () => togglePanel());
+  if (btnClose) {
+    btnClose.addEventListener("click", () => togglePanel(false));
   }
 
   const appendMessage = (type, text) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'lia-message ' + (type === 'user' ? 'lia-message-user' : 'lia-message-bot');
-    const bubble = document.createElement('div');
-    bubble.className = 'lia-message-bubble';
+    const wrapper = document.createElement("div");
+    wrapper.className =
+      "lia-message " +
+      (type === "user" ? "lia-message-user" : "lia-message-bot");
+    const bubble = document.createElement("div");
+    bubble.className = "lia-message-bubble";
     bubble.textContent = text;
     wrapper.appendChild(bubble);
     messages.appendChild(wrapper);
     messages.scrollTop = messages.scrollHeight;
   };
 
-  // historial de conversación
-  let conversation = [
-    {
-      role: "assistant",
-      content: "Hola, soy Lia 😊. ¿En qué puedo ayudarte hoy?",
-    },
-  ];
+  // Historial que se envía al backend
+  let conversation = [];
 
-  form.addEventListener('submit', async (e) => {
+  // Mensaje de bienvenida sólo en la UI (no se manda al backend)
+  appendMessage(
+    "bot",
+    "Hola, soy Lia 😊. ¿En qué puedo ayudarte hoy?"
+  );
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const value = input.value.trim();
     if (!value) return;
 
-    appendMessage('user', value);
-    input.value = '';
+    appendMessage("user", value);
+    input.value = "";
 
     // Guardamos el mensaje del usuario
     conversation.push({ role: "user", content: value });
 
     // Mensaje temporal de "pensando..."
-    const thinkingEl = document.createElement('div');
-    thinkingEl.className = 'lia-message lia-message-bot';
-    const bubble = document.createElement('div');
-    bubble.className = 'lia-message-bubble';
+    const thinkingEl = document.createElement("div");
+    thinkingEl.className = "lia-message lia-message-bot";
+    const bubble = document.createElement("div");
+    bubble.className = "lia-message-bubble";
     bubble.textContent = "Estoy pensando cómo ayudarte… 💭";
     thinkingEl.appendChild(bubble);
     messages.appendChild(thinkingEl);
     messages.scrollTop = messages.scrollHeight;
 
     try {
+      const workerId = getCurrentWorkerId();
+
       const resp = await fetch(LIA_BACKEND_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: conversation }),
+        body: JSON.stringify({
+          messages: conversation, // historial simple de la conversación
+          workerId,               // <-- clave para que el backend lea Supabase
+        }),
       });
 
       if (!resp.ok) {
@@ -776,22 +802,30 @@ function emotionToScore(e){
       }
 
       const data = await resp.json();
-      const reply = data.reply?.content || "Lo siento, hubo un problema al responder. Inténtalo más tarde.";
+
+      // El backend ahora devuelve { reply: "texto..." }
+      const replyText =
+        typeof data.reply === "string" && data.reply.trim()
+          ? data.reply.trim()
+          : "Lo siento, hubo un problema al responder. Inténtalo más tarde.";
 
       // Quitamos el “pensando…”
       messages.removeChild(thinkingEl);
 
-      appendMessage('bot', reply);
+      appendMessage("bot", replyText);
 
       // Añadimos respuesta al historial
       conversation.push({
         role: "assistant",
-        content: reply,
+        content: replyText,
       });
     } catch (err) {
       console.error("Error llamando a Lia backend:", err);
       messages.removeChild(thinkingEl);
-      appendMessage('bot', "Tuvimos un problema técnico para responder. Intenta de nuevo en unos minutos 🙏.");
+      appendMessage(
+        "bot",
+        "Tuvimos un problema técnico para responder. Intenta de nuevo en unos minutos 🙏."
+      );
     }
   });
 })();
