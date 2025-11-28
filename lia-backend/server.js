@@ -75,7 +75,21 @@ async function getWorkerContextFromSupabase(workerId) {
     console.log("[worker] 🔍 Buscando mediciones para workerId:", workerId);
     console.log("[worker] 🔍 Supabase inicializado:", !!supabase);
 
-    // Leemos las columnas REALES que guardas desde el front
+    // PRIMERO: Obtener nombre del usuario desde profiles
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", workerId)
+      .single();
+
+    let userName = profileData?.username || null;
+    if (profileError) {
+      console.warn("[worker] ⚠️ No se pudo obtener nombre del usuario:", profileError.message);
+    } else if (userName) {
+      console.log("[worker] 👤 Nombre obtenido:", userName);
+    }
+
+    // SEGUNDO: Obtener mediciones
     const { data, error } = await supabase
       .from("measurements")
       .select("created_at, combined_score, stress_level, workload_level")
@@ -231,10 +245,10 @@ INSTRUCCIÓN: Como Lia Coach, analiza estos números. Si el estrés es alto (>5)
 // RUTA: Chat TRABAJADOR
 // ========================
 app.post("/api/lia-chat", async (req, res) => {
-  const { messages, workerId, userName } = req.body;
+  const { messages, workerId, userName: userNameFromFrontend } = req.body;
 
   console.log("🔍 DIAGNÓSTICO CHAT -> ID Recibido:", workerId);
-  console.log("👤 Nombre usuario:", userName || "Sin nombre");
+  console.log("👤 Nombre usuario (del frontend):", userNameFromFrontend || "No enviado");
   console.log("📨 Mensajes recibidos:", messages?.length || 0);
   
   if (!Array.isArray(messages)) {
@@ -243,10 +257,24 @@ app.post("/api/lia-chat", async (req, res) => {
 
   try {
     let systemData = "No hay datos previos disponibles. Asume que es un usuario nuevo.";
+    let userNameFromDB = null;
     
-    // Si viene workerId, buscamos su historial real
+    // Si viene workerId, buscamos su historial real Y su nombre
     if (workerId) {
       console.log("📊 Intentando obtener contexto del trabajador...");
+      
+      // Obtener nombre desde la BD
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", workerId)
+        .single();
+      
+      if (profileData?.username) {
+        userNameFromDB = profileData.username;
+        console.log("👤 Nombre obtenido de BD:", userNameFromDB);
+      }
+      
       const context = await getWorkerContextFromSupabase(workerId);
       if (context) {
         systemData = context;
@@ -258,15 +286,16 @@ app.post("/api/lia-chat", async (req, res) => {
       console.warn("⚠️ No se recibió workerId");
     }
 
-    const userGreeting = userName ? `${userName}` : "Usuario";
+    // Usar nombre de BD si existe, si no, usar del frontend, si no, usar genérico
+    const userName = userNameFromDB || userNameFromFrontend || "Usuario";
 
     const chatMessages = [
       {
         role: "system",
         content: `
-Eres "Lia", compañera de bienestar IA del usuario ${userGreeting}.
+Eres "Lia", compañera de bienestar IA del usuario ${userName}.
 Tono: Cálido, empático, breve, personal y en ESPAÑOL de Chile (neutro).
-IMPORTANTE: Siempre saluda al usuario por su nombre "${userGreeting}" de forma natural en tu primera respuesta.
+IMPORTANTE: Siempre saluda al usuario por su nombre "${userName}" de forma natural en tu primera respuesta.
 
 INFORMACIÓN DEL USUARIO:
 ${systemData}
