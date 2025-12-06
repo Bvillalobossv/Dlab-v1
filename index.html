@@ -509,6 +509,20 @@
     </div>
 
     <form id="lia-assistant-form" class="lia-assistant-input-row">
+      <!-- Selector de equipos para Admin -->
+      <div id="admin-team-selector-container" style="display: none; width: 100%; margin-bottom: 10px;">
+        <label for="admin-team-selector" style="display: block; font-size: 0.9em; margin-bottom: 5px; font-weight: 500;">Selecciona un equipo:</label>
+        <select id="admin-team-selector" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.95em;">
+          <option value="">-- Elige un equipo --</option>
+          <option value="Operaciones">Operaciones</option>
+          <option value="Salud">Salud</option>
+          <option value="TI">TI</option>
+          <option value="Marketing">Marketing</option>
+          <option value="Administración">Administración</option>
+          <option value="Ventas">Ventas</option>
+        </select>
+      </div>
+      
       <input id="lia-assistant-input"
              type="text"
              placeholder="Escribe tu pregunta..."

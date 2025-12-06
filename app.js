@@ -42,9 +42,25 @@ function getCurrentTeamName() {
   return state.context?.area || null;
 }
 
+// Helper para detectar si es Admin (sin departamento pero ID específico)
+function isCurrentUserAdmin() {
+  // Admin es el usuario con ID 05ae5151-8e39-4861-82bc-478c131e326e
+  return state.user?.id === '05ae5151-8e39-4861-82bc-478c131e326e';
+}
+
 // Helper para detectar si el usuario actual es un empleador (tiene un equipo/departamento asignado)
 function isCurrentUserEmployer() {
-  return getCurrentTeamName() !== null;
+  return getCurrentTeamName() !== null || isCurrentUserAdmin();
+}
+
+// Helper para obtener el equipo seleccionado (para Admin, desde un selector)
+function getSelectedTeamForAdmin() {
+  if (!isCurrentUserAdmin()) return null;
+  const selector = document.getElementById('admin-team-selector');
+  if (selector) {
+    return selector.value || null;
+  }
+  return localStorage.getItem('admin_selected_team');
 }
 
 
@@ -135,6 +151,18 @@ async function onSignedIn(user){
   if (welcomeUser) {
     welcomeUser.textContent = `¡Hola, ${capitalize(name)}!`;
   }
+  
+  // Mostrar selector de equipos si es Admin
+  const adminSelectorContainer = document.getElementById('admin-team-selector-container');
+  if (adminSelectorContainer) {
+    if (isCurrentUserAdmin()) {
+      adminSelectorContainer.style.display = 'block';
+      console.log("[AUTH] ✅ Admin detectado - mostrando selector de equipos");
+    } else {
+      adminSelectorContainer.style.display = 'none';
+    }
+  }
+  
   show('screenHome');
 }
 function onSignedOut(){ state.user=null; show('screenIntro'); }
@@ -830,8 +858,21 @@ function emotionToScore(e){
       if (isEmployer) {
         // Si es empleador, usar el endpoint de coach y enviar teamName
         url = LIA_EMPLOYER_URL;
-        body.teamName = getCurrentTeamName();
-        console.log("[CHAT] Enviando como EMPLEADOR:", { teamName: body.teamName, url });
+        
+        // Si es Admin, obtener el equipo del selector; si no, usar el departamento
+        if (isCurrentUserAdmin()) {
+          body.teamName = getSelectedTeamForAdmin();
+          if (!body.teamName) {
+            appendMessage("bot", "⚠️ Por favor selecciona un equipo antes de consultar.");
+            messages.removeChild(thinkingEl);
+            return;
+          }
+        } else {
+          body.teamName = getCurrentTeamName();
+        }
+        
+        body.managerName = userName; // Agregar nombre del empleador para personalización
+        console.log("[CHAT] Enviando como EMPLEADOR:", { teamName: body.teamName, managerName: body.managerName, url });
       } else {
         // Si es trabajador, usar el endpoint normal y enviar workerId
         body.workerId = getCurrentWorkerId();
