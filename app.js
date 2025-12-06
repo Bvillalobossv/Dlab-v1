@@ -89,7 +89,7 @@ const MODEL_URL='./models';
 let faceModelsReady=false, cameraStream=null;
 const EMOJI_GIF={
   happy:'./images/mascots/happy.gif',
-  neutral:'./images/mascots/neutral.gif',
+  neutral:'./images/mascots/happy.gif', // Usar happy como default para neutral
   sad:'./images/mascots/sad.gif',
   angry:'./images/mascots/angry.gif',
   disgusted:'./images/mascots/disgust.gif',
@@ -421,10 +421,18 @@ function initFace(){
       const emotion = expr.expression;
       const conf = +(expr.probability * 100).toFixed(1);
 
+      console.log('[FACE] Emoción detectada:', emotion, 'Confianza:', conf + '%');
+      console.log('[FACE] GIF mapeado:', EMOJI_GIF[emotion] || EMOJI_GIF.neutral);
+
       $('#faceEmotion').textContent = capitalize(emotion);
       const img = $('#faceMascot');
-      img.src = EMOJI_GIF[emotion] || EMOJI_GIF.neutral;
+      const gifPath = EMOJI_GIF[emotion] || EMOJI_GIF.neutral;
+      img.src = gifPath;
       img.alt = `Emoción: ${emotion}`;
+      img.onerror = () => {
+        console.error('[FACE] Error cargando GIF:', gifPath);
+        img.src = EMOJI_GIF.neutral;
+      };
       $('#faceTip').textContent = tipForEmotion(emotion, conf);
       $('#face-results-content').classList.remove('hidden');
       $('#btnFaceNext').disabled = false;
@@ -452,6 +460,9 @@ function tipForEmotion(e,c){
     case 'neutral':return`Un estado de calma es un buen punto de partida${conf}.`;
     case 'sad':return`Ánimo${conf} 💛. Una pausa puede ayudar.`;
     case 'angry':return`Momento de bajar revoluciones${conf}. Respira profundo.`;
+    case 'disgusted':return`Algo te molesta${conf}. Identifica qué es y busca una solución.`;
+    case 'fearful':return`La preocupación es normal${conf}. Enfócate en lo que sí puedes controlar.`;
+    case 'surprised':return`¡Una sorpresa${conf}! Mantén la calma y observa.`;
     default:return`Respira profundo por 60 segundos y vuelve a enfocarte.`;
   }
 }
