@@ -88,13 +88,13 @@ const emailFromUser = u => `${(u||'').trim().toLowerCase().replace(/[^a-z0-9._-]
 const MODEL_URL='./models';
 let faceModelsReady=false, cameraStream=null;
 const EMOJI_GIF={
-  happy:'./images/mascots/happy.gif',
-  neutral:'./images/mascots/happy.gif', // Usar happy como default para neutral
-  sad:'./images/mascots/sad.gif',
-  angry:'./images/mascots/angry.gif',
-  disgusted:'./images/mascots/disgust.gif',
-  fearful:'./images/mascots/fear.gif',
-  surprised:'./images/mascots/surprised.gif'
+  happy:'./images/mascots/happy.png',
+  neutral:'./images/mascots/neutral.png',
+  sad:'./images/mascots/sad.png',
+  angry:'./images/mascots/angry.png',
+  disgusted:'./images/mascots/disgust.png',
+  fearful:'./images/mascots/fear.png',
+  surprised:'./images/mascots/surprised.png'
 };
 
 /*************** BOOT *****************/
