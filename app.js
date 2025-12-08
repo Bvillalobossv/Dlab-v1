@@ -318,6 +318,8 @@ function initModals() {
 /*************** NAV *****************/
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
+  $('#btnMyProfile')?.addEventListener('click',()=>show('screenProfile'));
+  $('#btnProfileBack')?.addEventListener('click',()=>show('screenHome'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
   $('#btnAreaNext')?.addEventListener('click',()=>show('screenFace'));
   $('#btnFaceSkip')?.addEventListener('click',()=>{ stopCamera(); show('screenAudioPrep'); });
