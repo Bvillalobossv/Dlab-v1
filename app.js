@@ -316,9 +316,49 @@ function initModals() {
 }
 
 /*************** NAV *****************/
+async function loadProfileData(){
+  try {
+    const userId = state.user?.id;
+    if (!userId) {
+      console.log("[PROFILE] ⚠️ No user ID found");
+      return;
+    }
+
+    // Obtener datos del perfil desde Supabase
+    const { data: profile, error } = await db
+      .from('profiles')
+      .select('username, full_name, department, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("[PROFILE] ❌ Error fetching profile:", error);
+      return;
+    }
+
+    if (profile) {
+      // Actualizar el nombre en la pantalla de perfil
+      const profileNameEl = document.querySelector('.profile-name');
+      if (profileNameEl) {
+        profileNameEl.textContent = profile.username || profile.full_name || 'Usuario';
+        console.log("[PROFILE] ✅ Nombre actualizado:", profileNameEl.textContent);
+      }
+
+      // Actualizar el rol/departamento si existe
+      const profileRoleEl = document.querySelector('.profile-role');
+      if (profileRoleEl && profile.department) {
+        profileRoleEl.textContent = profile.department;
+        console.log("[PROFILE] ✅ Departamento actualizado:", profile.department);
+      }
+    }
+  } catch (err) {
+    console.error("[PROFILE] ❌ Error en loadProfileData:", err);
+  }
+}
+
 function initNav(){
   $('#btnHomeStart')?.addEventListener('click',()=>show('screenArea'));
-  $('#btnMyProfile')?.addEventListener('click',()=>show('screenProfile'));
+  $('#btnMyProfile')?.addEventListener('click',async()=>{ await loadProfileData(); show('screenProfile'); });
   $('#btnProfileBack')?.addEventListener('click',()=>show('screenHome'));
   $('#btnSignOut')?.addEventListener('click',async()=>{ await db.auth.signOut(); onSignedOut(); });
   $('#btnAreaNext')?.addEventListener('click',()=>show('screenFace'));
